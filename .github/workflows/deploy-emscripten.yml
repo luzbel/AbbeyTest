@@ -1,0 +1,80 @@
+name: Build and Deploy Emscripten
+
+on:
+  push:
+    branches:
+      - emscripten  # Trigger: commits en esta rama
+  workflow_dispatch:  # Permite ejecución manual desde GitHub UI
+
+permissions:
+  contents: read  # Mínimo necesario para checkout
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Necesario para push a gh-pages
+    
+    steps:
+      # 1. Checkout del código (con credenciales para poder push después)
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        # persist-credentials: true por defecto → necesario para deploy posterior
+
+      # 2. Setup Emscripten SDK
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 'latest'
+          actions-cache-folder: 'emsdk-cache'  # Cache para builds más rápidos
+
+      # 3. Dependencias del sistema
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y make cmake
+
+      # 4. Build con tu proceso real: configure + make
+      - name: Configure and Build
+        run: |
+          echo "🔧 Ejecutando configure..."
+          cd build_emscripten
+          ./configure
+          
+          echo "🏗️ Compilando con make -j 4..."
+          make -j 4
+          
+          echo "✅ Verificando artefactos..."
+          ls -lh abbey-ghpages.html abbey.data abbey.js abbey.wasm coi-serviceworker.min.js
+
+      # 5. Preparar carpeta de despliegue
+      - name: Prepare deployment artifacts
+        run: |
+          mkdir -p deploy
+          
+          # Renombrar a index.html para que GitHub Pages lo sirva como raíz
+          cp build_emscripten/abbey-ghpages.html deploy/index.html
+          
+          # Copiar el resto de artefactos con sus nombres originales
+          cp build_emscripten/abbey.data deploy/
+          cp build_emscripten/abbey.js deploy/
+          cp build_emscripten/abbey.wasm deploy/
+          cp build_emscripten/coi-serviceworker.min.js deploy/
+          
+          # Opcional: archivo README para identificar el deploy
+          echo "🎮 Abbey of Crime - Emscripten Build" > deploy/README.md
+          echo "Generado automáticamente desde rama: emscripten" >> deploy/README.md
+          echo "Commit: ${{ github.sha }}" >> deploy/README.md
+          echo "Fecha: $(date -u)" >> deploy/README.md
+
+      # 6. Deploy a gh-pages (mismo repositorio → GITHUB_TOKEN funciona ✅)
+      - name: Deploy to gh-pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages          # Rama destino
+          folder: deploy            # Carpeta con los archivos a publicar
+          token: ${{ secrets.GITHUB_TOKEN }}  # Automático, no requiere configuración
+          clean: true               # Elimina archivos antiguos que ya no existen
+          commit-message: "🚀 Deploy: ${{ github.event.head_commit.message }}"
+          target-folder: /          # Publicar en raíz de gh-pages
+          single-commit: true       # Historial más limpio en gh-pages
