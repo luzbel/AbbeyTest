@@ -2,7 +2,7 @@
 //
 /////////////////////////////////////////////////////////////////////////////
 
-//#include "cpc6128.h"
+#include "cpc6128.h"
 #include "Juego.h"
 #include "GestorFrases.h"
 #include "Marcador.h"
