@@ -54,7 +54,7 @@ void Game::handleEvents()
 	sys->handleEvents();
 		
 	if (sys->pad.start){	
-		vigasocosdl->changeState(MENU);
+		vigasocosdl->changeState(Abadia::STATES::MENU);
 		sys->pad.start = false;
 	}
 }

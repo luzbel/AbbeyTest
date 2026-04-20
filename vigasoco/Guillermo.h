@@ -17,23 +17,23 @@ namespace Abadia {
 
 class Guillermo : public Personaje
 {
-// campos
+	// campos
 public:
-	int incrPosY;								// incremento de la posici�n y si el estado no es 0
+	int incrPosY;					// incremento de la posición y si el estado no es 0
 
 protected:
-	static DatosFotograma tablaAnimacion[8];	// tabla con los distintos fotogramas de la animaci�n del personaje
+	// tabla con los distintos fotogramas de la animación del personaje
+	static DatosFotograma tablaAnimacion[8];	
 
-// m�todos
+	// métodos
 public:
 	virtual void run();
 	virtual void ejecutaMovimiento();
 
-	// inicializaci�n y limpieza
+	// inicialización y limpieza
 	Guillermo(Sprite *spr);
 	virtual ~Guillermo();
 };
-
 
 }
 

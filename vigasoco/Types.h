@@ -7,7 +7,6 @@
 #ifndef _VIGASOCO_TYPES_H_
 #define _VIGASOCO_TYPES_H_
 
-
 static const int MIN_INT = - 2147483647 - 1;
 static const int MAX_INT = 2147483647;
 
@@ -26,7 +25,6 @@ typedef unsigned long long UINT64;
 typedef signed __int64 INT64;
 typedef unsigned __int64 UINT64;
 #endif
-
 
 struct Rect {
 	int left;

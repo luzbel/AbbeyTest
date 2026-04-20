@@ -7,7 +7,6 @@
 #ifndef _MONJE_H_
 #define _MONJE_H_
 
-
 #include "PersonajeConIA.h"
 
 namespace Abadia {
@@ -16,14 +15,14 @@ class SpriteMonje;								// definido en SpriteMonje.h
 
 class Monje : public PersonajeConIA
 {
-// campos
+	// campos
 protected:
-	int datosCara[2];							// dirección de los gráficos de la cara
-	SpriteMonje *sprMonje;						// sprite del monje
+	int datosCara[2];				// dirección de los gráficos de la cara
+	SpriteMonje *sprMonje;				// sprite del monje
 
 	static DatosFotograma tablaAnimacion[8];	// tabla con los distintos fotogramas de animación
 
-// métodos
+	// métodos
 public:
 	virtual DatosFotograma *calculaFotograma();
 
@@ -31,7 +30,6 @@ public:
 	Monje(SpriteMonje *spr);
 	virtual ~Monje();
 };
-
 
 }
 

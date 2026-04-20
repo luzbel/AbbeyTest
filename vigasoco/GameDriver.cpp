@@ -22,8 +22,6 @@ GameDriver::GameDriver(std::string driverName, std::string fullName, int intsPer
 	_numInterruptsPerVideoUpdate = 1;
 	_numInterruptsPerLogicUpdate = 1;
 
-	_palette = 0;
-
 	_errorMsg = "";
 	theFileLoader = new FileLoader();
 }
@@ -57,10 +55,9 @@ GameDriver::~GameDriver()
 // game driver initialization and cleanup
 /////////////////////////////////////////////////////////////////////////////
 
-bool GameDriver::init(SDLPalette *pal)
+//bool GameDriver::init(SDLPalette *pal)
+bool GameDriver::init()
 {
-	_palette = pal;
-
 	// recalculate the refresh rate
 	_videoInfo.refreshRate = _numInterruptsPerSecond/_numInterruptsPerVideoUpdate;
 

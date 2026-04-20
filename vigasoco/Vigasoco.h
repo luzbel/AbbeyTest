@@ -19,19 +19,19 @@
 #include <string>
 
 #include "Singleton.h"
-#include "SDLPalette.h"
 #include "GameDriver.h"
+
+#include "system.h"
 
 #define VigasocoMain Vigasoco::getSingletonPtr()
 
 class Vigasoco : public Singleton<Vigasoco>
 {
-// fields
+	// fields
 protected:	
 	GameDriver *_driver;
-	SDLPalette *_palette;
 
-// methods
+	// methods
 public:
 	// initialization and cleanup
 	Vigasoco();
@@ -41,14 +41,12 @@ public:
 	virtual void mainLoop();
 
 	GameDriver *getDriver() const { return _driver; }
-	SDLPalette *getPalette() const { return _palette; }
 
 	void toggleInformationMode();
 	void showMenu();
-	void changeState(int newState);
+	void changeState(Abadia::STATES newState);
 
 	GameDriver *createGameDriver(std::string game);		
 };
 
 #endif	// _VIGASOCO_H_
-

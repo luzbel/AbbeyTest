@@ -1,8 +1,6 @@
-
 #if VITA
 #define VITASDK
 #endif
-
 
 #include <errno.h>
 #include <sys/types.h>
@@ -58,8 +56,11 @@ int main(int argc, char* argv[])
 	checkSaveDirectory();
 #endif
 
-	game = new Game();
+	// SDL tiene que estar inicializado antes del juego
+        // para que se pueda convertir la paleta al formato
+        // de la superficie generada
 	sys->init();
+	game = new Game();
 
 #ifdef __EMSCRIPTEN__
         emscripten_set_main_loop(mainloop, 0, 1);

@@ -278,18 +278,6 @@ void Berengario::piensa()
 // se pone o se quita la capucha
 void Berengario::fijaCapucha(bool puesta)
 {
-	//CPC
-	/*
-	if (!puesta){
-        // coloca los datos de la cara de berengario
-		datosCara[0] = 0xb22f;
-		datosCara[1] = 0xb22f + 0x32;
-	} else {
-		// coloca los datos del encapuchado
-		datosCara[0] = 0xb35b;
-		datosCara[1] = 0xb35b + 0x32;
-	}
-	*/
 	// VGA
 	if (!puesta){
 		// coloca los datos de la cara de berengario

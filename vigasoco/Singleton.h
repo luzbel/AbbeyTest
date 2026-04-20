@@ -23,7 +23,7 @@ class Singleton
 {
 	static T *g_singleton;	// the singleton object
 
-// methods
+	// methods
 public:
 	// constructor
 	Singleton()
@@ -49,6 +49,5 @@ public:
 
 
 template <typename T> T* Singleton<T>::g_singleton = 0;
-
 
 #endif	// _SINGLETON_H_

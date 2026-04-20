@@ -408,7 +408,8 @@ int Personaje::puedeDejarObjeto(int &posXObj, int &posYObj, int &alturaObj)
 			}
 		}
 
-		// si el objeto no se va a dejar en la pantalla que se muestra actualmente, se deja en la posición del personaje
+		// si el objeto no se va a dejar en la pantalla que se muestra actualmente,
+		// se deja en la posición del personaje
 		if (!estaEnPantallaActual){
 			posXObj = posX;
 			posYObj = posY;
@@ -439,9 +440,12 @@ void Personaje::marcaPosicion(RejillaPantalla *rejilla, int valor)
 
 		// si el personaje no está en un desnivel, ocupa 4 posiciones ((x, y)(x-1, y)(x, y-1)(x-1, y-1))
 		if (!enDesnivel){
-			rejilla->bufAlturas[posYRejilla][posXRejilla - 1] = (rejilla->bufAlturas[posYRejilla][posXRejilla - 1] & 0x0f) | valor;
-			rejilla->bufAlturas[posYRejilla - 1][posXRejilla] = (rejilla->bufAlturas[posYRejilla - 1][posXRejilla] & 0x0f) | valor;
-			rejilla->bufAlturas[posYRejilla - 1][posXRejilla - 1] = (rejilla->bufAlturas[posYRejilla - 1][posXRejilla - 1] & 0x0f) | valor;
+			rejilla->bufAlturas[posYRejilla][posXRejilla - 1] =
+				(rejilla->bufAlturas[posYRejilla][posXRejilla - 1] & 0x0f) | valor;
+			rejilla->bufAlturas[posYRejilla - 1][posXRejilla] =
+				(rejilla->bufAlturas[posYRejilla - 1][posXRejilla] & 0x0f) | valor;
+			rejilla->bufAlturas[posYRejilla - 1][posXRejilla - 1] =
+				(rejilla->bufAlturas[posYRejilla - 1][posXRejilla - 1] & 0x0f) | valor;
 		}
 	}
 }

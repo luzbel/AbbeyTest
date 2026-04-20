@@ -7,7 +7,6 @@
 #ifndef _TRANSFORMACIONES_CAMARA_H_
 #define _TRANSFORMACIONES_CAMARA_H_
 
-
 namespace Abadia {
 
 class TransformacionCamara
@@ -20,7 +19,6 @@ public:
 	TransformacionCamara(){}
 	virtual ~TransformacionCamara(){}
 };
-
 
 class Camara0 : public TransformacionCamara
 {

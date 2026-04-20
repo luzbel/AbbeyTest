@@ -11,37 +11,38 @@
 #ifndef _SPRITE_LUZ_H_
 #define _SPRITE_LUZ_H_
 
-
 #include "Sprite.h"
 
 namespace Abadia {
 
-class Personaje;					// definido en Personaje.h
+class Personaje;			// definido en Personaje.h
 
 class SpriteLuz : public Sprite
 {
-// campos
+	// campos
 public:
-	bool flipX;						// indica si el personaje asociado a la luz está girado en x
-	int rellenoAbajo;				// número de pixels de relleno para completar el sprite por abajo
-	int rellenoArriba;				// número de pixels de relleno para completar el sprite por arriba
-	int rellenoDerecha;				// número de pixels de relleno para completar el sprite por la derecha
-	int rellenoIzquierda;			// número de pixels de relleno para completar el sprite por la izquierda
+	bool flipX;			// indica si el personaje asociado a la luz está girado en x
+	int rellenoAbajo;		// número de pixels de relleno para completar el sprite por abajo
+	int rellenoArriba;		// número de pixels de relleno para completar el sprite por arriba
+	int rellenoDerecha;		// número de pixels de relleno para completar el sprite por la derecha
+	int rellenoIzquierda;		// número de pixels de relleno para completar el sprite por la izquierda
 
 protected:
-	static int rellenoLuz[16];		// tabla con el patrón de relleno de la luz
+	static int rellenoLuz[16];	// tabla con el patrón de relleno de la luz
 
-// métodos
+	// métodos
 public:
 	void ajustaAPersonaje(Personaje *pers);
 
-	virtual void dibuja(Sprite *spr, UINT8 *bufferMezclas, int lgtudClipX, int lgtudClipY, int dist1X, int dist2X, int dist1Y, int dist2Y);
+	virtual void dibuja(
+		Sprite *spr, UINT8 *bufferMezclas,
+		int lgtudClipX, int lgtudClipY,
+		int dist1X, int dist2X, int dist1Y, int dist2Y);
 
 	// inicialización y limpieza
 	SpriteLuz();
 	virtual ~SpriteLuz();
 };
-
 
 }
 

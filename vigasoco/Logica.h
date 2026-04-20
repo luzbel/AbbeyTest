@@ -136,7 +136,7 @@ public:
 	void realizaReflejoEspejo();
 	void despHabitacionEspejo();
 
-	// inicializaci�n y limpieza
+	// inicialización y limpieza
 	Logica(UINT8 *romData, UINT8 *buf, int lgtud);
 	~Logica();
 
@@ -145,9 +145,9 @@ public:
 			Logica* const logica);
 
 
-// m�todos de ayuda
+// métodos de ayuda
 protected:
-	// inicializaci�n
+	// inicialización
 	void iniciaSprites();
 	void iniciaPersonajes();
 	void iniciaPuertas();

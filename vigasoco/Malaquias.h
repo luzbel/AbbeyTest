@@ -1,6 +1,6 @@
 // Malaquias.h
 //
-//	Clase que representa a Malaqu�as
+//	Clase que representa a Malaquías
 //
 /////////////////////////////////////////////////////////////////////////////
 
@@ -15,20 +15,20 @@ namespace Abadia {
 
 class Malaquias : public Monje
 {
-// campos
+	// campos
 public:
-	int estaMuerto;								// indica si el personaje est� muerto o muri�ndose
-	int estado2;								// guarda informaci�n extra sobre el estado del personaje
+	int estaMuerto;	// indica si el personaje está muerto o muriéndose
+	int estado2;	// guarda información extra sobre el estado del personaje
 
 protected:
-	int contadorEnScriptorium;					// indica el tiempo que guillermo est� sin salir del scriptorium
-	static PosicionJuego posicionesPredef[9];	// posiciones a las que puede ir el personaje seg�n el estado
+	int contadorEnScriptorium;	// indica el tiempo que guillermo está sin salir del scriptorium
+	static PosicionJuego posicionesPredef[9]; // posiciones a las que puede ir el personaje según el estado
 
-// m�todos
+// métodos
 public:
 	void piensa() override;
 
-	// inicializaci�n y limpieza
+	// inicialización y limpieza
 	explicit Malaquias(SpriteMonje *spr);
 	~Malaquias() override = default;
 

@@ -7,16 +7,15 @@
 #ifndef _UNCOMPRESSED_LOADER_H_
 #define _UNCOMPRESSED_LOADER_H_
 
-
 #include "ILoader.h"
 
 class UncompressedLoader : public ILoader
 {
-// fields
+	// fields
 protected:
 	std::string _path;
 
-// methods
+	// methods
 public:
 	UncompressedLoader();
 	virtual ~UncompressedLoader();

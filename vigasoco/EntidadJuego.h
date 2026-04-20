@@ -20,10 +20,10 @@ enum Orientacion {
 class PosicionJuego
 {
 public:
-	int orientacion;		// orientaci�n de la posici�n en el mundo
-	int posX;			// posici�n x en coordenadas de mundo
-	int posY;			// posici�n y en coordenadas de mundo
-	int altura;			// altura en coordenadas de mundo
+	int orientacion;		// orientación de la posición en el mundo
+	int posX;				// posición x en coordenadas de mundo
+	int posY;				// posición y en coordenadas de mundo
+	int altura;				// altura en coordenadas de mundo
 
 	PosicionJuego();
 	PosicionJuego(int ori, int pX, int pY, int alt);
@@ -38,12 +38,12 @@ class EntidadJuego : public PosicionJuego
 public:
 	Sprite *sprite;			// sprite asociado a la entidad
 
-// m�todos:
+// métodos:
 public:
 	virtual void cambioPantalla(){}
 	virtual void notificaVisibleEnPantalla(int posXPant, int posYPant, int profundidad) = 0;
 
-	// inicializaci�n y limpieza
+	// inicialización y limpieza
 	EntidadJuego(Sprite *spr);
 	virtual ~EntidadJuego();
 };

@@ -16,10 +16,9 @@
 
 #include "Singleton.h"
 #include "Types.h"
-#include "Paleta.h"
 #include "configreader.h"
 
-class CPC6128;					// definido en CPC6128.h
+#include "system.h"
 
 namespace Abadia {
 
@@ -66,30 +65,26 @@ public:
 	bool GraficosCPC; // Indica si se usan los datos del archivo GraficosCPC
 			  // o del GraficosVGA
 			  // En ambos casos, son de 8 bits
-	CPC6128 *cpc6128;						// objeto de ayuda para realizar operaciones gr??ficas del cpc6128
 	
-	Paleta *paleta;							// paleta del juego
-	UINT8 buffer[8192];						// buffer para mezclar los sprites y para buscar las rutas
-	UINT8 *roms;							// puntero a las roms originales
-	Logica *logica;							// objeto que se encarga de gestionar la l??gica del juego
+	UINT8 buffer[8192*2];			// buffer para mezclar los sprites y para buscar las rutas
+	UINT8 *roms;				// puntero a las roms originales
+	Logica *logica;				// objeto que se encarga de gestionar la l??gica del juego
 	
-	Pergamino *pergamino;					// pergamino para la presentaci??n y el final
-	Marcador *marcador;						// marcador del juego
-	MotorGrafico *motor;					// motor gr??fico
+	Pergamino *pergamino;			// pergamino para la presentación y el final
+	Marcador *marcador;			// marcador del juego
+	MotorGrafico *motor;			// motor gráfico
 
-	Sprite *sprites[numSprites];			// sprites del juego
-	Puerta *puertas[numPuertas];			// puertas del juego
-	Objeto *objetos[numObjetos];			// objetos del juego
+	Sprite *sprites[numSprites];		// sprites del juego
+	Puerta *puertas[numPuertas];		// puertas del juego
+	Objeto *objetos[numObjetos];		// objetos del juego
 	Personaje *personajes[numPersonajes];	// personajes del juego
 
-
-
-	bool pausa;								// indica si el juego est?? pausado
-	bool modoInformacion;					// modo de informaci??n del juego
-	bool cambioModoInformacion; // se ha cambiado el estado
-	InfoJuego *infoJuego;					// objeto para mostrar informaci??n interna del juego
-	int currentState;
-	int firstTime;	
+	bool pausa;				// indica si el juego está pausado
+	bool modoInformacion;			// modo de información del juego
+	bool cambioModoInformacion; 		// se ha cambiado el estado
+	InfoJuego *infoJuego;			// objeto para mostrar información interna del juego
+	Abadia::STATES currentState;
+	//int firstTime;	
 	int seleccionado;
 	ConfigReader *configReader;
 	int selectedSlot;
@@ -125,8 +120,41 @@ private:
 	void cambioCPC_VGA(void);
 	void compruebaCambioCPC_VGA(void);
 	bool compruebaMenu(void);
-	void ReiniciaPantalla(void);
+//	void ReiniciaPantalla(void); // lo ponemos publico para que cada vez que se cambie la paleta se reinicie
+	// es muy abadia, y muy cpc 
+	// pero no tiene sentido tenerlo en una clase sola
+	// ni en system
+	// pixel packing
+	inline int packPixelMode1(int oldByte, int pixel, int color)
+	{
+		assert ((pixel >= 0) && (pixel < 4));
+		assert ((color >= 0) && (color < 4));
+
+		// find out the 2 bits of the new pixel
+		int mask = 0x88;
+		mask = mask >> pixel;
+
+		// save the other pixels
+		oldByte = (oldByte & (~mask)) & 0xff;
+
+		// array with the four colors
+		static int byteColors[4] = { 0x00, 0xf0, 0x0f, 0xff };
+
+		// combines the other pixels with the new pixel
+		return oldByte | (byteColors[color] & mask);
+	}
+
 public:
+	void ReiniciaPantalla(bool mostrarDiaYMomentoDia=true); // lo ponemos publico para que cada vez que se cambie la paleta se reinicie
+	// es muy abadia, y muy cpc 
+	// pero no tiene sentido tenerlo en una clase sola
+	// ni en system
+	inline int unpackPixelMode1(int data, int pixel)
+	{
+		return (((data >> (3 - pixel)) & 0x01) << 1) | ((data >> (7 - pixel)) & 0x01);
+	}
+
+
 	void muestraFinal();
 	void limpiaAreaJuego(int color);
 
@@ -135,10 +163,10 @@ public:
 	void run();
 	void run2();
 	void stateMachine();
-	void changeState(int newState);
+	void changeState(Abadia::STATES newState);
 
-	// inicializaci??n y limpieza
-	Juego(UINT8 *romData, CPC6128 *cpc);
+	// inicialización y limpieza
+	Juego(UINT8 *romData);
 	~Juego();
 	bool showingMenu;
 	bool activeGame;
@@ -175,7 +203,6 @@ protected:
 	void askExitLogic();
 
 };
-
 
 }
 

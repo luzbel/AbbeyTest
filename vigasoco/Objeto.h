@@ -12,18 +12,17 @@
 
 namespace Abadia {
 
-
-class Personaje;				// definido en Personaje.h
+class Personaje;			// definido en Personaje.h
 
 class Objeto : public EntidadJuego
 {
 	// campos
 	public:
-		bool seEstaCogiendo;		// indica si el objeto se está cogiendo o dejando
-		bool seHaCogido;			// indica si el objeto está disponible o ha sido cogido
-		Personaje *personaje;		// personaje que tiene el objeto (en el caso de que haya sido cogido)
+		bool seEstaCogiendo;	// indica si el objeto se está cogiendo o dejando
+		bool seHaCogido;	// indica si el objeto está disponible o ha sido cogido
+		Personaje *personaje;	// personaje que tiene el objeto (en el caso de que haya sido cogido)
 
-		// métodos
+	// métodos
 	public:
 		virtual void notificaVisibleEnPantalla(int posXPant, int posYPant, int profundidad);
 

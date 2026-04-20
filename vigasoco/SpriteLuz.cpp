@@ -5,12 +5,11 @@
 #include "Juego.h"
 #include "Personaje.h"
 #include "SpriteLuz.h"
-#include "cpc6128.h"
 
 using namespace Abadia;
 
 /////////////////////////////////////////////////////////////////////////////
-// tabla con el patr�n de relleno de la luz
+// tabla con el patrón de relleno de la luz
 /////////////////////////////////////////////////////////////////////////////
 
 int SpriteLuz::rellenoLuz[16] = {
@@ -33,7 +32,7 @@ int SpriteLuz::rellenoLuz[16] = {
 };
 
 /////////////////////////////////////////////////////////////////////////////
-// inicializaci�n y limpieza
+// inicialización y limpieza
 /////////////////////////////////////////////////////////////////////////////
 
 SpriteLuz::SpriteLuz()
@@ -55,23 +54,23 @@ SpriteLuz::~SpriteLuz()
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// colocaci�n de la luz
+// colocación de la luz
 /////////////////////////////////////////////////////////////////////////////
 
-// ajusta el sprite de la luz a la posici�n del personaje que se le pasa
+// ajusta el sprite de la luz a la posición del personaje que se le pasa
 void SpriteLuz::ajustaAPersonaje(Personaje *pers)
 {
 	// asigna una profundidad en pantalla muy alta al sprite de la luz
 	posXLocal = 0xfe;
 	posYLocal = 0xfe;
 
-	// calcula los rellenos del sprite de la luz seg�n la posici�n del personaje
+	// calcula los rellenos del sprite de la luz según la posición del personaje
 	rellenoIzquierda = (pers->sprite->posXPant & 0x03)*4;
 	rellenoDerecha = (4 - (pers->sprite->posXPant & 0x03))*4;
 	rellenoArriba = ((pers->sprite->posYPant & 0x07) >= 4) ? 0xf0*4 : 0xa0*4;
 	rellenoAbajo = ((pers->sprite->posYPant & 0x07) >= 4) ? 0xa0*4 : 0xf0*4;
 
-	// coloca la posici�n de la luz basada en la posici�n del personaje (ajustando la posici�n al inicio de un tile)
+	// coloca la posición de la luz basada en la posición del personaje (ajustando la posición al inicio de un tile)
 	posXPant = (pers->sprite->posXPant & 0xfc) - 8;
 	if (posXPant < 0) posXPant = 0;
 	posYPant = (pers->sprite->posYPant & 0xf8) - 24;
@@ -80,7 +79,7 @@ void SpriteLuz::ajustaAPersonaje(Personaje *pers)
 	oldPosXPant = posXPant;
 	oldPosYPant = posYPant;
 
-	// obtiene si el personaje est� girado
+	// obtiene si el personaje está girado
 	flipX = pers->flipX;
 }
 
@@ -88,7 +87,7 @@ void SpriteLuz::ajustaAPersonaje(Personaje *pers)
 // dibujado de sprites
 /////////////////////////////////////////////////////////////////////////////
 
-// dibuja la parte visible del sprite actual en el �rea ocupada por el sprite que se le pasa como par�metro
+// dibuja la parte visible del sprite actual en el área ocupada por el sprite que se le pasa como parámetro
 void SpriteLuz::dibuja(Sprite *spr, UINT8 *bufferMezclas, int lgtudClipX, int lgtudClipY, int dist1X, int dist2X, int dist1Y, int dist2Y)
 {
 	// rellena de negro la parte superior del sprite
@@ -100,13 +99,13 @@ void SpriteLuz::dibuja(Sprite *spr, UINT8 *bufferMezclas, int lgtudClipX, int lg
 
 	// para 15 bloques
 	for (int j = 0; j < 15; j++){
-		// guarda la posici�n inicial de este bloque
+		// guarda la posición inicial de este bloque
 		UINT8 *posBuffer = bufferMezclas;
 
-		// obtiene el patr�n para rellenar este bloque
+		// obtiene el patrón para rellenar este bloque
 		int patron = rellenoLuz[j];
 
-		// rellena 4 l�neas de alto en la parte de la izquierda
+		// rellena 4 líneas de alto en la parte de la izquierda
 		for (int i = 0; i < rellenoIzquierda; i++){
 			/* CPC
 			bufferMezclas[0] = 3;
@@ -120,12 +119,12 @@ void SpriteLuz::dibuja(Sprite *spr, UINT8 *bufferMezclas, int lgtudClipX, int lg
 			bufferMezclas++;
 		}
 
-		// modifica levemente el patr�n dependiendo de a donde mira el personaje
+		// modifica levemente el patrón dependiendo de a donde mira el personaje
 		if (flipX){
 			patron = patron << 1;
 		}
 
-		// completa el sprite de la luz seg�n el patr�n de relleno
+		// completa el sprite de la luz según el patrón de relleno
 		for (int i = 0; i < 16; i++){
 			// si el bit actual es 0, rellena de negro un bloque de 4x4
 			if ((patron & 0x8000) == 0){
@@ -148,7 +147,7 @@ void SpriteLuz::dibuja(Sprite *spr, UINT8 *bufferMezclas, int lgtudClipX, int lg
 			patron = patron << 1;
 		}
 
-		// rellena 4 l�neas de alto en la parte de la derecha
+		// rellena 4 líneas de alto en la parte de la derecha
 		for (int i = 0; i < rellenoDerecha; i++){
 			/* CPC
 			bufferMezclas[0] = 3;
@@ -161,7 +160,7 @@ void SpriteLuz::dibuja(Sprite *spr, UINT8 *bufferMezclas, int lgtudClipX, int lg
 			bufferMezclas++;
 		}
 
-		// avanza la posici�n hasta la del siguiente bloque
+		// avanza la posición hasta la del siguiente bloque
 		bufferMezclas = posBuffer + 80*4;
 	}
 

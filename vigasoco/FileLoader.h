@@ -19,9 +19,7 @@
 class GameDataEntity;	// defined in GameDataEntity.h
 class ILoader;			// defined in ILoader.h
 
-//#define theFileLoader FileLoader::getSingletonPtr()
 
-//class FileLoader : public Singleton<FileLoader>
 class FileLoader
 {
 // types

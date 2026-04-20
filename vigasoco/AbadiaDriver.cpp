@@ -3,7 +3,6 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include "AbadiaDriver.h"
-#include "cpc6128.h"
 #include "DskReader.h"
 
 #include "GameDataEntity.h"
@@ -24,7 +23,7 @@ using namespace Abadia;
 /////////////////////////////////////////////////////////////////////////////
 
 AbadiaDriver::AbadiaDriver() : GameDriver("abadia", "La abadia del crimen", 300),
-                               _abadiaGame{0}, cpc6128{0}, romsPtr{0}
+                               _abadiaGame{0}, romsPtr{0}
 {
 	createGameDataEntities();
 }
@@ -35,7 +34,7 @@ AbadiaDriver::AbadiaDriver() : GameDriver("abadia", "La abadia del crimen", 300)
 
 void AbadiaDriver::createGameDataEntities()
 {
-	// el c?digo y los gr?ficos est?n mezclados en la imagen
+	// el código y los gráficos están mezclados en la imagen
 	auto *roms = new GameDataEntity(MIXED, "Code + Graphics + Sound");
 	roms->addFile(new GameFile("abadia.dsk", 0x00000, 0x27400, 0xd37cf8e7, 0));
 	_gameFiles.push_back(roms);
@@ -50,9 +49,7 @@ void AbadiaDriver::createGameDataEntities()
 	GfxCPC->addFile(new GameFile("GraficosCPC",0,174065,0,0));
 	_gameFiles.push_back(GfxCPC);
 
-	// Los sonidos se cargan directamente en el AudioPlugin
-	// para reducir el uso de memoria y no tenerlos
-	// cargados en 2 sitios a la vez
+	// Los sonidos se cargan directamente en system
 
 	// El delete de roms, GfxVGA y GfxCPC
 	// lo hace GameDriver::deallocateFilesMemory()
@@ -89,9 +86,8 @@ void AbadiaDriver::filesLoaded()
 	// y otra copia de los graficos CPC de 8 bits para poder
 	// cambiar en caliente entre ellos
 	// ver Juego::compruebaCambioCPC_VGA
-	// los sonidos en formato WAV no se copian aqui, porque
-	// el AudioPlugin vuelve a reservar memoria para ellos
-	// y seria desperdiciar mucha memoria
+	// los sonidos en formato WAV no se copian aqui, 
+	// se tratan directamente en system
 
 	// extrae los datos del juego de la imagen del disco
 	DskReader dsk(_gameFiles[0]->getData());
@@ -147,7 +143,7 @@ void AbadiaDriver::filesLoaded()
 	memcpy(&romsPtr[0x24000-1],_gameFiles[1]->getData(),_gameFiles[1]->getTotalSize());
 	memcpy(&romsPtr[0x24000-1+_gameFiles[1]->getTotalSize()+21600],_gameFiles[1]->getData(),_gameFiles[1]->getTotalSize());
 	memcpy(&romsPtr[0x24000-1+(_gameFiles[1]->getTotalSize()+21600)*2],_gameFiles[2]->getData(),_gameFiles[1]->getTotalSize());
-	// Los sonidos no se copian, y se cargan directamente en Audioplugin
+	// Los sonidos no se copian, y se cargan directamente en system
 
         // En la versión 0.09 se incluyeron nuevos caracteres para soportar nuevos idiomas
         // Esos nuevos caracteres incluian '-' y '.' , a los que se le añadio nuevo gráfico
@@ -175,7 +171,7 @@ void AbadiaDriver::filesLoaded()
         *(tmp+4)='~';
 }
 
-// reordena los datos gr?ficos y los copia en el destino
+// reordena los datos gráficos y los copia en el destino
 void AbadiaDriver::reOrderAndCopy(const UINT8 *src, UINT8 *dst, int size)
 {
 	for (int i = 0; i < size; i++){
@@ -185,16 +181,8 @@ void AbadiaDriver::reOrderAndCopy(const UINT8 *src, UINT8 *dst, int size)
 
 void AbadiaDriver::finishInit()
 {
-	// crea e inicia la secci?n cr?tica para la sincronizaci?n del dibujado de gr?ficos
-	//cs = VigasocoMain->createCriticalSection();
-	//cs->init();
-
-	//crea el objeto para tratar con gr?ficos del amstrad
-	//cpc6128 = new CPC6128(cs);
-	cpc6128 = new CPC6128();
-
 	// crea el objeto del juego
-	_abadiaGame = new Abadia::Juego(romsPtr, cpc6128);
+	_abadiaGame = new Abadia::Juego(romsPtr);
 }
 
 
@@ -207,9 +195,6 @@ void AbadiaDriver::finishInit()
 
 void AbadiaDriver::end()
 {
-	// borra el objeto de ayuda para los gr?ficos
-	delete cpc6128;
-
 	// borra el objeto del juego
 	delete _abadiaGame;
 
@@ -224,10 +209,10 @@ void AbadiaDriver::end()
 void AbadiaDriver::runSync()
 {
 	if (!_abadiaGame->pausa){
-		// incrementa el contador de la interrupci?n
+		// incrementa el contador de la interrupción
 		//_abadiaGame->contadorInterrupcion++;
 
-		// si se est? mostrando alguna frase en el marcador, contin?a mostr?ndola
+		// si se está mostrando alguna frase en el marcador, continúa mostrándola
 		elGestorFrases->procesaFraseActual();
 	}
 }
@@ -241,53 +226,14 @@ void AbadiaDriver::runAsync()
 }
 void AbadiaDriver::showMenu()
 {
-	_abadiaGame->changeState(MENU);
+	_abadiaGame->changeState(Abadia::STATES::MENU);
 }
-void AbadiaDriver::changeState(int newState)
+void AbadiaDriver::changeState(Abadia::STATES newState)
 {
 	_abadiaGame->changeState(newState);
 }
 void AbadiaDriver::render()
 {
-	//TODO: VGA
-	//El codigo si usasemos los graficos originales
-	//de abadia.dsk seria diferente
-
-	auto *posPant = cpc6128->screenBuffer;
-	UINT8 *posPantTmp = NULL;
-	auto *pixels = (uint8_t*)sys->surface->pixels;
-	auto p = (Uint32 *)pixels;
-
-        for (int y = 0; y < TEXTURE_HEIGHT/2; y++)
-	{
-		posPantTmp = posPant;
-		for (int x = 0; x < TEXTURE_WIDTH; x++)
-		{
-                        auto data = *posPant;
-			auto r = (Uint8) _abadiaGame->paleta->paleta2->_palette[data].R;
-			auto g = (Uint8) _abadiaGame->paleta->paleta2->_palette[data].G;
-			auto b = (Uint8) _abadiaGame->paleta->paleta2->_palette[data].B;
-			*p = sys->RGBA(r,g,b,0xFF);
-
-			p++;
-			posPant++;
-		}
-
-		posPant = posPantTmp;
-		for (int x = 0; x < TEXTURE_WIDTH; x++)
-		{
-			auto data = *posPant;
-			auto r = (Uint8) _abadiaGame->paleta->paleta2->_palette[data].R;
-			auto g = (Uint8) _abadiaGame->paleta->paleta2->_palette[data].G;
-			auto b = (Uint8) _abadiaGame->paleta->paleta2->_palette[data].B;
-			*p = sys->RGBA(r,g,b,0xFF);
-
-			p++;
-			posPant++;
-		}
-
-	}
-
 	sys->updateTexture();
 }
 

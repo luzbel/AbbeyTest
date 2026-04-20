@@ -40,12 +40,12 @@
 
 #include "FileLoader.h"
 #include "GameDataEntity.h"
-#include "SDLPalette.h"
 #include <string>
 #include "Types.h"
 #include <vector>
 
-class IDrawPlugin;		// defined in video/IDrawPlugin.h
+#include "system.h"
+
 struct GfxElement;		// defined in GfxData.h
 struct GfxEncoding;		// defined in GfxData.h
 
@@ -56,7 +56,6 @@ public:
 	typedef std::vector<GameDataEntity *> GameDataEntities;
 	typedef std::vector<GfxEncoding *> GfxEncodings;
 	typedef std::vector<GfxElement *> GfxElements;
-// 	typedef std::vector<InputPort *> InputPorts;
 
 // fields
 protected:
@@ -72,7 +71,7 @@ protected:
 	GfxEncodings _gfxEncoding;
 	GfxElements _gfx;
 
-	SDLPalette *_palette;
+//	SDLPalette *_palette;
 
 	std::string _errorMsg;
 
@@ -92,7 +91,8 @@ public:
 	const std::string getError() const { return _errorMsg; }
 
 	// game driver initialization and cleanup
-	bool init(SDLPalette *pal);
+	//bool init(SDLPalette *pal);
+	bool init();
 	virtual void end() = 0;
 
 	virtual void preRun() = 0;
@@ -101,7 +101,7 @@ public:
 	virtual void render() = 0;
 
 	virtual void showMenu() = 0;
-	virtual void changeState(int newState) = 0;
+	virtual void changeState(Abadia::STATES newState) = 0;
         virtual void showGameLogic() = 0;
 
 

@@ -1,6 +1,6 @@
 // Sprite.h
 //
-//	Clase que representa un sprite gen�rico
+//	Clase que representa un sprite genérico
 //
 /////////////////////////////////////////////////////////////////////////////
 
@@ -18,31 +18,31 @@ class Sprite
 // campos
 public:
 	bool esVisible;			// indica si el sprite es visible
-	bool haCambiado;		// indica si el sprite ha cambiado desde que se dibuj� por �ltima vez
+	bool haCambiado;		// indica si el sprite ha cambiado desde que se dibujó por última vez
 	bool seHaProcesado;		// indica si el sprite ha sido procesado por el mezclador
 	int profundidad;		// profundidad del sprite (coordenada y de pantalla)
 
-	int posXPant;			// coordenada x del sprite en la pantalla (en m�ltiplos de 4 pixels)
+	int posXPant;			// coordenada x del sprite en la pantalla (en múltiplos de 4 pixels)
 	int posYPant;			// coordenada y del sprite en la pantalla (en pixels)
-	int oldPosXPant;		// anterior coordenada x del sprite en la pantalla (en m�ltiplos de 4 pixels)
+	int oldPosXPant;		// anterior coordenada x del sprite en la pantalla (en múltiplos de 4 pixels)
 	int oldPosYPant;		// anterior coordenada y del sprite en la pantalla (en pixels)
 
 	bool desaparece;		// indica si el sprite va a desaparecer de la pantalla
-	int ancho;				// ancho del sprite (en m�ltiplos de 4 pixels)
+	int ancho;				// ancho del sprite (en múltiplos de 4 pixels)
 	int alto;				// alto del sprite (en pixels)
-	int despGfx;			// desplazamiento a los gr�ficos que forman el sprite
+	int despGfx;			// desplazamiento a los gráficos que forman el sprite
 	int oldAncho;			// anterior ancho del sprite (en bytes)
 	int oldAlto;			// anterior alto del sprite (en pixels)
 
-	int posXTile;			// coordenada x del tile en el que se empieza a dibujar el sprite (en m�ltiplos de 4 pixels)
+	int posXTile;			// coordenada x del tile en el que se empieza a dibujar el sprite (en múltiplos de 4 pixels)
 	int posYTile;			// coordenada y del tile en el que se empieza a dibujar el sprite (en pixels)
-	int anchoFinal;			// ancho final del �rea a dibujar del sprite (en bytes)
-	int altoFinal;			// alto final del �rea a dibujar del sprite (en pixels)
+	int anchoFinal;			// ancho final del área a dibujar del sprite (en bytes)
+	int altoFinal;			// alto final del área a dibujar del sprite (en pixels)
 	int despBuffer;			// desplazamiento en el buffer para mezclar los sprites
-	int posXLocal;			// coordenada x en la coordenadas locales de la c�mara
-	int posYLocal;			// coordenada y en la coordenadas locales de la c�mara
+	int posXLocal;			// coordenada x en la coordenadas locales de la cámara
+	int posYLocal;			// coordenada y en la coordenadas locales de la cámara
 
-// m�todos
+// métodos
 public:
 	// ajuste de las dimensiones para el dibujado
 	void ajustaATiles();
@@ -51,17 +51,21 @@ public:
 	void preparaParaCambio();
 
 	// dibujo del sprite
-	virtual void dibuja(Sprite *spr, UINT8 *bufferMezclas, int lgtudClipX, int lgtudClipY, int dist1X, int dist2X, int dist1Y, int dist2Y);
+	virtual void dibuja(
+		Sprite *spr, UINT8 *bufferMezclas, 
+		int lgtudClipX, int lgtudClipY,
+		int dist1X, int dist2X, int dist1Y, int dist2Y);
 
-	// inicializaci�n y limpieza
+	// inicialización y limpieza
 	Sprite();
 	virtual ~Sprite();
 private:
-	void dibujaVGA(Sprite *spr, UINT8 *bufferMezclas, int lgtudClipX, int lgtudClipY, int dist1X, int dist2X, int dist1Y, int dist2Y);
-
+	void dibujaVGA(
+		Sprite *spr, UINT8 *bufferMezclas,
+		int lgtudClipX, int lgtudClipY,
+		int dist1X, int dist2X, int dist1Y, int dist2Y);
 
 };
-
 
 }
 

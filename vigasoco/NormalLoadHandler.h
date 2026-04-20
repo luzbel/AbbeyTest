@@ -14,7 +14,7 @@ class GameDataEntity;	// defined in GameDataEntity.h
 
 class NormalLoadHandler : public LoadHandler
 {
-// methods
+	// methods
 public:
 	NormalLoadHandler(GameDataEntity *gameData);
 	~NormalLoadHandler();

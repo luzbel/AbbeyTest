@@ -15,14 +15,15 @@ namespace Abadia {
 
 class Severino : public Monje
 {
-// campos
+	// campos
 public:
-	bool estaVivo;								// indica si el personaje está vivo
+	bool estaVivo;					// indica si el personaje está vivo
 
 protected:
-	static PosicionJuego posicionesPredef[4];	// posiciones a las que puede ir el personaje según el estado
+	// posiciones a las que puede ir el personaje según el estado
+	static PosicionJuego posicionesPredef[4];	
 
-// métodos
+	// métodos
 public:
 	virtual void piensa();
 
@@ -30,7 +31,6 @@ public:
 	Severino(SpriteMonje *spr);
 	virtual ~Severino();
 };
-
 
 }
 

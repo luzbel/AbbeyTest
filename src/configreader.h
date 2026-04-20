@@ -33,9 +33,6 @@ public:
 
   bool isEmpty();
 
-  // Save
-  // void Save();
-
 private:
   std::map<std::string, std::string> data;
   std::string filename;

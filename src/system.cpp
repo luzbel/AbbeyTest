@@ -69,6 +69,24 @@ void System::init()
 	SDL_GetWindowSize(window, &w, &h);
 #else
 	window = SDL_CreateWindow(WINDOW_TITLE, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, windowFlags);
+	{
+		int window_w, window_h=0;
+		SDL_GetWindowSize(window, &window_w, &window_h);
+		float scale_x = (float)window_w / TEXTURE_WIDTH;
+		float scale_y = (float)window_h / TEXTURE_HEIGHT;
+
+		float scale = fminf(scale_x, scale_y); // Escala uniforme más grande que cabe
+
+		dstrect.w = (int)(TEXTURE_WIDTH * scale);
+		dstrect.h = (int)(TEXTURE_HEIGHT * scale);
+
+		dstrect.x = (window_w - dstrect.w) / 2;
+		dstrect.y = (window_h - dstrect.h) / 2;
+//	fprintf(stderr,"size  w %d h %d scale %f dw %d dh %d dx %d dy %d\n",
+//					window_w, window_h, scale, 
+//					dstrect.w , dstrect.h, dstrect.x , dstrect.y ); fflush(stderr);
+}
+
 #endif
 	
 	if (window == NULL){		
@@ -81,27 +99,34 @@ void System::init()
 	}
 
 	if( Mix_OpenAudio( 22050, MIX_DEFAULT_FORMAT, 2, 4096 ) == -1 ){
-		print("ERROR: Mix_OpenAudio.\n");
+		print("ERROR: Mix_OpenAudio\n");
+		fprintf(stderr,"ERROR: Mix_OpenAudio %s.\n",SDL_GetError());
 	}
-	for (int i=0;i<TOTAL_SOUND_FILES;i++)
+	int nc=Mix_AllocateChannels(static_cast<UINT8>(Abadia::SONIDOS::Count));
+      	if (nc!=static_cast<UINT8>(Abadia::SONIDOS::Count)) {
+		fprintf(stderr,"solo %d canales\n",nc); fflush(stderr);
+	}
+
+	//for (size_t i=0;i<std::size(Abadia::SOUND_FILE_NAMES);i++) esto requiere std=c++17
+	for (auto i=0;i<static_cast<UINT8>(Abadia::SONIDOS::Count);i++)
 	{
-		sounds.push_back(Mix_LoadWAV(soundsPathList[i]));
+		fprintf(stderr,"loadwav %s\n", Abadia::SOUND_FILE_NAMES[i]); fflush(stderr);
+		sounds.push_back(Mix_LoadWAV(Abadia::SOUND_FILE_NAMES[i]));
 		if (sounds[i] == NULL){
 			print("Error: can't read sound file\n");			
 		}
 	}
 
-	for (int i=0;i<TOTAL_MUSIC_FILES;i++){
-		music.push_back(Mix_LoadWAV(musicPathList[i]));
-		if (music[i] == NULL){
-			print("Error: can't read music file.\n");			
-		}
-	}
-	
 	surface = SDL_CreateRGBSurface(0, TEXTURE_WIDTH,TEXTURE_HEIGHT,32, rmask, gmask,bmask, amask);
+
 	if (surface == NULL){		
-        print ("Error: Can't create surface.\n");
+	        print ("Error: Can't create surface.\n");
 	}
+
+	_pixels=static_cast<Uint32*>(surface->pixels);
+	_pitch_pixels = surface->pitch / sizeof(UINT32);
+
+//fprintf(stderr,"SDL_GetPixelFormatName %s\n",(char *)SDL_GetPixelFormatName(surface->format->format)); fflush(stderr);
 	texture = SDL_CreateTextureFromSurface(renderer, surface);	
 	SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
 
@@ -128,12 +153,7 @@ void System::quit()
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);	
 
-	// music
-	for (int i=0;i<TOTAL_MUSIC_FILES;i++){
-        Mix_FreeChunk(music[i]);
-	}
-	music.clear();
-	for (int i=0;i<TOTAL_SOUND_FILES;i++){
+	for (size_t i=0;i<static_cast<int>(Abadia::SONIDOS::Count);i++) {
 		Mix_FreeChunk(sounds[i]);
 	}
 	sounds.clear(); 
@@ -150,24 +170,32 @@ void System::updateScreen()
 	// Test this line with all the supported platforms. Fixes video problems with 
 	// the raspberry pi with KMSDRM
 	SDL_RenderClear(renderer);
+#ifdef ANDROID
 	SDL_RenderCopy(renderer, texture, NULL, NULL);
+#else
+	// ponemos fondo negro para que si al escalar
+	// quedan bandas sin rellenar no queden en blanco
+	// que no casa con el fondo real del juego
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+	SDL_RenderCopy(renderer, texture, NULL, &dstrect);
+#endif
 	SDL_RenderPresent(renderer);
 #ifdef __EMSCRIPTEN__
 	}
 #endif
 }
 
-void System::playMusic(int i)
-{	
-    Mix_PlayChannel( -1, music[i], -1);
-}
-void System::stopMusic()
+void System::stopSound(Abadia::SONIDOS index)
 {
-    Mix_HaltChannel(-1);
+	auto i=static_cast<int>(index);
+	assert(i < static_cast<int>(Abadia::SONIDOS::Count));
+	Mix_HaltChannel(i);
 }
-void System::playSound(int i)
+void System::playSound(Abadia::SONIDOS index, bool loop)
 {
-	Mix_PlayChannel( -1, sounds[i], 0);
+	auto i=static_cast<int>(index);
+	assert(i < static_cast<int>(Abadia::SONIDOS::Count));
+	Mix_PlayChannel(i, sounds[i], loop);
 }
 void System::handleEvents()
 {
@@ -353,7 +381,30 @@ void System::handleEvents()
 				default:
 					break;
 			}
-		}		
+		}
+		//else if (event.type == SDL_WINDOWEVENT_SIZE_CHANGED)
+		else if (event.type ==  SDL_WINDOWEVENT && 
+				(event.window.event == SDL_WINDOWEVENT_RESIZED ||
+				event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
+			)
+		{
+			int window_w, window_h=0;
+			SDL_GetWindowSize(window, &window_w, &window_h);
+			float scale_x = (float)window_w / TEXTURE_WIDTH;
+			float scale_y = (float)window_h / TEXTURE_HEIGHT;
+
+			float scale = fminf(scale_x, scale_y); // Escala uniforme más grande que cabe
+
+			dstrect.w = (int)(TEXTURE_WIDTH * scale);
+			dstrect.h = (int)(TEXTURE_HEIGHT * scale);
+
+			dstrect.x = (window_w - dstrect.w) / 2;
+			dstrect.y = (window_h - dstrect.h) / 2;
+
+//			fprintf(stderr,"size changed w %d h %d scale %f dw %d dh %d dx %d dy %d\n",
+//					window_w, window_h, scale, 
+//					dstrect.w , dstrect.h, dstrect.x , dstrect.y ); fflush(stderr);
+		}
 	}
 }
 

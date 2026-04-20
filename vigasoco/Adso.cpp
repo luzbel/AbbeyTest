@@ -22,10 +22,10 @@ using namespace Abadia;
 
 /////////////////////////////////////////////////////////////////////////////
 // tabla de orientaciones a probar para moverse en un determinado sentido
-// Hay 2 grandes grupos de entradas en la tabla. Las primeras 4 entradas dan m?s prioridad a los 
-// movimientos a la derecha y las 4 ?ltimas a los movimientos a la izquierda. Dentro de cada grupo 
-// de entradas, las 2 primeras entradas dan m?s prioridad a los movimientos hacia abajo, y las otras 
-// 2 entradas dan m?s prioridad a los movimientos hacia arriba.
+// Hay 2 grandes grupos de entradas en la tabla. Las primeras 4 entradas dan más prioridad a los 
+// movimientos a la derecha y las 4 últimas a los movimientos a la izquierda. Dentro de cada grupo 
+// de entradas, las 2 primeras entradas dan más prioridad a los movimientos hacia abajo, y las otras 
+// 2 entradas dan más prioridad a los movimientos hacia arriba.
 /////////////////////////////////////////////////////////////////////////////
 
 int Adso::oriMovimiento[8][4] = {
@@ -41,7 +41,7 @@ int Adso::oriMovimiento[8][4] = {
 };
 
 /////////////////////////////////////////////////////////////////////////////
-// tabla de desplzamientos dentro del buffer de alturas seg?n la orientaci?n 
+// tabla de desplzamientos dentro del buffer de alturas según la orientación 
 /////////////////////////////////////////////////////////////////////////////
 
 int Adso::despBufferSegunOri[4][2] = {
@@ -52,22 +52,9 @@ int Adso::despBufferSegunOri[4][2] = {
 };
 
 /////////////////////////////////////////////////////////////////////////////
-// tabla de la animaci?n del personaje
+// tabla de la animación del personaje
 /////////////////////////////////////////////////////////////////////////////
 
-// CPC
-/*
-Personaje::DatosFotograma Adso::tablaAnimacion[8] = {
-	{ 0xa78a, 0x05, 0x20 },
-	{ 0xa6ea, 0x05, 0x20 },
-	{ 0xa78a, 0x05, 0x20 },
-	{ 0xa82a, 0x05, 0x1f },
-	{ 0xa8c5, 0x04, 0x1e },
-	{ 0xa93d, 0x04, 0x1e },
-	{ 0xa8c5, 0x04, 0x1e },
-	{ 0xa9b5, 0x04, 0x1e }
-};
-*/
 // VGA 
 Personaje::DatosFotograma Adso::tablaAnimacion[8] = {
 	{ 58408, 0x05, 0x20 },
@@ -81,22 +68,22 @@ Personaje::DatosFotograma Adso::tablaAnimacion[8] = {
 };
 
 /////////////////////////////////////////////////////////////////////////////
-// posiciones a las que puede ir el personaje seg?n el estado
+// posiciones a las que puede ir el personaje según el estado
 /////////////////////////////////////////////////////////////////////////////
 
 PosicionJuego Adso::posicionesPredef[3] = {
-	PosicionJuego(ABAJO, 0x84, 0x4e, 0x02),	// posici?n en la iglesia
-	PosicionJuego(ABAJO, 0x34, 0x39, 0x02),	// posici?n en el refectorio
-	PosicionJuego(ABAJO, 0xa8, 0x18, 0x00)	// posici?n en la celda
+	PosicionJuego(ABAJO, 0x84, 0x4e, 0x02),	// posición en la iglesia
+	PosicionJuego(ABAJO, 0x34, 0x39, 0x02),	// posición en el refectorio
+	PosicionJuego(ABAJO, 0xa8, 0x18, 0x00)	// posición en la celda
 };
 
 /////////////////////////////////////////////////////////////////////////////
-// inicializaci?n y limpieza
+// inicialización y limpieza
 /////////////////////////////////////////////////////////////////////////////
 
 Adso::Adso(Sprite *spr) : PersonajeConIA(spr)
 {
-	// asigna la tabla de animaci?n del personaje
+	// asigna la tabla de animación del personaje
 	animacion = tablaAnimacion;
 	numFotogramas = 8;
 
@@ -119,10 +106,10 @@ void Adso::run()
 	// inicialmente el personaje va a tratar de moverse
 	elBuscadorDeRutas->seBuscaRuta = true;
 
-	// ejecuta la l?gica del personaje
+	// ejecuta la lógica del personaje
 	piensa();
 
-	// modifica el n?mero aleatorio generado
+	// modifica el número aleatorio generado
 	laLogica->numeroAleatorio = bufAcciones[0];
 
 	// modifica la tabla de conexiones de las habitaciones dependiendo de las puertas a las que se tenga acceso
@@ -137,11 +124,11 @@ void Adso::run()
 	} else {
 		// si va hacia donde se mueve guillermo
 
-		// si la c?mara no sigue a guillermo o a adso, sale
+		// si la cámara no sigue a guillermo o a adso, sale
 		if (laLogica->numPersonajeCamara >= 2) return;
 
 		if (!pensarNuevoMovimiento){
-			// si tiene un movimiento pensado pero no se pudo mover hacia donde quer?a
+			// si tiene un movimiento pensado pero no se pudo mover hacia donde quería
 			if (!laLogica->hayMovimiento){
 				// si no ha podido moverse varias veces, piensa otro movimiento
 				movimientosFrustados++;
@@ -158,17 +145,16 @@ void Adso::run()
 			return;
 		}
 
-		// aqu? llega si adso no ten?a un movimiento pensado
+		// aquí llega si adso no tenía un movimiento pensado
 
 		Personaje *guillermo = laLogica->guillermo;
 		RejillaPantalla *rejilla = elMotorGrafico->rejilla;
 
 		int posXRejilla, posYRejilla;
 
-		// si adso est? en la pantalla que se muestra
+		// si adso está en la pantalla que se muestra
 		if (rejilla->estaEnRejillaCentral(this, posXRejilla, posYRejilla)){
-			// si se puls? cursor arriba
-			//if (losControles->estaSiendoPulsado(P1_UP)){
+			// si se pulsó cursor arriba
 			if (sys->pad.up){
 
 				int difAltura1 = 0, difAltura2, avanceX, avanceY;
@@ -176,7 +162,7 @@ void Adso::run()
 				// obtiene las posiciones hacia las que se va a mover guillermo
 				rejilla->obtenerAlturaPosicionesAvance2(guillermo, difAltura1, difAltura2, avanceX, avanceY);
 					
-				// comprueba si adso est? en alguna de las posiciones a las que va a moverse guillermo
+				// comprueba si adso está en alguna de las posiciones a las que va a moverse guillermo
 				int aux = rejilla->bufCalculoAvance[0][1] | rejilla->bufCalculoAvance[0][2] | rejilla->bufCalculoAvance[1][1] | rejilla->bufCalculoAvance[1][2];
 
 				// si adso impide el paso a guillermo, lo aparta
@@ -186,8 +172,7 @@ void Adso::run()
 				}
 			} 
 				
-			// si se puls? cursor abajo, trata de avanzar en la orientaci?n de guillermo
-			//if (losControles->estaSiendoPulsado(P1_DOWN)){
+			// si se pulsó cursor abajo, trata de avanzar en la orientación de guillermo
 			if (sys->pad.down){
 				avanzaSegunGuillermo();
 				return;
@@ -198,13 +183,13 @@ void Adso::run()
 			marcaPosicion(rejilla, 0);
 			guillermo->marcaPosicion(rejilla, 0);
 
-			// ajusta la posici?n de adso y guillermo a las coordenadas de rejilla
+			// ajusta la posición de adso y guillermo a las coordenadas de rejilla
 			int posXDest, posYDest;
 			bool noHayError = rejilla->ajustaAPosRejilla(posX, posY, posXDest, posYDest);
 			noHayError |= rejilla->ajustaAPosRejilla(guillermo->posX, guillermo->posY, elBuscadorDeRutas->posXIni, elBuscadorDeRutas->posYIni);
 			assert(noHayError);
 
-			// busca un camino para llegar a donde est? guillermo
+			// busca un camino para llegar a donde está guillermo
 			RejillaPantalla *temp = elBuscadorDeRutas->rejilla;
 			elBuscadorDeRutas->rejilla = rejilla;
 			bool encontrado = elBuscadorDeRutas->buscaEnPantalla(posXDest, posYDest);
@@ -215,7 +200,7 @@ void Adso::run()
 			marcaPosicion(rejilla, valorPosicion);
 			guillermo->marcaPosicion(rejilla, guillermo->valorPosicion);
 
-			// si no encontr? un camino para llegar a donde est? guillermo, sale
+			// si no encontró un camino para llegar a donde está guillermo, sale
 			if (!encontrado) return;
 
 			int numIteraciones = 4;
@@ -223,7 +208,7 @@ void Adso::run()
 			if (!enDesnivel){
 				numIteraciones--;
 
-				// si ninguna de las coordenadas es igual, se permite una iteraci?n m?s
+				// si ninguna de las coordenadas es igual, se permite una iteración más
 				if (posX != guillermo->posX){
 					if (posY != guillermo->posY){
 						numIteraciones++;
@@ -231,7 +216,7 @@ void Adso::run()
 				}
 			}
 
-			// si el n?mero de iteraciones para llegar a guillermo es grande, avanza hacia guillermo
+			// si el número de iteraciones para llegar a guillermo es grande, avanza hacia guillermo
 			if (elBuscadorDeRutas->nivelRecursion >= numIteraciones){ 
 				// avanza hacia guillermo
 				grabaComandosAvance(elBuscadorDeRutas->oriFinal);
@@ -240,7 +225,7 @@ void Adso::run()
 				run();
 			}
 		} else {
-			// aqu? llega si adso no est? en la zona de la pantalla que se muestra
+			// aquí llega si adso no está en la zona de la pantalla que se muestra
 			elBuscadorDeRutas->alternativaActual = 0;
 			elBuscadorDeRutas->numAlternativas = 1;
 
@@ -259,8 +244,8 @@ void Adso::run()
 
 // Los estados en los que puede estar adso son:
 //		0x00 -> estado incial
-//		0x01 -> estado en prima y v?speras para ir a misa
-//		0x04 -> estado dentro de su celda, esperando contestaci?n de si duerme o no
+//		0x01 -> estado en prima y vísperas para ir a misa
+//		0x04 -> estado dentro de su celda, esperando contestación de si duerme o no
 //		0x05 -> estado que se alcanza una vez que guillermo le dice que no se duerme
 //		0x06 -> estado fuera de la celda por la noche o en completas para dirigirse a su celda
 //		0x07 -> estado en sexta para ir al refectorio
@@ -273,12 +258,12 @@ void Adso::piensa()
 		laLogica->pergaminoGuardado = false;
 	}
 
-	// si se est? acabando la noche, pone en el marcador la frase: PRONTO AMANECERA, MAESTRO
+	// si se está acabando la noche, pone en el marcador la frase: PRONTO AMANECERA, MAESTRO
 	if (laLogica->seAcabaLaNoche){
 		elGestorFrases->muestraFrase(0x27);
 	}
 
-	// si hay un cambio de estado de la l?mpara, informa de ello
+	// si hay un cambio de estado de la lámpara, informa de ello
 	if (laLogica->cambioEstadoLampara == 1){
 		laLogica->cambioEstadoLampara = 0;
 		elGestorFrases->muestraFraseYa(0x28);	// LA LAMPARA SE AGOTA
@@ -290,7 +275,7 @@ void Adso::piensa()
 		// inicia el contador de tiempo que pueden ir a oscuras
 		laLogica->cntTiempoAOscuras = 0x32;
 
-		// pone la pantalla en negro y le quita la l?mpara a adso
+		// pone la pantalla en negro y le quita la lámpara a adso
 		// CPC elMotorGrafico->genPant->limpiaPantalla(3);
 		elMotorGrafico->genPant->limpiaPantalla(0); // VGA
 		laLogica->reiniciaContadoresLampara();
@@ -323,7 +308,7 @@ void Adso::piensa()
 				// sigue a guillermo
 				aDondeVa = POS_GUILLERMO;
 
-				// si adso no tiene la l?mpara, muestra la frase: DEBEMOS ENCONTRAR UNA LAMPARA, MAESTRO
+				// si adso no tiene la lámpara, muestra la frase: DEBEMOS ENCONTRAR UNA LAMPARA, MAESTRO
 				if ((objetos & LAMPARA) != LAMPARA){
 					elGestorFrases->muestraFraseYa(0x13);
 
@@ -332,18 +317,18 @@ void Adso::piensa()
 
 					return;
 				} else {
-					// en otro caso, enciende la l?mpara
+					// en otro caso, enciende la lámpara
 					laLogica->usandoLampara = true;
 				}
 			} else {
-				// si adso no est? en la biblioteca, apaga la l?mpara y reinicia el contador del tiempo que pueden ir a oscuras
+				// si adso no está en la biblioteca, apaga la lámpara y reinicia el contador del tiempo que pueden ir a oscuras
 				laLogica->usandoLampara = false;
 				laLogica->cntTiempoAOscuras = 0;
 			}
 		}
 	}
 
-	// realiza acciones dependiendo del momento del d?a
+	// realiza acciones dependiendo del momento del día
 	switch (laLogica->momentoDia){
 		case SEXTA:	// va al refectorio
 			aDondeVa = 1;
@@ -363,14 +348,14 @@ void Adso::piensa()
 			return;
 
 		case NOCHE:
-            // si est? esperando contestaci?n de si se duerme o no
+            // si está esperando contestación de si se duerme o no
 			if (estado == 4){
-				// si est? en la pantalla de fuera de la celda, indica que hay que avanzar el momento del d?a
+				// si está en la pantalla de fuera de la celda, indica que hay que avanzar el momento del día
 				if (elMotorGrafico->numPantalla == 0x37){
 					laLogica->avanzarMomentoDia = true;
 				}
 
-				// si no se est? reproduciendo una voz
+				// si no se está reproduciendo una voz
 				if (!elGestorFrases->mostrandoFrase){
 					// si lleva mucho tiempo sin responder a la pregunta de dormir, duerme
 					if (cntParaDormir >= 100){
@@ -384,12 +369,10 @@ void Adso::piensa()
 
 						// comprueba si se pulso la S o la N
 						if ((cntParaDormir & 0x01) == 0x01){
-							//if (losControles->estaSiendoPulsado(KEYBOARD_S)){
 							if (sys->pad.button3){
 								laLogica->avanzarMomentoDia = true;
 							}
 
-							//if (losControles->estaSiendoPulsado(KEYBOARD_N)){
 							if (sys->pad.button4){
 								estado = 5;
 							}
@@ -416,7 +399,7 @@ void Adso::piensa()
 				if (estado == 6){
 					// si estamos cerca de guillermo y en nuestra celda
 					if (estaCerca(guillermo) && (elMotorGrafico->numPantalla == 0x3e)){
-						// reinicia el contador para dormir y pone la frase ?DORMIMOS?, MAESTRO
+						// reinicia el contador para dormir y pone la frase ¿DORMIMOS?, MAESTRO
 						cntParaDormir = 0;
 						estado = 4;
 						elGestorFrases->muestraFrase(0x12);
@@ -433,7 +416,7 @@ void Adso::piensa()
 			return;
 	}
 
-	// aqu? solo llega en SEXTA, PRIMA y VISPERAS
+	// aquí solo llega en SEXTA, PRIMA y VISPERAS
 
 	// si ha cambiado el estado, muestra una frase
 	if (estado != oldEstado){
@@ -469,7 +452,7 @@ void Adso::grabaComandosAvance(int nuevaOri)
 
 	reiniciaPosicionBuffer();
 
-	// comprueba si debe cambiar la orientaci?n del personaje
+	// comprueba si debe cambiar la orientación del personaje
 	if (orientacion != nuevaOri){
 		modificaOrientacion(nuevaOri);
 		orientacion = nuevaOri;
@@ -495,24 +478,24 @@ void Adso::grabaComandosAvance(int nuevaOri)
 	posX = oldPosX;
 }
 
-// trata de avanzar en la orientaci?n de guillermo
+// trata de avanzar en la orientación de guillermo
 void Adso::avanzaSegunGuillermo()
 {
-	// limpia la posici?n ocupada por adso
+	// limpia la posición ocupada por adso
 	marcaPosicion(elMotorGrafico->rejilla, 0);
 
 	// calcula la entrada con las orientaciones a probar para moverse
 	int numEntrada = laLogica->guillermo->orientacion + 1;
 	if (numEntrada == 3) numEntrada = 7;
 	
-	// prueba a moverse hacia otra orientaci?n seg?n la entrada correspondiente
+	// prueba a moverse hacia otra orientación según la entrada correspondiente
 	pruebaMover(numEntrada);
 }
 
 // se aparta del avance de guillermo
 void Adso::liberaPasoAGuillermo()
 {
-	// limpia la posici?n ocupada por adso
+	// limpia la posición ocupada por adso
 	marcaPosicion(elMotorGrafico->rejilla, 0);
 
 	int numEntrada = 0;
@@ -520,7 +503,7 @@ void Adso::liberaPasoAGuillermo()
 	// calcula la distancia en x entre guillermo y adso
 	int distX = posX - laLogica->guillermo->posX;
 
-	// si adso est? a la izquierda de guillermo, modifica la entrada
+	// si adso está a la izquierda de guillermo, modifica la entrada
 	if (distX < 0){
 		distX = -distX;
 		numEntrada |= 0x04;
@@ -529,7 +512,7 @@ void Adso::liberaPasoAGuillermo()
 	// calcula la distancia en y entre guillermo y adso
 	int distY = posY - laLogica->guillermo->posY;
 
-	// si adso est? a la izquierda de guillermo, modifica la entrada
+	// si adso está a la izquierda de guillermo, modifica la entrada
 	if (distY < 0){
 		distY = -distY;
 		numEntrada |= 0x02;
@@ -540,16 +523,16 @@ void Adso::liberaPasoAGuillermo()
 		numEntrada++;
 	}
 
-	// prueba a moverse hacia otra orientaci?n seg?n la entrada correspondiente
+	// prueba a moverse hacia otra orientación según la entrada correspondiente
 	pruebaMover(numEntrada);
 }
 
-// prueba a moverse hacia otra orientaci?n seg?n la entrada correspondiente
+// prueba a moverse hacia otra orientación según la entrada correspondiente
 void Adso::pruebaMover(int numEntrada)
 {
 	int posXRejilla, posYRejilla;
 
-	// obtiene la posici?n del personaje dentro de la rejilla
+	// obtiene la posición del personaje dentro de la rejilla
 	elMotorGrafico->rejilla->estaEnRejillaCentral(this, posXRejilla, posYRejilla);
 
 	// obtiene la altura base del personaje
@@ -565,15 +548,15 @@ void Adso::pruebaMover(int numEntrada)
 		int posY = posYRejilla + despBufferSegunOri[ori][1];
 		elMotorGrafico->rejilla->bufAlturas[posY][posX] &= 0x7f;
 
-		// obtiene la altura si se mueve en esa orientaci?n
+		// obtiene la altura si se mueve en esa orientación
 		int altura = elMotorGrafico->rejilla->bufAlturas[posY][posX];
 		
-		// si la posici?n es accesible, se mueve hacia esa posici?n
+		// si la posición es accesible, se mueve hacia esa posición
 		if (elBuscadorDeRutas->esPosicionDestino(posX, posY, altura, alturaBase, false)){
 			elMotorGrafico->rejilla->bufAlturas[posY][posX] &= 0x7f;
 			grabaComandosAvance(ori);
 
-			// marca la posici?n que ocupa adso
+			// marca la posición que ocupa adso
 			marcaPosicion(elMotorGrafico->rejilla, valorPosicion);
 
 			elBuscadorDeRutas->rejilla = temp;
@@ -585,7 +568,7 @@ void Adso::pruebaMover(int numEntrada)
 		}
 	}
 
-	// marca la posici?n que ocupa adso
+	// marca la posición que ocupa adso
 	marcaPosicion(elMotorGrafico->rejilla, valorPosicion);
 
 	elBuscadorDeRutas->rejilla = temp;

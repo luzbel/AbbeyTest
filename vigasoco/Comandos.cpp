@@ -23,7 +23,7 @@ bool ChangePC::ejecutar(GeneradorPantallas *gen)
 
 void call(GeneradorPantallas *gen, bool modificaTiles)
 {
-	// guarda el estado necesario para reanudar la interpretaci�n del bloque
+	// guarda el estado necesario para reanudar la interpretación del bloque
 	gen->push(gen->tilePosX);
 	gen->push(gen->tilePosY);
 
@@ -38,7 +38,7 @@ void call(GeneradorPantallas *gen, bool modificaTiles)
 	gen->push(gen->datosBloque[15]);
 	gen->push(gen->datosBloque[16]);
 
-	// obtiene un puntero a las caracter�sticas del bloque
+	// obtiene un puntero a las características del bloque
 	int despTipoBloque = gen->obtenerDir(gen->comandosBloque);
 
 	gen->comandosBloque = gen->comandosBloque + 2;
@@ -94,7 +94,7 @@ bool Call::ejecutar(GeneradorPantallas *gen)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// m�todo de ayuda para los bucles
+// método de ayuda para los bucles
 /////////////////////////////////////////////////////////////////////////////
 
 void avanzaHastaFinDeWhile(GeneradorPantallas *gen)
@@ -125,55 +125,55 @@ void avanzaHastaFinDeWhile(GeneradorPantallas *gen)
 // comandos para bucles
 /////////////////////////////////////////////////////////////////////////////
 
-// inicia la ejecuci�n de una serie de instrucciones mientras el par�metro 1 sea > 0
+// inicia la ejecución de una serie de instrucciones mientras el parámetro 1 sea > 0
 bool WhileParam1::ejecutar(GeneradorPantallas *gen)
 {
-	// obtiene el valor del par�metro 1
+	// obtiene el valor del parámetro 1
 	int aux = gen->obtenerRegistro(0x6d, 0);
 
-	// si el bucle se va a ejecutar alguna vez, inserta en la pila la direcci�n de retorno y el valor actual del par�metro 1
+	// si el bucle se va a ejecutar alguna vez, inserta en la pila la dirección de retorno y el valor actual del parámetro 1
 	if (aux > 0){
 		gen->push(gen->comandosBloque);
 		gen->push(aux);
 	} else {
-		// en otro caso, salta las instrucciones hasta el f�n del while
+		// en otro caso, salta las instrucciones hasta el fín del while
 		avanzaHastaFinDeWhile(gen);
 	}
 
 	return false;
 }
 
-// inicia la ejecuci�n de una serie de instrucciones mientras el par�metro 2 sea > 0
+// inicia la ejecución de una serie de instrucciones mientras el parámetro 2 sea > 0
 bool WhileParam2::ejecutar(GeneradorPantallas *gen)
 {
-	// obtiene el valor del par�metro 2
+	// obtiene el valor del parámetro 2
 	int aux = gen->obtenerRegistro(0x6e, 0);
 
-	// si el bucle se va a ejecutar alguna vez, inserta en la pila la direcci�n de retorno y el valor actual del par�metro 2
+	// si el bucle se va a ejecutar alguna vez, inserta en la pila la dirección de retorno y el valor actual del parámetro 2
 	if (aux > 0){
 		gen->push(gen->comandosBloque);
 		gen->push(aux);
 	} else {
-		// en otro caso, salta las instrucciones hasta el f�n del while
+		// en otro caso, salta las instrucciones hasta el fín del while
 		avanzaHastaFinDeWhile(gen);
 	}
 
 	return false;
 }
 
-// termina la ejecuci�n de un blucle mientras
+// termina la ejecución de un blucle mientras
 bool EndWhile::ejecutar(GeneradorPantallas *gen)
 {
 	// recupera el contador del bucle
 	int contador = gen->pop();
 	contador--;
 
-	// si no se ha terminado todav�a
+	// si no se ha terminado todavía
 	if (contador > 0){
-		// recupera la direcci�n de inicio del while
+		// recupera la dirección de inicio del while
 		gen->comandosBloque = gen->pop();
 
-		// inserta en la pila la direcci�n de retorno y el contador
+		// inserta en la pila la dirección de retorno y el contador
 		gen->push(gen->comandosBloque);
 		gen->push(contador);
 	} else {
@@ -185,10 +185,10 @@ bool EndWhile::ejecutar(GeneradorPantallas *gen)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// comandos sobre los par�metros
+// comandos sobre los parámetros
 /////////////////////////////////////////////////////////////////////////////
 
-// incrementa el primer par�metro en el buffer de los datos del bloque
+// incrementa el primer parámetro en el buffer de los datos del bloque
 bool IncParam1::ejecutar(GeneradorPantallas *gen)
 {
 	gen->actualizaRegistro(0x6d, 1);
@@ -196,7 +196,7 @@ bool IncParam1::ejecutar(GeneradorPantallas *gen)
 	return false;
 }
 
-// decrementa el primer par�metro en el buffer de los datos del bloque
+// decrementa el primer parámetro en el buffer de los datos del bloque
 bool DecParam1::ejecutar(GeneradorPantallas *gen)
 {
 	gen->actualizaRegistro(0x6d, -1);
@@ -204,7 +204,7 @@ bool DecParam1::ejecutar(GeneradorPantallas *gen)
 	return false;
 }
 
-// incrementa el segundo par�metro en el buffer de los datos del bloque
+// incrementa el segundo parámetro en el buffer de los datos del bloque
 bool IncParam2::ejecutar(GeneradorPantallas *gen)
 {
 	gen->actualizaRegistro(0x6e, 1);
@@ -212,7 +212,7 @@ bool IncParam2::ejecutar(GeneradorPantallas *gen)
 	return false;
 }
 
-// decrementa el segundo par�metro en el buffer de los datos del bloque
+// decrementa el segundo parámetro en el buffer de los datos del bloque
 bool DecParam2::ejecutar(GeneradorPantallas *gen)
 {
 	gen->actualizaRegistro(0x6e, -1);
@@ -221,7 +221,7 @@ bool DecParam2::ejecutar(GeneradorPantallas *gen)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// comandos sobre la posici�n
+// comandos sobre la posición
 /////////////////////////////////////////////////////////////////////////////
 
 // incrementa la coordenada x del buffer de tiles
@@ -259,13 +259,13 @@ bool DecTilePosY::ejecutar(GeneradorPantallas *gen)
 // cambia la coordenada x del buffer de tiles
 bool UpdateTilePosX::ejecutar(GeneradorPantallas *gen)
 {
-	// obtiene el valor inicial de la expresi�n
+	// obtiene el valor inicial de la expresión
 	int rdo = gen->leeDatoORegistro(0);
 
-	// evalua una expresi�n
+	// evalua una expresión
 	rdo = gen->evaluaExpresion(rdo);
 
-	// modifica la posici�n en x en el buffer de tiles
+	// modifica la posición en x en el buffer de tiles
 	gen->tilePosX = gen->tilePosX + rdo;
 
 	return false;
@@ -275,19 +275,19 @@ bool UpdateTilePosX::ejecutar(GeneradorPantallas *gen)
 // cambia la coordenada y del buffer de tiles
 bool UpdateTilePosY::ejecutar(GeneradorPantallas *gen)
 {
-	// obtiene el valor inicial de la expresi�n
+	// obtiene el valor inicial de la expresión
 	int rdo = gen->leeDatoORegistro(0);
 
-	// evalua una expresi�n
+	// evalua una expresión
 	rdo = gen->evaluaExpresion(rdo);
 
-	// modifica la posici�n en y en el buffer de tiles
+	// modifica la posición en y en el buffer de tiles
 	gen->tilePosY = gen->tilePosY + rdo;
 
 	return false;
 }
 
-// guarda en la pila la posici�n actual en el buffer de tiles
+// guarda en la pila la posición actual en el buffer de tiles
 bool PushTilePos::ejecutar(GeneradorPantallas *gen)
 {
 	gen->push(gen->tilePosX);
@@ -296,7 +296,7 @@ bool PushTilePos::ejecutar(GeneradorPantallas *gen)
 	return false;
 }
 
-// recupera de la pila una posici�n en el buffer de tiles
+// recupera de la pila una posición en el buffer de tiles
 bool PopTilePos::ejecutar(GeneradorPantallas *gen)
 {
 	gen->tilePosY = gen->pop();
@@ -309,17 +309,17 @@ bool PopTilePos::ejecutar(GeneradorPantallas *gen)
 // comandos de dibujo
 /////////////////////////////////////////////////////////////////////////////
 
-// dibuja un tile en el buffer de tiles (si es visible), cambiando la posici�n actual en el buffer
+// dibuja un tile en el buffer de tiles (si es visible), cambiando la posición actual en el buffer
 void dibujaTileYMueve(GeneradorPantallas *gen, int deltax, int deltay)
 {
 	while (true){
-		// lee el siguiente operando del buffer de construcci�n del bloque
+		// lee el siguiente operando del buffer de construcción del bloque
 		int num = gen->leeDatoORegistro(0);
 
-		// lee el pr�ximo byte a procesar
+		// lee el próximo byte a procesar
 		int dato = gen->roms[gen->comandosBloque];
 
-		// si se encuentra una nueva orden, pinta, actualiza la posici�n y sale
+		// si se encuentra una nueva orden, pinta, actualiza la posición y sale
 		if (dato >= 0xc8){
 			gen->grabaTile(num);
 			gen->tilePosX += deltax;
@@ -330,33 +330,33 @@ void dibujaTileYMueve(GeneradorPantallas *gen, int deltax, int deltay)
 
 		gen->comandosBloque++;
 
-		// si se encuentra un 0x80, pinta, actualiza la posici�n y contin�a
+		// si se encuentra un 0x80, pinta, actualiza la posición y continúa
 		if (dato == 0x80){
 			gen->grabaTile(num);
 			gen->tilePosX += deltax;
 			gen->tilePosY += deltay;
 		} else if (dato == 0x81){
-			// si lee 0x81, pinta y contin�a
+			// si lee 0x81, pinta y continúa
 			gen->grabaTile(num);
 		} else {
-			// lee el n�mero de veces que ha de repteir la operaci�n
+			// lee el número de veces que ha de repteir la operación
 			int numVeces = gen->leeDatoORegistro(0);
 
-			// repite la misma operaci�n las veces leidas
+			// repite la misma operación las veces leidas
 			for (int i = 0; i < numVeces; i++){
 				gen->grabaTile(num);
 				gen->tilePosX += deltax;
 				gen->tilePosY += deltay;
 			}
 
-			// lee el pr�ximo byte a procesar
+			// lee el próximo byte a procesar
 			dato = gen->roms[gen->comandosBloque];
 
 			// si se encuentra una nueva orden, sale
 			if (dato >= 0xc8){
 				break;
 			} else {
-				// en otro caso se salta algo y contin�a
+				// en otro caso se salta algo y continúa
 				gen->comandosBloque++;
 			}
 		}
@@ -399,13 +399,13 @@ bool UpdateReg::ejecutar(GeneradorPantallas *gen)
 
 	int posReg = -1;
 
-	// obtiene la posici�n del registro que se va a modificar
+	// obtiene la posición del registro que se va a modificar
 	gen->leeDatoORegistro(&posReg);
 
-	// obtiene el valor inicial de la expresi�n
+	// obtiene el valor inicial de la expresión
 	int rdo = gen->leeDatoORegistro(0);
 
-	// evalua una expresi�n
+	// evalua una expresión
 	rdo = gen->evaluaExpresion(rdo);
 
 	// si se modifica un registro de coordenadas locales de la rejilla, ajusta el resultado entre 0 y 100
@@ -427,14 +427,14 @@ bool UpdateReg::ejecutar(GeneradorPantallas *gen)
 	return false;
 }
 
-// termina la evaluaci�n de un bloque
+// termina la evaluación de un bloque
 bool EndBlock::ejecutar(GeneradorPantallas *gen)
 {
 	bool seCambioSistemaCoord = gen->cambioSistemaCoord;
 
 	gen->cambioSistemaCoord= false;
 
-	// si se empez� a trabajar con respecto al nuevo sistema de coordenadas
+	// si se empezó a trabajar con respecto al nuevo sistema de coordenadas
 	if (!seCambioSistemaCoord){
 		gen->estadoOpsX[0] = 1;
 		gen->estadoOpsX[1] = 1;

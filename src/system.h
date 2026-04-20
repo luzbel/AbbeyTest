@@ -14,6 +14,8 @@
 #include <android/log.h>
 #endif
 
+#include "SDLPaleta.h"
+
 #ifdef __EMSCRIPTEN__
 #define WINDOW_WIDTH 640
 #define WINDOW_HEIGHT 400 
@@ -22,74 +24,46 @@
 #define WINDOW_HEIGHT 800
 #endif
 
-#define TEXTURE_WIDTH 640
-#define TEXTURE_HEIGHT 400
-#define WINDOW_TITLE "Abbey"
+#define TEXTURE_WIDTH 320
+#define TEXTURE_HEIGHT 200
+#define WINDOW_TITLE "Abbey SDL2 v2.0 build " __DATE__ " " __TIME__
 #define GAME_FRAME_TIME 130
 #define SCROLL_FRAME_TIME 60
 
-enum MUSICFILES{
-  START,
-  END,
-  BACKGROUND,
+namespace Abadia {
+	enum class SONIDOS : UINT8 {
+		Abrir = 0,
+		Aporrear = 1,
+		Campanas = 2,
+		Cerrar = 3,
+		Coger = 4,
+		Dejar = 5,
+		Espejo = 6,
+		Final = 7,
+		Fondo = 8,
+		Inicio = 9,
+		Pasos = 10,
+		Tintineo = 11,
 
-  TOTAL_MUSIC_FILES
-};
+		Count // para poder obtener el tamaño facilmente
+	};
+
+	enum class STATES: UINT8 {
+		INTRO,
+		SCROLL,
+		MENU,
+		LANGUAGE,
+		LOAD,
+		SAVE,	
+		PLAY,
+		ASK_NEW_GAME,
+		ASK_CONTINUE,
+		ASK_EXIT,
+		ENDING
+	};
+
+	constexpr const char* SOUND_FILE_NAMES[] = {
 #ifdef ANDROID
-static const char* const
-musicPathList[] = {
-	"roms/abadia/inicio.wav",
-	"roms/abadia/final.wav",
-	"roms/abadia/fondo.wav",
-};
-#else
-static const char* const
-musicPathList[] = {
-	"./roms/abadia/inicio.wav",
-	"./roms/abadia/final.wav",
-	"./roms/abadia/fondo.wav",
-};
-#endif
-
-enum SOUNDFILES{
-  OPEN,
-  HIT,
-  BELLS,
-  CLOSE,
-  GET,
-  LET,
-  MIRROR,
-  STEPS,
-  JINGLE,
-
-  TOTAL_SOUND_FILES
-};	
-
-enum STATES{
-	INTRO,
-	SCROLL,
-	MENU,
-	LANGUAGE,
-	LOAD,
-	SAVE,	
-	PLAY,
-	ASK_NEW_GAME,
-	ASK_CONTINUE,
-	ASK_EXIT,
-	ENDING
-};
-
-enum TILEMAP{
-	DAY,
-	NIGHT,
-	LAMP,
-
-	TOTAL_TILEMAP_FILES
-};
-
-#ifdef ANDROID
-static const char* 
-soundsPathList[] = {
 	"roms/abadia/abrir.wav",
 	"roms/abadia/aporrear.wav",
 	"roms/abadia/campanas.wav",
@@ -97,12 +71,12 @@ soundsPathList[] = {
 	"roms/abadia/coger.wav",
 	"roms/abadia/dejar.wav",
 	"roms/abadia/espejo.wav",		
+	"roms/abadia/final.wav",		
+	"roms/abadia/fondo.wav",		
+	"roms/abadia/inicio.wav",		
 	"roms/abadia/pasos.wav",
-	"roms/abadia/tintineo.wav",
-	};
+	"roms/abadia/tintineo.wav"
 #else
-[[maybe_unused]] static const char*
-soundsPathList[] = {
 	"./roms/abadia/abrir.wav",
 	"./roms/abadia/aporrear.wav",
 	"./roms/abadia/campanas.wav",
@@ -110,10 +84,14 @@ soundsPathList[] = {
 	"./roms/abadia/coger.wav",
 	"./roms/abadia/dejar.wav",
 	"./roms/abadia/espejo.wav",		
+	"./roms/abadia/final.wav",		
+	"./roms/abadia/fondo.wav",		
+	"./roms/abadia/inicio.wav",		
 	"./roms/abadia/pasos.wav",
-	"./roms/abadia/tintineo.wav",
-	};
+	"./roms/abadia/tintineo.wav"
 #endif
+	};
+} // namespace Abadia
 
 struct PlayerInput
 {
@@ -149,16 +127,14 @@ struct System
 #endif
 
 	SDL_Surface *surface;
+	SDL_Rect dstrect; // para mantener proporción al escalar
 	SDL_Renderer *renderer;
 	SDL_Texture *texture;
 	SDL_Window *window;
 	SDL_GameController *gamepad;
 	SDL_Haptic *hapticDevice;
 
-	SDL_Surface *tilemap[TOTAL_TILEMAP_FILES];
-
 	std::vector<Mix_Chunk*>sounds;
-	std::vector<Mix_Chunk*>music;
 
 	uint64_t frameTime=0;
 #ifdef __EMSCRIPTEN__
@@ -172,14 +148,11 @@ struct System
 
 	void init();
 	void quit();
-	void playMusic(int i);
-	void stopMusic();
-	void playSound(int i);
+	void stopSound(Abadia::SONIDOS i);
+	void playSound(Abadia::SONIDOS i, bool loop=false);
 	void updateScreen();
 	void handleEvents();
 	void hapticFeedback();
-
-	SDL_Surface* flipSurfaceHorizontally(SDL_Surface *src);
 
 	void setFastSpeed();
 	void setNormalSpeed();
@@ -187,6 +160,60 @@ struct System
 	void updateTexture();
 	void exitGame();
 	void print(const std::string message);
+
+	void initPaleta(UINT8 *dirPaleta) { _paleta=new Paleta(dirPaleta); }
+	void setGamePalette(UINT8 pal) { _paleta->setGamePalette(pal,surface->format); }; // todo, deberia todos ser del tipo setIntro
+	void setIntroPalette(void) { _paleta->setGamePalette(5,surface->format); }; // todo, deberia todos ser del tipo setIntro
+								    
+	void setRGBPixel(UINT32 x, UINT32 y, UINT32 color) {
+		assert((x >= 0) && (x < 320));
+		assert((y >= 0) && (y < 200));
+		assert(color >= 0);
+		_pixels[y * _pitch_pixels + x] = color;
+	}
+
+	UINT32 getPixel(UINT32 x, UINT32 y) {
+		assert((x >= 0) && (x < 320));
+		assert((y >= 0) && (y < 200));
+
+		return _pixels[y * _pitch_pixels + x];
+	}
+								   
+	void setPixel(UINT32 x, UINT32 y, UINT8 color) {
+		assert((x >= 0) && (x < 320));
+		assert((y >= 0) && (y < 200));
+		assert((color >= 0) && (color < 256));
+		_pixels[y * _pitch_pixels + x] = _paleta->rgb[color];
+	};
+
+	void fillMode1Rect(int x, int y, int width, int height, int color) {
+		assert((x >= 0) && (x < 320));
+		assert((y >= 0) && (y < 200));
+		assert((color >= 0) && (color < 256)); 
+		assert(((x + width) <= 320) && ((y + height) <= 200));
+
+		fillRect(x, y, width, height, color);
+	}
+	private:
+	void fillRect(int x, int y, int width, int height, int color)
+	{
+		int xLimit = width + x - 1;
+
+		for (; height > 0; height--, y++){
+			if (xLimit < x) {
+				std::swap<int>(x, xLimit);
+			}
+
+			for (int xx = x; xx <= xLimit; xx++){
+				setPixel(xx, y, color);
+			}
+		}
+	};
+
+	UINT32 *_pixels;
+	UINT32 _pitch_pixels;
+	Paleta *_paleta;	
+
 };
 extern System *const sys;
 

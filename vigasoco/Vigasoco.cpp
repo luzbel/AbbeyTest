@@ -14,7 +14,6 @@
 Vigasoco::Vigasoco()
 {
 	_driver = 0;
-	_palette = 0;
 }
 
 Vigasoco::~Vigasoco()
@@ -26,7 +25,6 @@ Vigasoco::~Vigasoco()
 /////////////////////////////////////////////////////////////////////////////
 bool Vigasoco::init()
 {
-	_palette = new SDLPalette();
 	
 	// creates the game driver
 	_driver = createGameDriver("abadia");
@@ -34,7 +32,7 @@ bool Vigasoco::init()
 	if (!_driver) return false;
 
 	// inits the game driver (load files, decode gfx, preprocessing, etc)
-	if (!_driver->init(_palette)) return false;	
+	if (!_driver->init()) return false;	
 
 	// calls template method to perform specific actions after initialization has been completed
 	_driver->preRun();
@@ -44,8 +42,6 @@ bool Vigasoco::init()
 
 void Vigasoco::end()
 {
-	delete _palette;
-	_palette = 0;
 }
 
 void Vigasoco::mainLoop()
@@ -71,7 +67,7 @@ void Vigasoco::showMenu()
 	_driver->showMenu();
 }
 
-void Vigasoco::changeState(int newState)
+void Vigasoco::changeState(Abadia::STATES newState)
 {
 	_driver->changeState(newState);
 }

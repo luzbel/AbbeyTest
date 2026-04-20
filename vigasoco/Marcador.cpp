@@ -2,13 +2,12 @@
 //
 /////////////////////////////////////////////////////////////////////////////
 
-#include "cpc6128.h"
+//#include "cpc6128.h"
 
 #include "Abad.h"
 #include "Juego.h"
 #include "Logica.h"
 #include "Marcador.h"
-#include "Paleta.h"
 #include "Sprite.h"
 
 //para printf trazas
@@ -18,10 +17,13 @@
 #include <codecvt>
 #include <locale>
 
+// para sys
+#include "system.h"
+
 using namespace Abadia;
 
 /////////////////////////////////////////////////////////////////////////////
-// duraci�n de las etapas del d�a
+// duración de las etapas del día
 /////////////////////////////////////////////////////////////////////////////
 
 int Marcador::duracionEtapasDia[7][7] = {
@@ -35,12 +37,11 @@ int Marcador::duracionEtapasDia[7][7] = {
 };
 
 /////////////////////////////////////////////////////////////////////////////
-// inicializaci�n y limpieza
+// inicialización y limpieza
 /////////////////////////////////////////////////////////////////////////////
 
 Marcador::Marcador()
 {
-	cpc6128 = elJuego->cpc6128;
 	roms = elJuego->roms;
 }
 
@@ -49,98 +50,99 @@ Marcador::~Marcador()
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// m�todos relacionados con los d�as y los momentos del d�a
+// métodos relacionados con los días y los momentos del día
 /////////////////////////////////////////////////////////////////////////////
 
-// avanza el momento del d�a del marcador
+// avanza el momento del día del marcador
 void Marcador::muestraDiaYMomentoDia()
 {
-	// coloca una paleta seg�n el momento del d�a
+	// coloca una paleta según el momento del día
 	/* 
 	if (laLogica->momentoDia < VISPERAS){
 		elJuego->paleta->setGamePalette(2);
 	} else {
 		elJuego->paleta->setGamePalette(3);
 	}
-	*/
+*/	
+
 	if (laLogica->momentoDia == NOCHE ||
 		laLogica->momentoDia == COMPLETAS){
-		elJuego->paleta->setGamePalette(3);
+		sys->setGamePalette(3);
+		elJuego->ReiniciaPantalla(false);
 	} else {
-		elJuego->paleta->setGamePalette(2);
+		sys->setGamePalette(2);
+		elJuego->ReiniciaPantalla(false);
 	}
+        // dibuja el número de día en el marcador
+        dibujaDia(laLogica->dia);
 
-
-	// dibuja el n�mero de d�a en el marcador
-	dibujaDia(laLogica->dia);
-
-	// hace que avance el momento del d�a, para mostrar el efecto de scroll en las letras del d�a
-	laLogica->momentoDia = laLogica->momentoDia - 1;
-	avanzaMomentoDia();
+        // hace que avance el momento del día, para mostrar el efecto de scroll en las letras del día
+        laLogica->momentoDia = laLogica->momentoDia - 1;
+        avanzaMomentoDia();	
 }
 
-// avanza el momento del d�a
+// avanza el momento del día
 void Marcador::avanzaMomentoDia()
 {
 	laLogica->momentoDia = laLogica->momentoDia + 1;
 
-	// si se han terminado los momentos del d�a, avanza al siguiente d�a
+	// si se han terminado los momentos del día, avanza al siguiente día
 	if (laLogica->momentoDia > COMPLETAS){
 		laLogica->momentoDia = 0;
 		laLogica->dia = laLogica->dia + 1;
 
-		// si se ha terminado el s�ptimo d�a, vuelve al primer d�a
+		// si se ha terminado el séptimo día, vuelve al primer día
 		if (laLogica->dia > 7){
 			laLogica->dia = 1;
 		}
 
-		// dibuja el nuevo d�a en el marcador
+		// dibuja el nuevo día en el marcador
 		dibujaDia(laLogica->dia);
 	}
 
-	// obtiene un puntero a los caracteres que forman el momento del d�a
+	// obtiene un puntero a los caracteres que forman el momento del día
 	nombreMomentoDia = &roms[0x4fbc + 7*laLogica->momentoDia];
 
-	// quedan 9 caracteres para completar el scroll del nombre del d�a
+	// quedan 9 caracteres para completar el scroll del nombre del día
 	numPosScrollDia = 9;
 
-	// obtiene la duraci�n de esta etapa del d�a
+	// obtiene la duración de esta etapa del día
 	laLogica->duracionMomentoDia = duracionEtapasDia[laLogica->dia - 1][laLogica->momentoDia]*0x100;
 }
 
-// dibuja el d�a en el marcador
+// dibuja el día en el marcador
 void Marcador::dibujaDia(int numDia)
 {
-	// indexa en la tabla de los d�as
+	// indexa en la tabla de los días
 	UINT8 *data = &roms[0x4fa7 + (numDia - 1)*3];
 
-	// dibuja los 3 n�meros romanos que forman el d�a en el que se est�
+	// dibuja los 3 números romanos que forman el día en el que se está
 	dibujaDigitoDia(data[0], 68, 165);
 	dibujaDigitoDia(data[1], 68 + 8, 165);
 	dibujaDigitoDia(data[2], 68 + 16, 165);
 }
 
-// dibuja un n�mero romano que forma el d�a en la posici�n que se le pasa
+// dibuja un número romano que forma el día en la posición que se le pasa
 void Marcador::dibujaDigitoDia(int digito, int x, int y)
 {
 	/* CPC
 	// apunta a 8 pixels negros
 	int despDigito = 0x5581;
 
-	// si se le pas� una 'I'
+	// si se le pasó una 'I'
 	if (digito == 2){
 		despDigito = 0xab49;
 	} else if (digito == 1){
-		// si se le pas� una 'V'
+		// si se le pasó una 'V'
 		despDigito = 0xab39;
 	}
 
-	// obtiene un puntero a los gr�ficos del d�gito
+	// obtiene un puntero a los gráficos del dígito
 	UINT8 *data = &roms[despDigito];
 
-	// rellena las 8 l�neas que ocupa la letra
+	// rellena las 8 líneas que ocupa la letra
 	for (int j = 0; j < 8; j++){
-		// cada d�gito tiene 8 pixels de ancho
+		// cada dígito tiene 8 pixels de ancho
 		for (int i = 0; i < 2; i++){
 			for (int k = 0; k < 4; k++){
 				cpc6128->setMode1Pixel(x + 4*i + k, y + j, cpc6128->unpackPixelMode1(*data, k));
@@ -148,7 +150,7 @@ void Marcador::dibujaDigitoDia(int digito, int x, int y)
 			data++;
 		}
 
-		// si no hab�a que mostrar ning�n d�gito, mantiene el puntero en los pixels negros
+		// si no había que mostrar ningún dígito, mantiene el puntero en los pixels negros
 		if (digito == 0){
 			data = data - 2;
 		}
@@ -158,25 +160,26 @@ void Marcador::dibujaDigitoDia(int digito, int x, int y)
 	// apunta a 8 pixels negros
 	int despDigito = 72108+(8*8*2);
 
-	// si se le pas� una 'I'
+	// si se le pasó una 'I'
 	if (digito == 2){
 		despDigito = 72108+(8*8*1);
 	} else if (digito == 1){
-		// si se le pas� una 'V'
+		// si se le pasó una 'V'
 		despDigito = 72108;
 	}
 
-	// obtiene un puntero a los gr�ficos del d�gito
+	// obtiene un puntero a los gráficos del dígito
 	UINT8 *data = &roms[despDigito+0x24000-1-0x4000]; // pasar a la zona VGA y dentro buscar el digito
 
-	// rellena las 8 l�neas que ocupa la letra
+	// rellena las 8 líneas que ocupa la letra
 	for (int j = 0; j < 8; j++){
-		// cada d�gito tiene 8 pixels de ancho
+		// cada dígito tiene 8 pixels de ancho
 		for (int i = 0; i < 8; i++){
-			cpc6128->setVGAPixel(x + i, y + j,*data++);
+			//cpc6128->setVGAPixel(x + i, y + j,*data++);
+			sys->setPixel(x + i, y + j,*data++);
 		}
 /* ?? no hace falta, en los graficos VGA estan los 8x8 pixeles negros ???
-		// si no hab�a que mostrar ning�n d�gito, mantiene el puntero en los pixels negros
+		// si no había que mostrar ningún dígito, mantiene el puntero en los pixels negros
 		if (digito == 0){
 			data = data - 2;
 		}
@@ -184,10 +187,10 @@ void Marcador::dibujaDigitoDia(int digito, int x, int y)
 	}
 }
 
-// realiza el efecto de scroll en la parte del marcador que muestra el momento del d�a
+// realiza el efecto de scroll en la parte del marcador que muestra el momento del día
 void Marcador::realizaScrollMomentoDia()
 {
-	// si todav�a quedan posiciones para desplazar
+	// si todavía quedan posiciones para desplazar
 	if (numPosScrollDia != 0){
 		numPosScrollDia--;
 
@@ -199,13 +202,14 @@ void Marcador::realizaScrollMomentoDia()
 			nombreMomentoDia++;
 		}
 
-		// 8 l�neas de alto
+		// 8 líneas de alto
 		for (int j = 0; j < 8; j++){
 			// desplaza 48/8 = 6 caracteres a la izquierda 1 caracter (cada caracter es de 8x8)
 			for (int i = 0; i < 48; i++){
 				// CPC cpc6128->setMode1Pixel(44 + i - 8, 180 + j, cpc6128->getMode1Pixel(44 + i, 180 + j));
 				// VGA
-				cpc6128->setVGAPixel(44 + i - 8, 180 + j, cpc6128->getMode1Pixel(44 + i, 180 + j));
+				//cpc6128->setVGAPixel(44 + i - 8, 180 + j, cpc6128->getMode1Pixel(44 + i, 180 + j),true);
+				sys->setRGBPixel(44 + i - 8, 180 + j, sys->getPixel(44 + i, 180 + j));
 			}
 		}
 		
@@ -215,7 +219,7 @@ void Marcador::realizaScrollMomentoDia()
 	}
 }
 /////////////////////////////////////////////////////////////////////////////
-// m�todos relacionados con el obsequium
+// métodos relacionados con el obsequium
 /////////////////////////////////////////////////////////////////////////////
 
 // decrementa la barra de obsequium
@@ -225,7 +229,7 @@ void Marcador::decrementaObsequium(int unidades)
 
 	// si se ha terminado el obsequium
 	if (laLogica->obsequium < 0){
-		// si guillermo no ha muerto, cambia el estado del abad para que le eche de la abad�a
+		// si guillermo no ha muerto, cambia el estado del abad para que le eche de la abadía
 		if (!laLogica->haFracasado){
 			laLogica->abad->estado = 0x0b;
 		}
@@ -246,7 +250,7 @@ void Marcador::decrementaObsequium(int unidades)
 void Marcador::dibujaBarra(int lgtud, int color, int x, int y)
 {
 	if (lgtud != 0){
-		cpc6128->fillMode1Rect(x, y, lgtud, 6, color);
+		sys->fillMode1Rect(x, y, lgtud, 6, color);
 	}
 }
 
@@ -254,26 +258,26 @@ void Marcador::dibujaBarra(int lgtud, int color, int x, int y)
 // dibujo del marcador
 /////////////////////////////////////////////////////////////////////////////
 
-// limpia el �rea que ocupa el marcador
+// limpia el área que ocupa el marcador
 void Marcador::limpiaAreaMarcador()
 {
 //TODO revisar si al poner las traducciones con caracteres de 8x10
 // en vez de 8x8, hay que cambiar esto
 	// CPC cpc6128->fillMode1Rect(0, 160, 320, 40, 3);
-	cpc6128->fillMode1Rect(0, 160, 320, 40, 0); // VGA
+	sys->fillMode1Rect(0, 160, 320, 40, 0); // VGA
 }
 
 // dibuja el marcador
 void Marcador::dibujaMarcador()
 {
-//TODO igual hay que coger el marcardor del GraficosVGA de la nueva versi�n del remake
+//TODO igual hay que coger el marcardor del GraficosVGA de la nueva versión del remake
 // Ver si tiene 32 pixeles o 34 o 35, para dejar hueco para los 2 pixeles de mas de los
 // acentos
 	/* CPC
-	// apunta a los datos gr�ficos del marcador
+	// apunta a los datos gráficos del marcador
 	UINT8 *data = &roms[0x1e328];
 
-	// dibuja las 32 l�neas que forman el marcador en la parte inferior de la pantalla
+	// dibuja las 32 líneas que forman el marcador en la parte inferior de la pantalla
 	for (int j = 0; j < 32; j++){
 		for (int i = 0; i < 256/4; i++){
 			for (int k = 0; k < 4; k++){
@@ -284,13 +288,13 @@ void Marcador::dibujaMarcador()
 	}
 	*/
 	// VGA
-	// apunta a los datos gr�ficos del marcador
+	// apunta a los datos gráficos del marcador
 	UINT8 *data = &roms[0x24000 -1 - 0x4000 + 0xB200];
 
-	// dibuja las 32 l�neas que forman el marcador en la parte inferior de la pantalla
+	// dibuja las 32 líneas que forman el marcador en la parte inferior de la pantalla
 	for (int j = 0; j < 32; j++){
 		for (int i = 0; i < 256; i++){
-			cpc6128->setVGAPixel(32 + i , 160 + j, *data++);
+			sys->setPixel(32 + i , 160 + j, *data++);
 		}
 	}	
 	// TODO 
@@ -300,7 +304,7 @@ void Marcador::dibujaMarcador()
 	// voy a borrarlos antes para que no quede un efecto feo
 	// la solucion alternativa adoptada en el remake PC con traducciones es dibujar
 	// un nuevo marcador con espacio suficiente
-	cpc6128->fillMode1Rect(96, 162, 128, 2, 0);
+	sys->fillMode1Rect(96, 162, 128, 2, 0);
 }
 
 // dibuja los objetos que tenemos en el marcador
@@ -313,7 +317,7 @@ void Marcador::dibujaObjetos(int objetos, int mascara)
 
 	// recorre los 6 huecos posibles
 	for (int numHuecos = 0; numHuecos < 6; numHuecos++){
-		// si se han procesado todos los objetos que hab�a que actualizar, sale
+		// si se han procesado todos los objetos que había que actualizar, sale
 		if (mascara == 0){
 			return;
 		}
@@ -324,7 +328,7 @@ void Marcador::dibujaObjetos(int objetos, int mascara)
 			if ((objetos & (1 << (Juego::numObjetos - 1))) != 0){
 				Sprite *spr = sprites[Juego::primerSpriteObjetos + numHuecos];
 
-				// obtiene un puntero a los gr�ficos del objeto
+				// obtiene un puntero a los gráficos del objeto
 				// CPC UINT8 *data = &roms[spr->despGfx];
 				// VGA
 				UINT8 *data = &roms[spr->despGfx + 0x24000 - 1 - 0x4000];
@@ -333,22 +337,16 @@ void Marcador::dibujaObjetos(int objetos, int mascara)
 				for (int j = 0; j < spr->alto; j++){
 					// CPC for (int i = 0; i < spr->ancho; i++){
 					for (int i = 0; i < spr->ancho*4; i++){
-						/* CPC
-						for (int k = 0; k < 4; k++){
-							cpc6128->setMode1Pixel(posX + 4*i + k, posY + j, cpc6128->unpackPixelMode1(*data, k));
-						}
-						data++;
-						*/
 						// VGA
 						int pixel=*data++;
-						if (pixel!=255) cpc6128->setVGAPixel(posX + i, posY + j,pixel);
+						if (pixel!=255) sys->setPixel(posX + i, posY + j,pixel);
 					}
 				}
 			} else {
 				// en otro caso, limpia el hueco (12x16 pixels)
 				for (int j = 0; j < 12; j++){
 					for (int i = 0; i < 16; i++){
-						cpc6128->setMode1Pixel(posX + i, posY + j, 0);
+						sys->setPixel(posX + i, posY + j, 0);
 					}
 				}
 			}
@@ -358,7 +356,7 @@ void Marcador::dibujaObjetos(int objetos, int mascara)
 		mascara = mascara << 1;
 		objetos = objetos << 1;
 
-		// avanza la posici�n al siguiente hueco
+		// avanza la posición al siguiente hueco
 		posX += 20;
 
 		// al pasar del tercer al cuarto hueco, hay 4 pixels extra
@@ -377,17 +375,16 @@ void Marcador::limpiaAreaFrases()
 {
 //TODO revisar si al poner las traducciones con caracteres de 8x10
 // en vez de 8x8, hay que cambiar esto
-	// CPC cpc6128->fillMode1Rect(96, 164, 128, 8, 3);
-	cpc6128->fillMode1Rect(96, 164, 128, 8, 0); // VGA 
+	sys->fillMode1Rect(96, 164, 128, 8, 0); // VGA 
 }
 
-// recorre los caracteres de la frase, mostr�ndolos por pantalla
+// recorre los caracteres de la frase, mostrándolos por pantalla
 void Marcador::imprimeFrase(std::string frase, int x, int y, int colorTexto, int colorFondo)
 {
-	/*
-	for (unsigned int i = 0; i < frase.length(); i++){
-		imprimirCaracter(frase[i], x + 8*i, y, colorTexto, colorFondo);
-	} */
+	
+	//for (unsigned int i = 0; i < frase.length(); i++){
+        // 		imprimirCaracter(frase[i], x + 8*i, y, colorTexto, colorFondo);
+	//} 
 	// Compatible con archivos fuente UTF-8 con acentos
 	// requiere compilarse con -std=c+11 
 	// en VigasocoSDL podía ser un problema con PS2 y otros sistemas que usan un gcc antiguo
@@ -398,7 +395,7 @@ void Marcador::imprimeFrase(std::string frase, int x, int y, int colorTexto, int
         for (auto &letter : utf32str) {
                 imprimirCaracter(letter, x + 8*i, y, colorTexto, colorFondo);
                 i++;
-        }	
+        }
 }
 
 void Marcador::imprimirCaracter(int caracter, int x, int y, int colorTexto, int colorFondo)
@@ -524,7 +521,7 @@ void Marcador::imprimirCaracter(int caracter, int x, int y, int colorTexto, int 
 				 // limpio los 2 pixeles de mas que hayan podido
 				 // dejar los caracteres de 8x10 antes
 				 // TODO: esto cambiaria si se usa un marcador con mas espacio
-				 cpc6128->fillMode1Rect(x, y, 8, 2, colorFondo);
+				 sys->fillMode1Rect(x, y, 8, 2, colorFondo);
 				 y=y+2;
 
 				break;
@@ -537,9 +534,8 @@ void Marcador::imprimirCaracter(int caracter, int x, int y, int colorTexto, int 
 	for (int j = 0; j < largo; j++){
 		int bit = 0x80;
 		int valor = *data;
-
 		for (int i = 0; i < 8; i++){
-			cpc6128->setMode1Pixel(x + i, y + j, 
+			sys->setPixel(x + i, y + j, 
 				(valor & bit) ? colorTexto : colorFondo);
 			bit = bit >> 1;
 		}

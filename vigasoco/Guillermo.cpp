@@ -15,20 +15,8 @@
 using namespace Abadia;
 
 /////////////////////////////////////////////////////////////////////////////
-// tabla de la animaci�n del personaje
+// tabla de la animación del personaje
 /////////////////////////////////////////////////////////////////////////////
-/* CPC
-Personaje::DatosFotograma Guillermo::tablaAnimacion[8] = {
-	{ 0xa3b4, 0x05, 0x22 },
-	{ 0xa300, 0x05, 0x24 },
-	{ 0xa3b4, 0x05, 0x22 },
-	{ 0xa45e, 0x05, 0x22 },
-	{ 0xa666, 0x04, 0x21 },
-	{ 0xa508, 0x05, 0x23 },
-	{ 0xa666, 0x04, 0x21 },
-	{ 0xa5b7, 0x05, 0x21 }
-};
-*/
 // VGA
 Personaje::DatosFotograma Guillermo::tablaAnimacion[8] = {
 	{ 54480, 0x05, 0x22 },
@@ -42,12 +30,12 @@ Personaje::DatosFotograma Guillermo::tablaAnimacion[8] = {
 };
 
 /////////////////////////////////////////////////////////////////////////////
-// inicializaci�n y limpieza
+// inicialización y limpieza
 /////////////////////////////////////////////////////////////////////////////
 
 Guillermo::Guillermo(Sprite *spr) : Personaje(spr)
 {
-	// asigna la tabla de animaci�n del personaje
+	// asigna la tabla de animación del personaje
 	animacion = tablaAnimacion;
 	numFotogramas = 8;
 
@@ -62,30 +50,27 @@ Guillermo::~Guillermo()
 // movimiento
 /////////////////////////////////////////////////////////////////////////////
 
-// m�todo llamado desde el bucle principal para que el personaje interactue con el mundo virtual
+// método llamado desde el bucle principal para que el personaje interactue con el mundo virtual
 void Guillermo::run()
 {
 	mueve();
 }
 
-// mueve el personaje seg�n el estado en el que se encuentra
+// mueve el personaje según el estado en el que se encuentra
 void Guillermo::ejecutaMovimiento()
 {
-	// si est� vivo, responde a la pulsaci�n de los cursores
+	// si está vivo, responde a la pulsación de los cursores
 	if (estado == 0){
-		// si la c�mara no sigue a guillermo, sale
+		// si la cámara no sigue a guillermo, sale
 		if (laLogica->numPersonajeCamara != 0) return;
 
-		// dependiendo de la tecla que se pulse, act�a en consecuencia
-		//if (losControles->estaSiendoPulsado(P1_LEFT)){
+		// dependiendo de la tecla que se pulse, actúa en consecuencia
 		if (sys->pad.left){
 			gira(1);
 			sys->pad.left = false;
-		//} else if (losControles->estaSiendoPulsado(P1_RIGHT)){
 		} else if (sys->pad.right){
 			gira(-1);
 			sys->pad.right = false;
-		//} else if (losControles->estaSiendoPulsado(P1_UP)){
 		} else if (sys->pad.up){
 			int difAltura1, difAltura2, avanceX, avanceY;
 
@@ -94,7 +79,7 @@ void Guillermo::ejecutaMovimiento()
 			trataDeAvanzar(difAltura1, difAltura2, avanceX, avanceY);
 		}
 	} else {
-		// si ha llegado al �ltimo estado cuando est� muerto, sale
+		// si ha llegado al último estado cuando está muerto, sale
 		if (estado == 1) return;
 
 		estado = estado - 1;
@@ -109,7 +94,7 @@ void Guillermo::ejecutaMovimiento()
 		}
 
         if (estado != 1){
-			// modifica la posici�n y del sprite en pantalla
+			// modifica la posición y del sprite en pantalla
 			sprite->posYPant += incrPosY;
 			sprite->haCambiado = true;
 

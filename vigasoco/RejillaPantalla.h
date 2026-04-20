@@ -1,6 +1,6 @@
 // RejillaPantalla.h
 //
-//	Clase que contiene los m�todos para modificar la rejilla de una pantalla
+//	Clase que contiene los métodos para modificar la rejilla de una pantalla
 //
 /////////////////////////////////////////////////////////////////////////////
 
@@ -11,30 +11,30 @@
 
 namespace Abadia {
 
-class MotorGrafico;					// definido en MotorGrafico.h
-class Personaje;					// definido en Personaje.h
+class MotorGrafico;				// definido en MotorGrafico.h
+class Personaje;				// definido en Personaje.h
 class PosicionJuego;				// definido en EntidadJuego.h
 
 
 class RejillaPantalla
 {
-// campos
+	// campos
 public:
 	UINT8 *roms;
 	MotorGrafico *motor;
 	UINT8 bufAlturas[24][24];		// buffer de alturas de la rejilla (24x24, 1 byte por entrada)
 
-	int minPosX;					// m�nimo valor visible en x para recortar (en coordenadas de mundo)
-	int minPosY;					// m�nimo valor visible en y para recortar (en coordenadas de mundo)
-	int minAltura;					// m�nimo altura visible (en coordenadas de mundo)
+	int minPosX;				// mínimo valor visible en x para recortar (en coordenadas de mundo)
+	int minPosY;				// mínimo valor visible en y para recortar (en coordenadas de mundo)
+	int minAltura;				// mínimo altura visible (en coordenadas de mundo)
 
-	int bufCalculoAvance[4][4];		// buffer auxiliar para el c�lculo del avance del personaje
+	int bufCalculoAvance[4][4];		// buffer auxiliar para el cálculo del avance del personaje
 
 protected:
-	// tabla para el c�lculo del avance seg�n las posiciones que ocupa el personaje
+	// tabla para el cálculo del avance según las posiciones que ocupa el personaje
 	static int calculoAvancePosicion[4][8];
 
-// m�todos
+	// métodos
 public:
 	void rellenaAlturasPantalla(Personaje *pers);
 	void calculaMinimosValoresVisibles(Personaje *pers);
@@ -42,18 +42,21 @@ public:
 	bool estaEnRejillaCentral(PosicionJuego *pos, int &posXRejilla, int &posYRejilla);
 	bool ajustaAPosRejilla(int posX, int posY, int &posXRejilla, int &posYRejilla);
 
-	bool obtenerAlturaPosicionesAvance(Personaje *pers, int &difAltura1, int &difAltura2, int &avanceX, int &avanceY);
-	bool obtenerAlturaPosicionesAvance2(Personaje *pers, int &difAltura1, int &difAltura2, int &avanceX, int &avanceY);
+	bool obtenerAlturaPosicionesAvance(
+		Personaje *pers, int &difAltura1, int &difAltura2,
+		int &avanceX, int &avanceY);
+	bool obtenerAlturaPosicionesAvance2(
+		Personaje *pers, int &difAltura1, int &difAltura2,
+		int &avanceX, int &avanceY);
 
 	RejillaPantalla(MotorGrafico *motorGrafico);
 	~RejillaPantalla();
 
-// m�todos de ayuda
+	// métodos de ayuda
 protected:
 	bool obtenerAlturaPosicionesAvanceComun(Personaje *pers, int alturaLocal, int &difAltura1, int &difAltura2, int &avanceX, int &avanceY);
 	void fijaAlturaRecortando(int posX, int posY, int altura);
 };
-
 
 }
 

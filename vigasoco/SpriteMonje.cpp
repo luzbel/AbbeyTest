@@ -4,35 +4,13 @@
 
 #include "Juego.h"
 #include "SpriteMonje.h"
-#include "cpc6128.h"
 
 using namespace Abadia;
 
 /////////////////////////////////////////////////////////////////////////////
-// tabla de desplazamientos a los datos gr�ficos de los trajes de los monjes
+// tabla de desplazamientos a los datos gráficos de los trajes de los monjes
 /////////////////////////////////////////////////////////////////////////////
 
-// CPC
-/*
-int SpriteMonje::despAnimTraje[16] = {
-	0x0ab59 + 0x0082,  
-	0x0ab59 + 0x0000,
-	0x0ab59 + 0x0082,
-	0x0ab59 + 0x00fa,
-	0x0ab59 + 0x0262,
-	0x0ab59 + 0x0172,
-	0x0ab59 + 0x0262,
-	0x0ab59 + 0x01ef,
-	0x16b59 + 0x0262,
-	0x16b59 + 0x0172,
-	0x16b59 + 0x0262,
-	0x16b59 + 0x01ef,
-	0x16b59 + 0x0082,
-	0x16b59 + 0x0000,
-	0x16b59 + 0x0082,
-	0x16b59 + 0x00fa
-};
-*/
 // VGA
 int SpriteMonje::despAnimTraje[16] = {
 	61628, // 0x0ab59 + 0x0082,  
@@ -54,7 +32,7 @@ int SpriteMonje::despAnimTraje[16] = {
 };
 
 /////////////////////////////////////////////////////////////////////////////
-// inicializaci�n y limpieza
+// inicialización y limpieza
 /////////////////////////////////////////////////////////////////////////////
 
 SpriteMonje::SpriteMonje()
@@ -72,7 +50,7 @@ SpriteMonje::~SpriteMonje()
 /////////////////////////////////////////////////////////////////////////////
 
 /* CPC
-// dibuja la parte visible del sprite actual en el �rea ocupada por el sprite que se le pasa como par�metro
+// dibuja la parte visible del sprite actual en el área ocupada por el sprite que se le pasa como parámetro
 void SpriteMonje::dibuja(Sprite *spr, UINT8 *bufferMezclas, int lgtudClipX, int lgtudClipY, int dist1X, int dist2X, int dist1Y, int dist2Y)
 {
 	// obtiene los objetos que se usan luego
@@ -81,14 +59,14 @@ void SpriteMonje::dibuja(Sprite *spr, UINT8 *bufferMezclas, int lgtudClipX, int 
 
 	int despSrc;
 
-	// si ya ha pasado la zona de la cabeza, obtiene los gr�ficos de la parte del traje
+	// si ya ha pasado la zona de la cabeza, obtiene los gráficos de la parte del traje
 	if (dist2Y >= 10){
 		despSrc = despAnimTraje[animacionTraje] + (dist2Y - 10)*ancho + dist2X;
 	} else {
 		despSrc = despGfx + dist2Y*ancho + dist2X;
 	}
 
-	// calcula la direcci�n de destino de los gr�ficos en el buffer de sprites
+	// calcula la dirección de destino de los gráficos en el buffer de sprites
 	int despDest = spr->despBuffer + (dist1Y*spr->anchoFinal + dist1X)*4;
 
 	// recorre los pixels visibles en Y
@@ -98,7 +76,7 @@ void SpriteMonje::dibuja(Sprite *spr, UINT8 *bufferMezclas, int lgtudClipX, int 
 
 		// recorre los pixels visibles en X
 		for (int lgtudX = 0; lgtudX < lgtudClipX; lgtudX++){
-			// lee un byte del gr�fico (4 pixels)
+			// lee un byte del gráfico (4 pixels)
 			int data = *src;
 
 			// para cada pixel del byte leido
@@ -120,7 +98,7 @@ void SpriteMonje::dibuja(Sprite *spr, UINT8 *bufferMezclas, int lgtudClipX, int 
 
 		dist2Y++;
 
-		// si ya se ha dibujado la cabeza, obtiene los gr�ficos de la parte del traje
+		// si ya se ha dibujado la cabeza, obtiene los gráficos de la parte del traje
 		if (dist2Y == 10){
 			despSrc = despAnimTraje[animacionTraje] + dist2X;
 		}
@@ -128,7 +106,7 @@ void SpriteMonje::dibuja(Sprite *spr, UINT8 *bufferMezclas, int lgtudClipX, int 
 }
 */
 // VGA
-// dibuja la parte visible del sprite actual en el �rea ocupada por el sprite que se le pasa como par�metro
+// dibuja la parte visible del sprite actual en el área ocupada por el sprite que se le pasa como parámetro
 void SpriteMonje::dibuja(Sprite *spr, UINT8 *bufferMezclas, int lgtudClipX, int lgtudClipY, int dist1X, int dist2X, int dist1Y, int dist2Y)
 {
 	// obtiene los objetos que se usan luego
@@ -136,14 +114,14 @@ void SpriteMonje::dibuja(Sprite *spr, UINT8 *bufferMezclas, int lgtudClipX, int 
 
 	int despSrc;
 
-	// si ya ha pasado la zona de la cabeza, obtiene los gr�ficos de la parte del traje
+	// si ya ha pasado la zona de la cabeza, obtiene los gráficos de la parte del traje
 	if (dist2Y >= 10){
 		despSrc = despAnimTraje[animacionTraje] + (dist2Y - 10)*ancho*4 + dist2X*4;
 	} else {
 		despSrc = despGfx + dist2Y*ancho*4 + dist2X*4;
 	}
 
-	// calcula la direcci�n de destino de los gr�ficos en el buffer de sprites
+	// calcula la dirección de destino de los gráficos en el buffer de sprites
 	int despDest = spr->despBuffer + (dist1Y*spr->anchoFinal + dist1X)*4;
 
 	// recorre los pixels visibles en Y
@@ -153,7 +131,7 @@ void SpriteMonje::dibuja(Sprite *spr, UINT8 *bufferMezclas, int lgtudClipX, int 
 
 		// recorre los pixels visibles en X
 		for (int lgtudX = 0; lgtudX < lgtudClipX*4; lgtudX++){
-			// lee un byte del gr�fico (1 pixel)
+			// lee un byte del gráfico (1 pixel)
 			int data = *src++;
 
 			if(data!=255) *dest=data;
@@ -165,7 +143,7 @@ void SpriteMonje::dibuja(Sprite *spr, UINT8 *bufferMezclas, int lgtudClipX, int 
 
 		dist2Y++;
 
-		// si ya se ha dibujado la cabeza, obtiene los gr�ficos de la parte del traje
+		// si ya se ha dibujado la cabeza, obtiene los gráficos de la parte del traje
 		if (dist2Y == 10){
 			despSrc = despAnimTraje[animacionTraje] + dist2X*4;
 		}

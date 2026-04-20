@@ -2,7 +2,7 @@
 //
 /////////////////////////////////////////////////////////////////////////////
 
-#include "cpc6128.h"
+//#include "cpc6128.h"
 #include "Juego.h"
 #include "GestorFrases.h"
 #include "Marcador.h"
@@ -702,8 +702,8 @@ void GestorFrases::scrollFrase()
 	for (int j = -2; j < 8; j++){
 		// desplaza 120/8 = 15 caracteres a la izquierda 1 caracter (cada caracter es de 8x8)
 		for (int i = 0; i < 120; i++){
-			cpc6128->setMode1Pixel(104 + i - 8, 164 + j, cpc6128->getMode1Pixel(104 + i, 164 + j));
-			//sys->setRGBPixel(104 + i - 8, 164 + j, sys->getPixel(104 + i, 164 + j));
+			//cpc6128->setMode1Pixel(104 + i - 8, 164 + j, cpc6128->getMode1Pixel(104 + i, 164 + j),true);
+			sys->setRGBPixel(104 + i - 8, 164 + j, sys->getPixel(104 + i, 164 + j));
 		}
 	}
 }

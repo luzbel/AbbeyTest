@@ -29,11 +29,6 @@ PosicionJuego Severino::posicionesPredef[4] = {
 Severino::Severino(SpriteMonje *spr) : Monje(spr)
 {
 	// coloca los datos de la cara de severino
-	// CPC
-	/*
-	datosCara[0] = 0xb103;
-	datosCara[1] = 0xb103 + 0x32;
-	*/
 	// VGA
         datosCara[0] = 66908;
         datosCara[1] = 66908+0x32*4;
