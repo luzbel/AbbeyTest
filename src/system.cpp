@@ -458,27 +458,28 @@ void System::endFrame()
 		targetFrameTime+=0x24*(1000./300.); // 300 ints x second, y 36 iteraciones por logica
 		if (targetFrameTime<=frameTime) targetFrameTime=SDL_GetTicks64()+5;
 		logicInterrupt=false; 
-		/*
+		
 		// log IPS 
 		static auto lastLogic = SDL_GetTicks64();
 		static int framesLogic = 0;
 		framesLogic++;
 		if (SDL_GetTicks64() - lastLogic > 1000) {
-			if (framesLogic!=9) SDL_Log("IPS: %d Debería ser 9", framesLogic);
+			//if (framesLogic!=9) SDL_Log("IPS: %d Debería ser 9", framesLogic);
+			SDL_Log("IPS: %d Debería ser 9", framesLogic);
 			framesLogic = 0;
 			lastLogic = SDL_GetTicks64();
-		}  */
+		} 
 	}
 #endif	
-/*
+
 	// Log FPS
 	static auto last = SDL_GetTicks64();
 	static int frames = 0;
 	frames++;
 	if (SDL_GetTicks64() - last > 1000) {
-		if (frames!=60) SDL_Log("FPS: %d", frames);
+		//if (frames!=60) SDL_Log("FPS: %d", frames);
+		SDL_Log("FPS: %d", frames);
 		frames = 0;
 		last = SDL_GetTicks64();
 	}
-	*/
 }

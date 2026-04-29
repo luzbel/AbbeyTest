@@ -35,14 +35,11 @@ private:
     // --- sub-pasos de mainLoop() ---
     void handleEvents();
     void logic();
-    void renderFrame();           // loop VGA→SDL + updateTexture + updateScreen
 
     // --- helpers ---
     static void reOrderAndCopy(const UINT8 *src, UINT8 *dst, int size);
 
     // --- recursos propios ---
-//    SDLPalette             *_palette;
-//    CPC6128                *_cpc6128;
     Abadia::Juego          *_game;
     FileLoader             *_fileLoader;
 

@@ -5,36 +5,31 @@
 #include <cstdio>
 #include <cstring>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 // -------------------------------------------------------------------------
 // Constructor / destructor
 // -------------------------------------------------------------------------
 
 Abbey::Abbey()
-//    : _palette(nullptr)
-//    , _cpc6128(nullptr)
- //   , _game(nullptr)
- :_game(nullptr)
-    , _fileLoader(new FileLoader())
-    , _romsPtr(nullptr)
+	:_game(nullptr)
+	, _fileLoader(new FileLoader())
+	 , _romsPtr(nullptr)
 {
 }
 
 Abbey::~Abbey()
 {
 	delete _game;
-    delete[] _romsPtr;
-    delete _fileLoader;
-	/*
-    delete _cpc6128;
-    delete _game;
-    delete[] _romsPtr;
-//    delete _palette;
-    delete _fileLoader;
-*/
-    for (auto *e : _gameFiles) {
-        e->free();
-        delete e;
-    } 
+	delete[] _romsPtr;
+	delete _fileLoader;
+
+	for (auto *e : _gameFiles) {
+		e->free();
+		delete e;
+	} 
 }
 
 // -------------------------------------------------------------------------
@@ -43,9 +38,6 @@ Abbey::~Abbey()
 
 bool Abbey::init()
 {
-	
-    //_palette = new SDLPalette();
-
     // Registra los ficheros necesarios (antes en AbadiaDriver::createGameDataEntities)
     auto *roms = new GameDataEntity(MIXED, "Code + Graphics + Sound");
     roms->addFile(new GameFile("abadia.dsk", 0x00000, 0x27400, 0xd37cf8e7, 0));
@@ -166,9 +158,7 @@ void Abbey::deallocateFilesMemory()
 // -------------------------------------------------------------------------
 
 void Abbey::finishInit()
-{ /*
-    _cpc6128 = new CPC6128();
-    _game    = new Abadia::Juego(_romsPtr, _cpc6128); */
+{ 
     _game    = new Abadia::Juego(_romsPtr); 
 }
 
@@ -178,19 +168,50 @@ void Abbey::finishInit()
 
 void Abbey::mainLoop()
 { 
+	/*
     while (!sys->exit)
     {
         auto frameTime = SDL_GetTicks();
 
         handleEvents();
         logic();
-        //renderFrame();
+	// (antes AbadiaDriver::render + Game::render)
     	sys->updateTexture();
     	sys->updateScreen();   // antes en Game::render  
+	// TODO: usar init y endFrame para ver cuando hacer updateTexture
+	// y cuando updateScreen
 
         if (SDL_GetTicks() - frameTime < sys->minimumFrameTime)
             SDL_Delay(sys->minimumFrameTime - (SDL_GetTicks() - frameTime)); 
-    } 
+    }  */
+#ifndef __EMSCRIPTEN__
+        while(!sys->exit)
+        {
+		sys->initFrame();
+
+                handleEvents();
+                logic();
+    		sys->updateTexture();
+                sys->updateScreen();
+
+		sys->endFrame();
+        }
+#else
+        if (sys->exit) {
+                sys->quit();
+                emscripten_cancel_main_loop();
+        }
+        sys->initFrame();
+
+        if (sys->logicInterrupt) {
+                handleEvents();
+                logic();
+        }
+	sys->updateTexture();
+	sys->updateScreen();
+
+        sys->endFrame();
+#endif
 }
 
 // -------------------------------------------------------------------------
@@ -221,6 +242,7 @@ void Abbey::logic()
     }
 
     // runSync (AbadiaDriver): procesa frase del marcador si no está en pausa
+    SDL_Log("pausa %d\n",_game->pausa);
     if (!_game->pausa)
         Abadia::elGestorFrases->procesaFraseActual();
 
@@ -229,58 +251,10 @@ void Abbey::logic()
 }
 
 // -------------------------------------------------------------------------
-// renderFrame  (antes AbadiaDriver::render + Game::render)
-// -------------------------------------------------------------------------
-
-void Abbey::renderFrame()
-{ /*
-    auto  *posPant    = _cpc6128->screenBuffer;
-    UINT8 *posPantTmp = nullptr;
-    auto  *pixels     = static_cast<uint8_t *>(sys->surface->pixels);
-    auto   p          = reinterpret_cast<Uint32 *>(pixels);
-
-    for (int y = 0; y < TEXTURE_HEIGHT / 2; y++)
-    {
-        posPantTmp = posPant;
-
-        // Primera pasada (línea original)
-        for (int x = 0; x < TEXTURE_WIDTH; x++) {
-            const auto data = *posPant++;
-            *p++ = sys->RGBA(
-0xFF, //               static_cast<Uint8>(_game->paleta->paleta2->_palette[data].R),
-0xFF,//                static_cast<Uint8>(_game->paleta->paleta2->_palette[data].G),
-0xFF,//                static_cast<Uint8>(_game->paleta->paleta2->_palette[data].B),
-                0xFF);
-        }
-
-        posPant = posPantTmp;
-
-        // Segunda pasada (línea duplicada — escalado x2 vertical)
-        for (int x = 0; x < TEXTURE_WIDTH; x++) {
-            const auto data = *posPant++;
-            *p++ = sys->RGBA(
-0xFF,//                static_cast<Uint8>(_game->paleta->paleta2->_palette[data].R),
-      0xFF,//          static_cast<Uint8>(_game->paleta->paleta2->_palette[data].G),
-            0xFF,//    static_cast<Uint8>(_game->paleta->paleta2->_palette[data].B),
-                0xFF);
-        }
-    }
-*/
-//	sys->fillMode1Rect(0,0,320,200,1); 
-//
-/*
-for (int kk=0;kk<320;kk++)
-       for(int zz=0;zz<100;zz++)	sys->setRGBPixel(kk,zz,255);
-    sys->updateTexture();
-    sys->updateScreen();   // antes en Game::render  
-			   */
-}
-
-// -------------------------------------------------------------------------
 // reOrderAndCopy  (antes AbadiaDriver::reOrderAndCopy)
 // -------------------------------------------------------------------------
 
-/*static*/ void Abbey::reOrderAndCopy(const UINT8 *src, UINT8 *dst, int size)
+void Abbey::reOrderAndCopy(const UINT8 *src, UINT8 *dst, int size)
 { 
     for (int i = 0; i < size; i++)
         dst[size - i - 1] = src[i]; 

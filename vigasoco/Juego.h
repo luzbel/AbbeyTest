@@ -54,6 +54,8 @@ public:
 private:
 	bool mute;
 	unsigned short slot;
+	bool pausaSolicitadaPorElJugador;
+	bool pausaPorEstarEnMenus;
 public:		
 	int idioma;  // idioma de los textos TODO ponerlo como un enumerado
 	// GraficosCPC estaba como privado
@@ -80,6 +82,7 @@ public:
 	Personaje *personajes[numPersonajes];	// personajes del juego
 
 	bool pausa;				// indica si el juego está pausado
+
 	bool modoInformacion;			// modo de información del juego
 	bool cambioModoInformacion; 		// se ha cambiado el estado
 	InfoJuego *infoJuego;			// objeto para mostrar información interna del juego

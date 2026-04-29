@@ -4,10 +4,6 @@
 
 #include <string>
 
-//#include "cpc6128.h"
-
-//#include "Vigasoco.h"
-
 #include "Abad.h"
 #include "Adso.h"
 #include "Berengario.h"
@@ -63,7 +59,7 @@ const char *Juego::savefile[7] = {
 
 
 /////////////////////////////////////////////////////////////////////////////
-// inicializaci??n y limpieza
+// inicialización y limpieza
 /////////////////////////////////////////////////////////////////////////////
 
 //Juego::Juego(UINT8 *romData, CPC6128 *cpc)
@@ -107,6 +103,8 @@ Juego::Juego(UINT8 *romData)
 	infoJuego = new InfoJuego();
 	
 	pausa = false;
+	pausaPorEstarEnMenus=false;
+	pausaSolicitadaPorElJugador=false;
 	modoInformacion = false;
 	seleccionado = 0;
 	
@@ -899,12 +897,59 @@ void Juego::changeState(Abadia::STATES newState)
 {
 	ReiniciaPantalla();
 	marcador->limpiaAreaMarcador();
+/*
+	switch (currentState)
+	{
+		case STATES::PLAY:
+			break;
+		case STATES::INTRO:			
+		case STATES::LANGUAGE:			
+		case STATES::MENU:
+		case STATES::LOAD:
+		case STATES::SAVE:
+		case STATES::SCROLL:
+		case STATES::ASK_NEW_GAME:
+		case STATES::ASK_CONTINUE:
+		case STATES::ASK_EXIT:
+		case STATES::ENDING:
+			break;
+	}
+*/
+	
+	switch (newState)
+	{
+		case STATES::PLAY:
+		//	SDL_Log("PLAY1 antes %d ahora %d\n",statusPauseBeforeMenu,pausa);
+		//	pausa=statusPauseBeforeMenu;
+		//	SDL_Log("PLAY2 antes %d ahora %d\n",statusPauseBeforeMenu,pausa);
+			pausaPorEstarEnMenus=false;
+			break;
+		case STATES::INTRO:			
+		case STATES::LANGUAGE:			
+		case STATES::MENU:
+		case STATES::LOAD:
+		case STATES::SAVE:
+		case STATES::SCROLL:
+		case STATES::ASK_NEW_GAME:
+		case STATES::ASK_CONTINUE:
+		case STATES::ASK_EXIT:
+		case STATES::ENDING:
+		//	statusPauseBeforeMenu=pausa;
+		//	pausa=true;
+		//	SDL_Log("antes %d ahora %d\n",statusPauseBeforeMenu,pausa);
+			pausaPorEstarEnMenus=true;
+			break;
+	}
+
 	currentState = newState;
+
 }
 
 void Juego::stateMachine()
 {
 	using Abadia::STATES;
+
+	pausa=pausaSolicitadaPorElJugador||pausaPorEstarEnMenus;
 
 	switch (currentState)
 	{
@@ -1062,10 +1107,10 @@ void Juego::run()
 {
  //elMarcador->imprimeFrase("ABCDEFGHIJKLMNÑ", 100, 164, 4, 0); // VGA
  //elMarcador->imprimeFrase("OPQRSTUVWXYZ", 100, 164, 4, 0); // VGA
-   //elMarcador->imprimeFrase("ÀÁÂÃÄÇÈÉÊÍÏÒÓÖÕ", 100, 164, 4, 0); // VGA
-//   elMarcador->imprimeFrase("ÙÚW-'", 100, 164, 4, 0); // VGA
-//     elMarcador->imprimeFrase(",.¿Ñ~?", 100, 164, 4, 0); // VGA
-//     elGestorFrases->muestraFraseYa(18); 
+ //elMarcador->imprimeFrase("ÀÁÂÃÄÇÈÉÊÍÏÒÓÖÕ", 100, 164, 4, 0); // VGA
+ //elMarcador->imprimeFrase("ÙÚW-'", 100, 164, 4, 0); // VGA
+ //elMarcador->imprimeFrase(",.¿Ñ~?", 100, 164, 4, 0); // VGA
+ //     elGestorFrases->muestraFraseYa(18); 
 	elBuscadorDeRutas->contadorAnimGuillermo = laLogica->guillermo->contadorAnimacion;
 	
 	logica->compruebaAbreEspejo();
