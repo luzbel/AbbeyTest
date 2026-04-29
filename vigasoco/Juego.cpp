@@ -34,16 +34,12 @@
 #include "Serializar.h"
 
 #include <iostream>
-// memcpy
 #include <string.h>
 
-
 #include "system.h"
-
 #include "texts.h"
 
 #define VITA_SAVE_DIR "ux0:data/Abbey/"
-
 
 using namespace Abadia;
 
@@ -62,39 +58,30 @@ const char *Juego::savefile[7] = {
 // inicialización y limpieza
 /////////////////////////////////////////////////////////////////////////////
 
-//Juego::Juego(UINT8 *romData, CPC6128 *cpc)
 Juego::Juego(UINT8 *romData)
 {		
-	idioma=1; // Default english language
+	idioma=1;
 	mute=false; 
 	slot=0;
 	GraficosCPC=false;
-	// apunta a los datos del juego, pero saltándose la de la presentación
 	roms = romData + 0x4000;
 
-//	cpc6128 = cpc;
-
-	// inicia los sprites del juego
 	for (int i = 0; i < numSprites; i++){
 		sprites[i] = 0;
 	}
 
-	// inicia los personajes del juego
 	for (int i = 0; i < numPersonajes; i++){
 		personajes[i] = 0;
 	}
 
-	// inicia las puertas del juego
 	for (int i = 0; i < numPuertas; i++){
 		puertas[i] = 0;
 	}
 
-	// inicia los objetos del juego
 	for (int i = 0; i < numObjetos; i++){
 		objetos[i] = 0;
 	}
 
-	// crea los objetos principales que usar?? el juego
 	sys->initPaleta(romData+0x24000-1);	
 	pergamino = new Pergamino();
 	motor = new MotorGrafico(buffer, 8192);
@@ -102,15 +89,12 @@ Juego::Juego(UINT8 *romData)
 	logica = new Logica(roms, buffer, 8192); 	
 	infoJuego = new InfoJuego();
 	
-	pausa = false;
 	pausaPorEstarEnMenus=false;
-	pausaSolicitadaPorElJugador=false;
 	modoInformacion = false;
 	seleccionado = 0;
 	
 	currentState = Abadia::STATES::INTRO; 
 	showingMenu = false;
-	//firstTime = true;
 	activeGame = false;
 	
 	#ifdef RG350	
@@ -130,22 +114,18 @@ Juego::Juego(UINT8 *romData)
 
 Juego::~Juego()
 {
-	// borra los sprites del juego
 	for (int i = 0; i < numSprites; i++){
 		delete sprites[i];
 	}
 
-	// borra los personajes del juego
 	for (int i = 0; i < numPersonajes; i++){
 		delete personajes[i];
 	}
 
-	// borra las puertas del juego
 	for (int i = 0; i < numPuertas; i++){
 		delete puertas[i];
 	}
 
-	// borra los objetos del juego
 	for (int i = 0; i < numObjetos; i++){
 		delete objetos[i];
 	}
@@ -160,20 +140,15 @@ Juego::~Juego()
 
 void Juego::ReiniciaPantalla(bool mostrarDiaYMomentoDia)
 {
-	// limpia el área de juego y dibuja el marcador
-	limpiaAreaJuego(12); // el 0 es el cyan en CPC, no se cual poner en VGA
-	// pongo el 12 que es un amarillo cantoso, para comparar con Abadia32
+	limpiaAreaJuego(12);
 
 	marcador->dibujaMarcador();
 
-	// pone una posición de pantalla inválida para que se redibuje la pantalla
 	motor->posXPantalla = motor->posYPantalla = -1;
 
-	// dibuja los objetos que tiene guillermo en el marcador
 	marcador->dibujaObjetos(personajes[0]->objetos, 0xff);
 
-	// inicia el marcador (día y momento del día, obsequium y el espacio de las frases)
-	if (mostrarDiaYMomentoDia) marcador->muestraDiaYMomentoDia(); // con if para evitar bucle infinito recursivo
+	if (mostrarDiaYMomentoDia) marcador->muestraDiaYMomentoDia();
 	marcador->decrementaObsequium(0);
 	marcador->limpiaAreaFrases();
 }
@@ -213,7 +188,6 @@ bool Juego::menuCargar2()
 		{
 			selectedSlot = seleccionado;
 
-			// Ask to continue and loose all progress
 			if (activeGame)
 			{
 				changeState(Abadia::STATES::ASK_CONTINUE);
@@ -226,7 +200,6 @@ bool Juego::menuCargar2()
 			cargar(seleccionado);			
 			changeState(Abadia::STATES::PLAY);
 			ReiniciaPantalla();
-			//firstTime = false;
 		}
 		else
 		{
@@ -264,22 +237,10 @@ bool Juego::cargar(int slot)
 	in >> logica;
 	if (in.fail())
 	{
-		// VGA
 		elMarcador->imprimeFrase("                  ", 100, 164, 4, 0);
 		elMarcador->imprimeFrase("ERROR: PRESS SPACE", 100, 164, 4, 0);
-		// el juego ha podido quedar destrozado
-		// lo suyo seria cargar en un objeto logica temporal
-		// y luego intercambiar los punteros
-		// pero como es un singleton...
-		// intentemos , al menos, reiniciar
-		//do
-		//{
-		//	losControles->actualizaEstado();
-		//}while (losControles->estaSiendoPulsado(P1_BUTTON1) == false);
-
 		elMarcador->imprimeFrase("                  ", 100, 164, 4, 0);
 		logica->inicia();
-		// devolvemos true, para que se reinicie todo
 		return true;
 	}
 	else {return true;}
@@ -305,7 +266,6 @@ void Juego::askExitLogic()
 	{
 		i++;
 		sys->pad.left = false;
-		
 	}		
 	else if (sys->pad.right)
 	{
@@ -324,13 +284,11 @@ void Juego::askExitLogic()
 	{
 		BUTTON_YES = false;
 
-		// exit
 		if (seleccionado == 0){				
 			sys->exitGame();
 		}
 		else if (seleccionado==1)
 		{
-			// Back to the game
 			changeState(Abadia::STATES::PLAY);
 			ReiniciaPantalla();
 			sys->setGamePalette(2);
@@ -339,7 +297,6 @@ void Juego::askExitLogic()
 			BUTTON_YES = false;
 
 			sys->setNormalSpeed();
-			//sys->playMusic(START);
 			activeGame = true;
 		}
 	}	
@@ -351,15 +308,12 @@ void Juego::askExit()
 
 	askExitLogic();
 
-	// clear screen
 	limpiaAreaJuego(0); 
 	
 	x = 32;
 
-	// find the delimiter
 	int delimiterPosition = continueQuestionText[idioma].find("\n");
 	
-	// get token and value
 	string line1 = continueQuestionText[idioma].substr(0, delimiterPosition);
 	string line2 = continueQuestionText[idioma].substr(delimiterPosition+1,
 		continueQuestionText[idioma].length());
@@ -390,7 +344,6 @@ void Juego::askForNewGameLogic()
 	{
 		i++;
 		sys->pad.left = false;
-		
 	}		
 	else if (sys->pad.right)
 	{
@@ -409,13 +362,10 @@ void Juego::askForNewGameLogic()
 	{
 		BUTTON_YES = false;
 
-		//restart the game
 		if (seleccionado == 0){				
 			logica->inicia();		
 		}
 
-		// Back to the game
-		
 		changeState(Abadia::STATES::PLAY);
 		ReiniciaPantalla();
 		sys->setGamePalette(2);
@@ -424,7 +374,6 @@ void Juego::askForNewGameLogic()
 		BUTTON_YES = false;
 
 		sys->setNormalSpeed();
-		//sys->playMusic(START);
 		activeGame = true;
 	}
 }
@@ -435,15 +384,12 @@ void Juego::askForNewGame()
 
 	askForNewGameLogic();
 
-	// clear screen
 	limpiaAreaJuego(0); 
 	
 	x = 32;
 
-	// find the delimiter
 	int delimiterPosition = newGameQuestionText[idioma].find("\n");
 	
-	// get token and value
 	string line1 = newGameQuestionText[idioma].substr(0, delimiterPosition);
 	string line2 = newGameQuestionText[idioma].substr(delimiterPosition+1,
 		newGameQuestionText[idioma].length());
@@ -474,7 +420,6 @@ void Juego::askToContinueLogic()
 	{
 		i++;
 		sys->pad.left = false;
-		
 	}		
 	else if (sys->pad.right)
 	{
@@ -502,9 +447,7 @@ void Juego::askToContinueLogic()
 			BUTTON_YES = false;
 
 			sys->setNormalSpeed();
-			//sys->playMusic(START);
 			activeGame = true;		
-			
 		}
 		else //YES
 		{	
@@ -512,25 +455,22 @@ void Juego::askToContinueLogic()
 			cargar(selectedSlot);						
 			changeState(Abadia::STATES::PLAY);
 			ReiniciaPantalla();
-			//firstTime = false;
 		}
 	}
 }
+
 void Juego::askToContinue()
 {
 	int x = 0;	
 
 	askToContinueLogic();
 
-	// clear screen
 	limpiaAreaJuego(0); 
 	
 	x = 32;
 
-	// find the delimiter
 	int delimiterPosition = continueQuestionText[idioma].find("\n");
 	
-	// get token and value
 	string line1 = continueQuestionText[idioma].substr(0, delimiterPosition);
 	string line2 = continueQuestionText[idioma].substr(delimiterPosition+1,
 		continueQuestionText[idioma].length());
@@ -555,8 +495,6 @@ void Juego::askToContinue()
 
 void Juego::save(int slot)
 {
-	
-	//Update config.txt
 	string d = getDateAndTime();
 	string token = "SAVEX";
 	token[4] = '0' + slot;		
@@ -590,7 +528,6 @@ void Juego::save(int slot)
 
 	if (out.fail())
 	{
-		// VGA
 		elMarcador->imprimeFrase("                  ", 100, 164, 4, 0);
 		elMarcador->imprimeFrase("ERROR: PRESS SPACE", 100, 164, 4, 0);		
 	}
@@ -598,13 +535,8 @@ void Juego::save(int slot)
 
 void Juego::pintaMenuGrabar(int seleccionado,bool efecto)
 {	
-	// limpia el área que ocupa el marcador
 	limpiaAreaJuego(0); 
 	marcador->limpiaAreaMarcador();	
-
-	//repintar con un efecto para que vaya apareciendo el
-	// menu de izquierda a derecha y asi dar tiempo a soltar las teclas
-	// al usuario
 
 	int x = 0;
 	const int y = 32;
@@ -620,7 +552,6 @@ void Juego::pintaMenuGrabar(int seleccionado,bool efecto)
 			marcador->imprimeFrase(saveFile[i], x, y+(i*16),4, 0);
 		}		
 	}
-	// Text for the option "Back"
 	if (seleccionado == 7){
 		x = (320 - textSave[idioma].length()*8)>>1;
 		marcador->imprimeFrase(textSave[idioma], x, y+(7*16),0, 4);
@@ -630,6 +561,7 @@ void Juego::pintaMenuGrabar(int seleccionado,bool efecto)
 		marcador->imprimeFrase(textSave[idioma], x, y+(7*16),4, 0);
 	}
 }
+
 bool Juego::menuGrabar2()
 {
 	pintaMenuGrabar(seleccionado,true);
@@ -673,8 +605,6 @@ bool Juego::menuGrabar2()
 
 void Juego::pintaMenuIdioma(int seleccionado,bool efecto)
 {
-
-	// limpia el área que ocupa el marcador
 	limpiaAreaJuego(0); 
 
 	int x = 0;
@@ -687,7 +617,6 @@ void Juego::pintaMenuIdioma(int seleccionado,bool efecto)
 	x = (320 - textLanguage[seleccionado].length()*8)>>1;
 	marcador->imprimeFrase(textLanguage[seleccionado], x, 
 		32+(seleccionado*16), 0, 4);
-	
 }
 
 bool Juego::menuIdioma()
@@ -714,7 +643,6 @@ bool Juego::menuIdioma()
 		BUTTON_YES = false;
 		idioma=seleccionado;
 
-		//Update config.txt
 		string d = getDateAndTime();
 		string token = "LANGUAGE";
 		token[4] = '0' + idioma;		
@@ -729,10 +657,8 @@ bool Juego::menuIdioma()
 	return false;
 }
 
-
 void Juego::pintaMenuPrincipal(int seleccionado,bool efecto)
 {
-	// limpia el área que ocupa el marcador
 	limpiaAreaJuego(0); 
 
 	int x = 0;
@@ -773,14 +699,11 @@ bool Juego::menu()
 					BUTTON_YES = false;
 
 					sys->minimumFrameTime = SCROLL_FRAME_TIME;
-					sys->playSound(Abadia::SONIDOS::Inicio); // TODO, revisar si hace falta loop
+					sys->playSound(Abadia::SONIDOS::Inicio);
 					activeGame = true;						
 				}
 				else
 				{
-					//std::raise(SIGTRAP);	
-					// Ask player to continue and loose game
-					
 					seleccionado = 1;
 					changeState(Abadia::STATES::ASK_NEW_GAME);
 					ReiniciaPantalla();
@@ -867,7 +790,7 @@ bool Juego::menu()
 		seleccionado = 0;
 	}	
 	else if (seleccionado < 0){
-		seleccionado = 5; // EXIT
+		seleccionado = 5;
 	}	
 
 	return false;
@@ -880,7 +803,6 @@ void Juego::preRun()
 {	
 	marcador->limpiaAreaMarcador();
 
-	// crea las entidades del juego (sprites, personajes, puertas y objetos)
 	creaEntidadesJuego();
 	generaGraficosFlipeados();
 	motor->personaje = personajes[0];
@@ -892,36 +814,15 @@ void Juego::preRun()
 	logica->inicia();
 	ReiniciaPantalla();
 }
-
+/*
 void Juego::changeState(Abadia::STATES newState)
 {
 	ReiniciaPantalla();
 	marcador->limpiaAreaMarcador();
-/*
-	switch (currentState)
-	{
-		case STATES::PLAY:
-			break;
-		case STATES::INTRO:			
-		case STATES::LANGUAGE:			
-		case STATES::MENU:
-		case STATES::LOAD:
-		case STATES::SAVE:
-		case STATES::SCROLL:
-		case STATES::ASK_NEW_GAME:
-		case STATES::ASK_CONTINUE:
-		case STATES::ASK_EXIT:
-		case STATES::ENDING:
-			break;
-	}
-*/
-	
+
 	switch (newState)
 	{
 		case STATES::PLAY:
-		//	SDL_Log("PLAY1 antes %d ahora %d\n",statusPauseBeforeMenu,pausa);
-		//	pausa=statusPauseBeforeMenu;
-		//	SDL_Log("PLAY2 antes %d ahora %d\n",statusPauseBeforeMenu,pausa);
 			pausaPorEstarEnMenus=false;
 			break;
 		case STATES::INTRO:			
@@ -934,62 +835,458 @@ void Juego::changeState(Abadia::STATES newState)
 		case STATES::ASK_CONTINUE:
 		case STATES::ASK_EXIT:
 		case STATES::ENDING:
-		//	statusPauseBeforeMenu=pausa;
-		//	pausa=true;
-		//	SDL_Log("antes %d ahora %d\n",statusPauseBeforeMenu,pausa);
 			pausaPorEstarEnMenus=true;
 			break;
 	}
 
 	currentState = newState;
-
 }
+*/
 
-void Juego::stateMachine()
+void Juego::changeState(Abadia::STATES newState)
 {
-	using Abadia::STATES;
+	ReiniciaPantalla();
+	marcador->limpiaAreaMarcador();
 
-	pausa=pausaSolicitadaPorElJugador||pausaPorEstarEnMenus;
-
+	// limpieza según el estado del que salimos
 	switch (currentState)
 	{
-		case STATES::INTRO:			
-			muestraPresentacion();
-			break;
-		case STATES::LANGUAGE:			
-			menuIdioma();
-			break;
-		case STATES::MENU:
-			menu();
-			break;
-		case STATES::LOAD:
-			menuCargar2();
-			break;
-		case STATES::SAVE:
-			menuGrabar2();
-			break;		
 		case STATES::SCROLL:
-			muestraIntroduccion();
-			break;
-		case STATES::PLAY:
-			run();
-			break;
-		case STATES::ASK_NEW_GAME:
-			askForNewGame();
-			break;
-		case STATES::ASK_CONTINUE:
-			askToContinue();
-			break;
-		case STATES::ASK_EXIT:
-			askExit();
+			// el pergamino de introducción tiene su propio sonido;
+			// lo paramos siempre al salir, independientemente del destino
+			sys->stopSound(Abadia::SONIDOS::Inicio);
 			break;
 		case STATES::ENDING:
-			muestraFinal();
+			sys->stopSound(Abadia::SONIDOS::Final);
 			break;
+		default:
+			break;
+	}
+
+	// ajuste de pausa y sonidos según el estado al que entramos
+	switch (newState)
+	{
+		case STATES::PLAY:
+			pausaPorEstarEnMenus = false;
+			// solo reanudamos si veníamos de un estado de menú,
+			// no si veníamos de SCROLL o ENDING que tienen sus propios sonidos
+			if (currentState != STATES::SCROLL && currentState != STATES::ENDING)
+				sys->resumeSounds();
+			break;
+
+		case STATES::INTRO:
+		case STATES::LANGUAGE:
+		case STATES::MENU:
+		case STATES::LOAD:
+		case STATES::SAVE:
+		case STATES::ASK_NEW_GAME:
+		case STATES::ASK_CONTINUE:
+		case STATES::ASK_EXIT:
+			pausaPorEstarEnMenus = true;
+			// congelamos los sonidos de juego sin detenerlos
+			sys->pauseSounds();
+			break;
+
+		case STATES::SCROLL:
+		case STATES::ENDING:
+			// estados con su propia banda sonora; no pausamos ni reanudamos
+			// los sonidos de juego porque en estos estados no hay partida activa
+			pausaPorEstarEnMenus = true;
+			break;
+	}
+
+	currentState = newState;
+}
+
+void Juego::run()
+{
+	elBuscadorDeRutas->contadorAnimGuillermo = laLogica->guillermo->contadorAnimacion;
+	
+	logica->compruebaAbreEspejo();
+	logica->actualizaVariablesDeTiempo();
+
+	if (muestraPantallaFinInvestigacion()) return;		
+	
+	logica->compruebaLecturaLibro();	
+	marcador->realizaScrollMomentoDia();		
+	logica->ejecutaAccionesMomentoDia();
+	logica->compruebaBonusYCambiosDeCamara();
+	motor->compruebaCambioPantalla();
+	logica->compruebaCogerDejarObjetos();
+	logica->compruebaAbrirCerrarPuertas();
+			
+	for (int i = 0; i < numPersonajes; i++){
+		personajes[i]->run();
+	}
+	
+	logica->buscRutas->generadoCamino = false;	
+	
+	actualizaLuz();
+
+	laLogica->realizaReflejoEspejo();
+	
+	if (cambioModoInformacion && modoInformacion)
+	{
+		cambioModoInformacion=false;
+	}
+
+	if (cambioModoInformacion && !modoInformacion)
+	{
+		limpiaAreaJuego(12);
+		motor->compruebaCambioPantalla(true);	
+		cambioModoInformacion=false;			
+	}
+
+	{		
+		motor->dibujaPantalla();
+		motor->dibujaSprites();				
+	}
+	if (modoInformacion){
+		infoJuego->muestraInfo();
+	}
+
+	if (laLogica->guillermo->contadorAnimacion==1){			
+		sys->playSound(Abadia::SONIDOS::Pasos);
 	}
 }
 
-// check for save files correct the menu options
+void Juego::limpiaAreaJuego(int color)
+{
+	sys->fillMode1Rect(0, 0, 32, 160, 0);
+	sys->fillMode1Rect(32, 0, 256, 160, color);
+	sys->fillMode1Rect(32 + 256, 0, 32, 160, 0);	
+}
+
+void Juego::generaGraficosFlipeados()
+{
+	generaGraficosFlipeadosVGA();
+
+	UINT8 tablaFlipX[256];
+
+	for (int i = 0; i < 256; i++)
+	{
+		int pixel0 = unpackPixelMode1(i, 0);
+		int pixel1 = unpackPixelMode1(i, 1);
+		int pixel2 = unpackPixelMode1(i, 2);
+		int pixel3 = unpackPixelMode1(i, 3);
+
+		int data = 0;
+
+		data = packPixelMode1(data, 0, pixel3);
+		data = packPixelMode1(data, 1, pixel2);
+		data = packPixelMode1(data, 2, pixel1);
+		data = packPixelMode1(data, 3, pixel0);
+
+		tablaFlipX[i] = data;
+	}
+
+	flipeaGraficos(tablaFlipX, &roms[0x0a300], &roms[0x16300], 5, 0x366);
+	flipeaGraficos(tablaFlipX, &roms[0x0a666], &roms[0x16666], 4, 0x084);
+	flipeaGraficos(tablaFlipX, &roms[0x0a6ea], &roms[0x166ea], 5, 0x1db);
+	flipeaGraficos(tablaFlipX, &roms[0x0a8c5], &roms[0x168c5], 4, 0x168);
+	flipeaGraficos(tablaFlipX, &roms[0x0ab59], &roms[0x16b59], 5, 0x2d5);
+	flipeaGraficos(tablaFlipX, &roms[0x0b103], &roms[0x17103], 5, 0x2bc);
+	flipeaGraficos(tablaFlipX, &roms[0x0aa49], &roms[0x16a49], 6, 0x0f0);
+}
+
+void Juego::generaGraficosFlipeadosVGA()
+{
+	UINT8 *romsVGA = &roms[0x24000-1-0x4000];
+	UINT8 *romsVGAFlip = &roms[0x24000 + 174065 -1 - 0x4000];
+	int dest = 0;
+	int size = 57240-53760;
+
+	flipeaGraficosVGA(&romsVGA[53760], &romsVGAFlip[dest], 5*4, size);
+	dest += size;
+	size = 57768-57240;
+	flipeaGraficosVGA(&romsVGA[57240], &romsVGAFlip[dest], 4*4, size);
+	dest += size;
+
+	size = 59668 - 57768;
+	flipeaGraficosVGA(&romsVGA[57768], &romsVGAFlip[dest], 5*4, size);
+	dest += size;
+	size = 61108 - 59668;
+	flipeaGraficosVGA(&romsVGA[59668], &romsVGAFlip[dest], 4*4, size);
+
+	dest += size;
+	size = 64008 - 61108;
+	flipeaGraficosVGA(&romsVGA[61108], &romsVGAFlip[dest], 5*4, size);
+
+	dest += size;
+	dest+=2900;
+	size = 69708 - 66908;
+	flipeaGraficosVGA(&romsVGA[66908], &romsVGAFlip[dest], 5*4, size);
+
+	dest += size;
+	size = 24*40;
+	flipeaGraficosVGA(&romsVGA[69708], &romsVGAFlip[dest], 6*4, size);
+}
+
+void Juego::flipeaGraficos(UINT8 *tablaFlip, UINT8 *src, UINT8 *dest, int ancho, int bytes)
+{
+	memcpy(dest, src, bytes);
+
+	int numLineas = bytes/ancho;
+	int numIntercambios = (ancho + 1)/2;
+
+	for (int j = 0; j < numLineas; j++)
+	{
+		UINT8 *ptr1 = dest;
+		UINT8 *ptr2 = ptr1 + ancho - 1;
+
+		for (int i = 0; i < numIntercambios; i++)
+		{
+			UINT8 aux = *ptr1;
+			*ptr1 = tablaFlip[*ptr2];
+			*ptr2 = tablaFlip[aux];
+
+			ptr1++;
+			ptr2--;
+		}
+
+		dest = dest + ancho;
+	}
+}
+
+void Juego::flipeaGraficosVGA(UINT8 *src, UINT8 *dest, int ancho, int bytes)
+{
+	memcpy(dest, src, bytes);
+
+	int numLineas = bytes/ancho;
+	int numIntercambios = (ancho + 1)/2;
+
+	for (int j = 0; j < numLineas; j++)
+	{
+		UINT8 *ptr1 = dest;
+		UINT8 *ptr2 = ptr1 + ancho - 1;
+
+		for (int i = 0; i < numIntercambios; i++)
+		{
+			UINT8 aux = *ptr1;
+			*ptr1 = *ptr2;
+			*ptr2 = aux;
+
+			ptr1++;
+			ptr2--;
+		}
+
+		dest = dest + ancho;
+	}
+}
+
+void Juego::actualizaLuz()
+{
+	sprites[spriteLuz]->esVisible = false;
+
+	if (motor->pantallaIluminada) return;
+
+	if (!(personajes[1]->sprite->esVisible))
+	{
+		for (int i = 0; i < numSprites; i++)
+		{
+			if (sprites[i]->esVisible){
+				sprites[i]->haCambiado = false;
+			}
+		}
+		return;
+	}
+
+	SpriteLuz *sprLuz = (SpriteLuz *) sprites[spriteLuz];
+	sprLuz->ajustaAPersonaje(personajes[1]);
+}
+
+void Juego::cambioCPC_VGA()
+{
+	if (GraficosCPC)
+	{
+		memcpy(	&roms[0x24000-1-0x4000],
+				&roms[0x24000-1-0x4000+(174065+21600)],
+				174065);
+		GraficosCPC=false;
+	}
+	else
+	{
+		memcpy(	&roms[0x24000-1-0x4000],
+				&roms[0x24000-1-0x4000+(174065+21600)*2],
+				174065);
+		GraficosCPC=true;
+	}
+
+	generaGraficosFlipeados();
+	ReiniciaPantalla();		
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// métodos para mostrar distintas pantallas
+/////////////////////////////////////////////////////////////////////////////
+
+void Juego::muestraPresentacion()
+{
+	sys->setIntroPalette();
+	UINT8 *romsVGA = &roms[0x24000-1-0x4000];
+	UINT8 *screen=romsVGA+0x1ADF0;
+	for (int j = 0; j < 200; j++){
+		for (int i = 0; i < 320; i++){
+			sys->setPixel(i,j,*screen++);
+		}
+	}
+
+	if (BUTTON_YES)
+	{
+		currentState = Abadia::STATES::MENU;
+		ReiniciaPantalla();
+		marcador->limpiaAreaMarcador();
+	}
+}
+
+void Juego::muestraIntroduccion()
+{
+	pergamino->muestraTexto(Pergamino::pergaminoInicio[idioma]);
+	
+	if (pergamino->finished)
+	{
+		sys->setGamePalette(0);
+		currentState = Abadia::STATES::PLAY;
+	
+		sys->stopSound(Abadia::SONIDOS::Inicio);
+		ReiniciaPantalla();
+		sys->setGamePalette(2);
+		marcador->limpiaAreaMarcador();
+
+		ReiniciaPantalla();
+		BUTTON_YES = false;
+		
+		sys->setNormalSpeed();
+	}
+}
+
+void Juego::muestraFinal()
+{
+	sys->playSound(Abadia::SONIDOS::Final,true);
+	pergamino->muestraTexto(Pergamino::pergaminoFinal[idioma]);
+}
+
+bool Juego::muestraPantallaFinInvestigacion()
+{
+	std::string porcentaje[8] = {
+	"XX POR CIENTO DE",
+	"XX  PER  CENT",
+	"XX POR CENTO DA",
+	"XX PER CENT DE",
+	"XX POR CENTO DA",
+	"XX PER CENTO",
+	"XX  PER  CENT",
+	"XX POR CENTO DA"
+	};
+
+	if (!logica->haFracasado) {return false;}
+
+	laLogica->numPersonajeCamara = 0x80;
+
+	if (elGestorFrases->mostrandoFrase) {return false;}
+
+	limpiaAreaJuego(0);
+
+	int porc = logica->calculaPorcentajeMision();
+
+	porcentaje[idioma][0] = ((porc/10) % 10) + 0x30;
+	porcentaje[idioma][1] = (porc % 10) + 0x30;
+	
+	int x = 0;
+	x = (320 - frase1[idioma].length()*8)>>1;
+	marcador->imprimeFrase(frase1[idioma], x, 32, 4, 0);
+	x = (320 - porcentaje[idioma].length()*8)>>1;
+	marcador->imprimeFrase(porcentaje[idioma], x, 48, 4, 0);
+	x = (320 - frase3[idioma].length()*8)>>1;
+	marcador->imprimeFrase(frase3[idioma], x, 64, 4, 0);
+	x = (320 - frase4[idioma].length()*8)>>1;
+	marcador->imprimeFrase(frase4[idioma], x, 128, 4, 0);
+
+	if (sys->pad.button1 ||sys->pad.button2 ||sys->pad.button3 ||sys->pad.button4)
+	{
+		sys->setIntroPalette();
+		UINT8 *romsVGA = &roms[0x24000-1-0x4000];
+		UINT8 *screen=romsVGA+0x1ADF0;
+		for (int j = 0; j < 200; j++){
+			for (int i = 0; i < 320; i++){
+				sys->setPixel(i,j,*screen++);
+			}
+		}
+
+		currentState = Abadia::STATES::INTRO;
+	}
+
+	return true;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// creación de las entidades del juego
+/////////////////////////////////////////////////////////////////////////////
+
+void Juego::creaEntidadesJuego()
+{
+	sprites[0] = new Sprite();
+	sprites[1] = new Sprite();
+
+	for (int i = 2; i < 8; i++){
+		sprites[i] = new SpriteMonje();
+	}
+
+	for (int i = primerSpritePuertas; i < primerSpritePuertas + numPuertas; i++)
+	{
+		sprites[i] = new Sprite();
+		sprites[i]->ancho = sprites[i]->oldAncho = 0x06;
+		sprites[i]->alto = sprites[i]->oldAlto = 0x28;
+	}
+
+	int despObjetos[8] = { 
+		11200,
+		34496,
+		34304,
+		34880,
+		34688,
+		34688,
+		34688,
+		11008
+	};
+
+	for (int i = primerSpriteObjetos; i < primerSpriteObjetos + numObjetos; i++)
+	{
+		sprites[i] = new Sprite();
+		sprites[i]->ancho = sprites[i]->oldAncho = 0x04;
+		sprites[i]->alto = sprites[i]->oldAlto = 0x0c;
+		sprites[i]->despGfx = despObjetos[i - primerSpriteObjetos];
+	}
+
+	sprites[spritesReflejos] = new Sprite();
+	sprites[spritesReflejos + 1] = new Sprite();
+
+	sprites[spriteLuz] = new SpriteLuz();
+
+	personajes[0] = new Guillermo(sprites[0]);
+	personajes[1] = new Adso(sprites[1]);
+	personajes[2] = new Malaquias((SpriteMonje *)sprites[2]);
+	personajes[3] = new Abad((SpriteMonje *)sprites[3]);
+	personajes[4] = new Berengario((SpriteMonje *)sprites[4]);
+	personajes[5] = new Severino((SpriteMonje *)sprites[5]);
+	personajes[6] = new Jorge((SpriteMonje *)sprites[6]);
+	personajes[7] = new Bernardo((SpriteMonje *)sprites[7]);
+
+	for (int i = 0; i < 8; i++){
+		personajes[i]->despX = -2;
+		personajes[i]->despY = -34;
+	}
+	personajes[1]->despY = -32;
+	
+	for (int i = 0; i < numPuertas; i++){
+		puertas[i] = new Puerta(sprites[primerSpritePuertas + i]);
+	}
+
+	for (int i = 0; i < numObjetos; i++){
+		objetos[i] = new Objeto(sprites[primerSpriteObjetos + i]);
+	}
+}
+
 void Juego::checkForSaveFiles()
 {
 	checkConfigFile();
@@ -1006,7 +1303,6 @@ void Juego::checkConfigFile()
 	if (!readConfigFile())
 	{
 		if (saveConfigFile()){
-			// Success!, config file created.
 		}
 	}
 }
@@ -1042,9 +1338,8 @@ bool Juego::readConfigFile()
 
 	configReader = new ConfigReader((path + "config.txt").c_str());
 
-	if  (configReader->parse())
+	if (configReader->parse())
 	{
-		//idioma = stoi(configReader->getValue("LANGUAGE"));
 		string s = configReader->getValue("LANGUAGE");
 		idioma = atoi(s.c_str());
 		r = true;
@@ -1080,575 +1375,21 @@ bool Juego::saveConfigFile()
 	
 	f.open((path + "config.txt").c_str());
 
-	// write current language
 	f << "LANGUAGE="<< idioma <<"\n";
 
 	for (int i=0;i<7;i++)
 	{
-		// Change token
 		string token = "SAVEX";
 		token[4] = '0' + i;
 
-		// If exist retrieve value from the linked list
 		if (!configReader->isEmpty()){			
 			f << "SAVE" << i << "=" << configReader->getValue(token) <<"\n";
 		}
-		else{ // default			
+		else{
 			f << "SAVE" << i << "=" <<"--" <<"\n";
 		}
 	}
 
 	f.close();
 	return r;
-}
-
-
-void Juego::run()
-{
- //elMarcador->imprimeFrase("ABCDEFGHIJKLMNÑ", 100, 164, 4, 0); // VGA
- //elMarcador->imprimeFrase("OPQRSTUVWXYZ", 100, 164, 4, 0); // VGA
- //elMarcador->imprimeFrase("ÀÁÂÃÄÇÈÉÊÍÏÒÓÖÕ", 100, 164, 4, 0); // VGA
- //elMarcador->imprimeFrase("ÙÚW-'", 100, 164, 4, 0); // VGA
- //elMarcador->imprimeFrase(",.¿Ñ~?", 100, 164, 4, 0); // VGA
- //     elGestorFrases->muestraFraseYa(18); 
-	elBuscadorDeRutas->contadorAnimGuillermo = laLogica->guillermo->contadorAnimacion;
-	
-	logica->compruebaAbreEspejo();
-	
-	logica->actualizaVariablesDeTiempo();
-
-	// si guillermo ha muerto, empieza una partida
-	if (muestraPantallaFinInvestigacion()) return;		
-	
-	logica->compruebaLecturaLibro();	
-	
-	marcador->realizaScrollMomentoDia();		
-	
-	logica->ejecutaAccionesMomentoDia();
-	
-	logica->compruebaBonusYCambiosDeCamara();
-	
-	motor->compruebaCambioPantalla();
-	
-	logica->compruebaCogerDejarObjetos();
-
-	logica->compruebaAbrirCerrarPuertas();
-			
-	for (int i = 0; i < numPersonajes; i++){
-		personajes[i]->run();
-	}
-	
-	logica->buscRutas->generadoCamino = false;	
-	
-	actualizaLuz();
-
-	// si guillermo o adso están frente al espejo, muestra su reflejo
-	laLogica->realizaReflejoEspejo();
-	
-	if (cambioModoInformacion && modoInformacion)
-	{
-		// para permitir modoInformacion
-		// superpuesto a la pantalla de Juego
-		//limpiaAreaJuego(12);			
-		cambioModoInformacion=false;
-	}
-
-	if (cambioModoInformacion && !modoInformacion )
-	{
-		limpiaAreaJuego(12);
-		motor->compruebaCambioPantalla(true);	
-		cambioModoInformacion=false;			
-	}
-
-	// así el infoJuego tapa totalmente la pantalla
-	/*
-	if (modoInformacion){
-		infoJuego->muestraInfo();
-	} 
-	else
-	{		
-		motor->dibujaPantalla();
-		motor->dibujaSprites();				
-	} */
-	// así es posible superponer el modoInformacion
-	// a la pantalla de juego
-	// TODO: probar el comportamiento en el laberinto
-	// con el Sprite de Luz y cuando se agota la lampara
-	// por si no se viese bien
-	{		
-		motor->dibujaPantalla();
-		motor->dibujaSprites();				
-	}
-	if (modoInformacion){
-		infoJuego->muestraInfo();
-	}
-
-	if (laLogica->guillermo->contadorAnimacion==1){			
-		sys->playSound(Abadia::SONIDOS::Pasos);
-	}
-}
-
-// limpia el área de juego de color que se le pasa y los bordes de negro
-void Juego::limpiaAreaJuego(int color)
-{
-	// VGA
-	sys->fillMode1Rect(0, 0, 32, 160, 0);
-	sys->fillMode1Rect(32, 0, 256, 160, color);
-	sys->fillMode1Rect(32 + 256, 0, 32, 160, 0);	
-}
-
-// flipea respecto a x todos los gráficos del juego que lo necesiten
-void Juego::generaGraficosFlipeados()
-{
-	generaGraficosFlipeadosVGA(); //  VGA
-
-	UINT8 tablaFlipX[256];
-
-	// inicia la tabla para flipear los gráficos
-	for (int i = 0; i < 256; i++)
-	{
-		// extrae los pixels
-		int pixel0 = unpackPixelMode1(i, 0);
-		int pixel1 = unpackPixelMode1(i, 1);
-		int pixel2 = unpackPixelMode1(i, 2);
-		int pixel3 = unpackPixelMode1(i, 3);
-
-		int data = 0;
-
-		// combina los pixels en orden inverso
-		data = packPixelMode1(data, 0, pixel3);
-		data = packPixelMode1(data, 1, pixel2);
-		data = packPixelMode1(data, 2, pixel1);
-		data = packPixelMode1(data, 3, pixel0);
-
-		// guarda el resultado
-		tablaFlipX[i] = data;
-	}
-
-	// genera los gráficos de las animaciones de guillermo flipeados respecto a x
-	flipeaGraficos(tablaFlipX, &roms[0x0a300], &roms[0x16300], 5, 0x366);
-	flipeaGraficos(tablaFlipX, &roms[0x0a666], &roms[0x16666], 4, 0x084);
-
-	// genera los gráficos de las animaciones de adso flipeados respecto a x
-	flipeaGraficos(tablaFlipX, &roms[0x0a6ea], &roms[0x166ea], 5, 0x1db);
-	flipeaGraficos(tablaFlipX, &roms[0x0a8c5], &roms[0x168c5], 4, 0x168);
-
-	// genera los gráficos de los trajes de los monjes flipeados respecto a x
-	flipeaGraficos(tablaFlipX, &roms[0x0ab59], &roms[0x16b59], 5, 0x2d5);
-
-	// genera los gráficos de las caras de los monjes flipeados respecto a x
-	flipeaGraficos(tablaFlipX, &roms[0x0b103], &roms[0x17103], 5, 0x2bc);
-
-	// genera los gráficos de las puertas flipeados respecto a x
-	flipeaGraficos(tablaFlipX, &roms[0x0aa49], &roms[0x16a49], 6, 0x0f0);
-}
-
-// flipea respecto a x todos los gráficos del juego que lo necesiten
-void Juego::generaGraficosFlipeadosVGA()
-{
-	UINT8 *romsVGA = &roms[0x24000-1-0x4000];
-	UINT8 *romsVGAFlip = &roms[0x24000 + 174065 -1 - 0x4000];
-	int dest = 0;
-	int size = 57240-53760;
-
-	// genera los gráficos de las animaciones de guillermo flipeados respecto a x
-	flipeaGraficosVGA(&romsVGA[53760], &romsVGAFlip[dest], 5*4, size);
-	dest += size;
-	size = 57768-57240; // ok, coincide con los 0x084 que se pasaba para CPC * 4 ya que en VGA cada pixel es un byte , y no 4 pixel en un byte
-	flipeaGraficosVGA(&romsVGA[57240], &romsVGAFlip[dest], 4*4, size );
-	dest += size;
-
-	// genera los gráficos de las animaciones de adso flipeados respecto a x
-	size = 59668 - 57768; // ok, coincide con 0x1db *4 
-	flipeaGraficosVGA(&romsVGA[57768], &romsVGAFlip[dest], 5*4, size);
-	dest += size;
-	size = 61108 - 59668; // ok , es 0x168 * 4
-	flipeaGraficosVGA(&romsVGA[59668], &romsVGAFlip[dest], 4*4, size);
-
-	// genera los gráficos de los trajes de los monjes flipeados respecto a x
-	dest += size;
-	size = 64008 - 61108; // ok , es 0x2d5*4
-	flipeaGraficosVGA(&romsVGA[61108], &romsVGAFlip[dest], 5*4, size);
-
-	// genera los gráficos de las caras de los monjes flipeados respecto a x
-	dest += size;
-	dest+=2900; // TODO: cambio temporal, para que la distancia entre los graficos y su homologo flipeados sea siempre 120305
-	// a ver si hay suerte, y en estos 2900 bytes lo que estan son los graficos de las puertas que son los que nos faltan !!! -> pues no, estan justo detras de las caras
-	size = 69708 - 66908; // OK , es 0x2bc*4
-	flipeaGraficosVGA(&romsVGA[66908], &romsVGAFlip[dest], 5*4, size);
-
-	// genera los gráficos de las puertas flipeados respecto a x
-	dest += size;
-	size = 24*40; // OK , es 0x0f0 * 4
-	flipeaGraficosVGA(&romsVGA[69708], &romsVGAFlip[dest], 6*4, size);
-}
-
-// copia los gráficos de origen en el destino y los flipea
-void Juego::flipeaGraficos(UINT8 *tablaFlip, UINT8 *src, UINT8 *dest, int ancho, int bytes)
-{
-	// copia los gráficos del origen al destino
-	memcpy(dest, src, bytes);
-
-	// calcula las variables que controlan el bucle
-	int numLineas = bytes/ancho;
-	int numIntercambios = (ancho + 1)/2;
-
-	// recorre todas las líneas que forman el gráfico
-	for (int j = 0; j < numLineas; j++)
-	{
-		UINT8 *ptr1 = dest;
-		UINT8 *ptr2 = ptr1 + ancho - 1;
-
-		// realiza los intercambios necesarios para flipear esta línea
-		for (int i = 0; i < numIntercambios; i++)
-		{
-			UINT8 aux = *ptr1;
-			*ptr1 = tablaFlip[*ptr2];
-			*ptr2 = tablaFlip[aux];
-
-			ptr1++;
-			ptr2--;
-		}
-
-		// pasa a la siguiente línea
-		dest = dest + ancho;
-	}
-}
-
-// copia los gráficos de origen en el destino y los flipea
-void Juego::flipeaGraficosVGA(UINT8 *src, UINT8 *dest, int ancho, int bytes)
-{
-	// copia los gráficos del origen al destino
-	memcpy(dest, src, bytes);
-
-	// calcula las variables que controlan el bucle
-	int numLineas = bytes/ancho;
-	int numIntercambios = (ancho + 1)/2;
-
-	// recorre todas las líneas que forman el gráfico
-	for (int j = 0; j < numLineas; j++)
-	{
-		UINT8 *ptr1 = dest;
-		UINT8 *ptr2 = ptr1 + ancho - 1;
-
-		// realiza los intercambios necesarios para flipear esta línea
-		for (int i = 0; i < numIntercambios; i++)
-		{
-			UINT8 aux = *ptr1;
-			*ptr1 = *ptr2;
-			*ptr2 = aux;
-
-			ptr1++;
-			ptr2--;
-		}
-
-		// pasa a la siguiente línea
-		dest = dest + ancho;
-	}
-}
-
-// actualiza el sprite de la luz para que se mueva siguiendo a adso
-void Juego::actualizaLuz()
-{
-	// desactiva el sprite de la luz
-	sprites[spriteLuz]->esVisible = false;
-
-	// si la pantalla está iluminada, sale
-	if (motor->pantallaIluminada) return;
-
-	// si adso no es visible en la pantalla actual
-	if (!(personajes[1]->sprite->esVisible))
-	{
-		for (int i = 0; i < numSprites; i++)
-		{
-			if (sprites[i]->esVisible){
-				sprites[i]->haCambiado = false;
-			}
-		}
-		return;
-	}
-
-	// actualiza las características del sprite de la luz según la posición del personaje
-	SpriteLuz *sprLuz = (SpriteLuz *) sprites[spriteLuz];
-	sprLuz->ajustaAPersonaje(personajes[1]);
-}
-
-// comprueba si se desea cambiar los graficos VGA por CPC
-void Juego::cambioCPC_VGA()
-{
-	// En Memoria esta la rom de 0x24000 bytes 
-	//  seguidos de 174065 bytes con los graficos de 8 bits a usar
-	//  seguidos de 174065+21600 bytes con los graficos VGA de 8 bits
-	//  seguidos de 174065+21600 bytes con los graficos CPC de 8 bits
-	// asi que copiamos despues de la rom los graficos que vamos a usar
-	// (los 21600 son los graficos flipeados)
-	if (GraficosCPC)
-	{
-		memcpy(	&roms[0x24000-1-0x4000],
-				&roms[0x24000-1-0x4000+(174065+21600)],
-				174065);
-
-		GraficosCPC=false;
-	}
-	else
-	{
-		memcpy(	&roms[0x24000-1-0x4000],
-				&roms[0x24000-1-0x4000+(174065+21600)*2],
-				174065);
-
-		GraficosCPC=true;
-	}
-
-	// genera los gr??ficos flipeados en x de las entidades que lo necesiten
-	generaGraficosFlipeados();
-	ReiniciaPantalla();		
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// m??todos para mostrar distintas las pantallas de distintas situaciones del juego
-/////////////////////////////////////////////////////////////////////////////
-
-// muestra la imagen de presentación del juego
-void Juego::muestraPresentacion()
-{
-	sys->setIntroPalette();
-        UINT8 *romsVGA = &roms[0x24000-1-0x4000];
-        //cpc6128->showVGAScreen(romsVGA + 0x1ADF0);
-	UINT8 *screen=romsVGA+0x1ADF0;
-	// scan the rows
-	for (int j = 0; j < 200; j++){
-		// scan the cols
-		for (int i = 0; i < 320; i++){
-			// draw pixels
-			sys->setPixel(i,j,*screen++);
-		}
-	}
-
-        if (BUTTON_YES)
-        {
-                currentState = Abadia::STATES::MENU;
-                ReiniciaPantalla();
-                marcador->limpiaAreaMarcador();
-        }
-}
-
-// muestra el pergamino de presentación
-void Juego::muestraIntroduccion()
-{
-	// muestra la introducción
-	pergamino->muestraTexto(Pergamino::pergaminoInicio[idioma]);
-	
-	if (pergamino->finished)
-	{
-		// coloca la paleta negra
-		sys->setGamePalette(0);
-		currentState = Abadia::STATES::PLAY;
-	
-		sys->stopSound(Abadia::SONIDOS::Inicio);
-		ReiniciaPantalla();
-		sys->setGamePalette(2);
-		marcador->limpiaAreaMarcador();
-
-		ReiniciaPantalla();
-		BUTTON_YES = false;
-		
-		sys->setNormalSpeed();
-		//firstTime = false;
-	}
-
-}
-
-// muestra indefinidamente el pergamino del final
-void Juego::muestraFinal()
-{
-	//audio_plugin->Play(SONIDOS::Final,true);
-        sys->playSound(Abadia::SONIDOS::Final,true);
-	// muestra el texto del final
-	pergamino->muestraTexto(Pergamino::pergaminoFinal[idioma]);
-}
-
-// muestra la parte de misión completada. Si se ha completado el juego, muestra el final
-bool Juego::muestraPantallaFinInvestigacion()
-{
-	std::string porcentaje[8] = {
-	"XX POR CIENTO DE", // 0 castellano
-	"XX  PER  CENT", // 1 ingles
-	"XX POR CENTO DA", // 2 portugues brasil
-	"XX PER CENT DE", // 3 CATAL??N
-	"XX POR CENTO DA", // 4 GALLEGO
-	"XX PER CENTO", // 5 ITALIANO
-	"XX  PER  CENT", // 6 fines
-	"XX POR CENTO DA" // 7 PORTUGUES
-	};
-
-	//activeGame = false;
-
-	// si guillermo está vivo, sale
-	if (!logica->haFracasado) {return false;}
-
-	// indica que la cámara siga a guillermo y lo haga ya
-	laLogica->numPersonajeCamara = 0x80;
-
-	// si está mostrando una frase por el marcador, espera a que se termine de mostrar
-	if (elGestorFrases->mostrandoFrase) {return false;}
-
-	// oculta el área de juego
-	// CPC limpiaAreaJuego(3);
-	limpiaAreaJuego(0); // VGA
-
-	// calcula el porcentaje de misión completada. Si se ha completado el juego, muestra el final
-	int porc = logica->calculaPorcentajeMision();
-
-	porcentaje[idioma][0] = ((porc/10) % 10) + 0x30;
-	porcentaje[idioma][1] = (porc % 10) + 0x30;
-	
-	// Show message
-	int x = 0;
-	x = (320 - frase1[idioma].length()*8)>>1;
-	marcador->imprimeFrase(frase1[idioma], x, 32, 4, 0);
-	x = (320 - porcentaje[idioma].length()*8)>>1;
-	marcador->imprimeFrase(porcentaje[idioma], x, 48, 4, 0);
-	x = (320 - frase3[idioma].length()*8)>>1;
-	marcador->imprimeFrase(frase3[idioma], x, 64, 4, 0);
-	x = (320 - frase4[idioma].length()*8)>>1;
-	marcador->imprimeFrase(frase4[idioma], x, 128, 4, 0);
-
-	if (sys->pad.button1 ||sys->pad.button2 ||sys->pad.button3 ||sys->pad.button4)
-	{
-		sys->setIntroPalette();
-		//VGA
-		UINT8 *romsVGA = &roms[0x24000-1-0x4000];
-
-		//cpc6128->showVGAScreen(romsVGA + 0x1ADF0);
-		UINT8 *screen=romsVGA+0x1ADF0;
-		// scan the rows
-		for (int j = 0; j < 200; j++){
-			// scan the cols
-			for (int i = 0; i < 320; i++){
-				// draw pixels
-				sys->setPixel(i,j,*screen++);
-			}
-		}
-
-		currentState = Abadia::STATES::INTRO;
-	}
-
-	return true;
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// creaci??n de las entidades del juego
-/////////////////////////////////////////////////////////////////////////////
-
-// crea los sprites, personajes, puertas y objetos del juego
-void Juego::creaEntidadesJuego()
-{
-	// sprites de los personajes
-
-	// sprite de guillermo
-	sprites[0] = new Sprite();
-
-	// sprite de adso
-	sprites[1] = new Sprite();
-
-	// sprite de los monjes
-	for (int i = 2; i < 8; i++){
-		sprites[i] = new SpriteMonje();
-	}
-
-	// sprite de las puertas
-	for (int i = primerSpritePuertas; i < primerSpritePuertas + numPuertas; i++)
-	{
-		sprites[i] = new Sprite();
-		sprites[i]->ancho = sprites[i]->oldAncho = 0x06;
-		sprites[i]->alto = sprites[i]->oldAlto = 0x28;
-	}
-
-	// CPC int despObjetos[8] = { 0x88f0, 0x9fb0, 0x9f80, 0xa010, 0x9fe0, 0x9fe0, 0x9fe0, 0x88c0 };
-	// VGA
-	/*
-	int despObjetos[8] = { 
-		0x24000 - 1 - 0x4000 + 11200,  // LIBRO
-		0x24000 - 1 - 0x4000 + 34496,  // GUANTES
-		0x24000 - 1 - 0x4000 + 34304,  // GAFAS
-		0x24000 - 1 - 0x4000 + 34880,  // ?PERGAMINO?
-		0x24000 - 1 - 0x4000 + 34688,  // LLAVE
-		0x24000 - 1 - 0x4000 + 34688,
-		0x24000 - 1 - 0x4000 + 34688,
-		0x24000 - 1 - 0x4000 + 11008  // ?LAMPARA?
-	}; */
-
-	// En Sprite::dibujaVGA ya le anyade el 0x24000 - 1 - 0x4000 para saltarse la rom CPC e ir a los graficos VGA
-	// ¡¡¡ ojo !!! , entonces en Marcador::dibujaObjetos hay que incluir este salto ...
-	int despObjetos[8] = { 
-		11200,  // LIBRO
-		34496,  // GUANTES
-		34304,  // GAFAS
-		34880,  // ?PERGAMINO?
-		34688,  // LLAVE
-		34688,
-		34688,
-		11008  // ?LAMPARA?
-	};// TODO: los desplazamientos estan bien, lo que no se si se corresponde
-	// del todo es el indice, o sea, que el objeto 7 en el juego es la lampara
-	// y el 3 el pergamino... 
-
-	// sprite de los objetos
-	for (int i = primerSpriteObjetos; i < primerSpriteObjetos + numObjetos; i++)
-	{
-		sprites[i] = new Sprite();
-		sprites[i]->ancho = sprites[i]->oldAncho = 0x04;
-		sprites[i]->alto = sprites[i]->oldAlto = 0x0c;
-
-		// CPC sprites[i]->despGfx = despObjetos[i - primerSpriteObjetos];
-		// VGA
-		// 0x24000 para pasar las roms CPC
-		// -1 de empezar a contar en el cero
-		// - 0x4000 ya que en el puntero con el que se trabaja se han pasado los primeros 0x4000 bytes con la pantalla de presentacion CPC
-		// +34304 que es donde esta el tile 228 , que es por donde anda la imagen del primer objeto
-		// como los objetos son de 16*12 (??????ojo!!! no son como el resto de tiles!!!)
-		// sumo 16*12* el numero de objeto que busco
-		//sprites[i]->despGfx = 0x24000 - 1 - 0x4000 + 34304 + (i - primerSpriteObjetos)*16*12;
-		//muy bonito , si los graficos estuviesen en el mismo orden logico que los objetos en el juego
-	
-		// igual que en CPC , pero con el array despObjetos "actualizado" a las posiciones VGA
-		sprites[i]->despGfx = despObjetos[i - primerSpriteObjetos];
-
-	}
-
-	// sprite de los reflejos en el espejo
-	sprites[spritesReflejos] = new Sprite();
-	sprites[spritesReflejos + 1] = new Sprite();
-
-	// sprite de la luz
-	sprites[spriteLuz] = new SpriteLuz();
-
-	// crea los personajes del juego
-	personajes[0] = new Guillermo(sprites[0]);
-	personajes[1] = new Adso(sprites[1]);
-	personajes[2] = new Malaquias((SpriteMonje *)sprites[2]);
-	personajes[3] = new Abad((SpriteMonje *)sprites[3]);
-	personajes[4] = new Berengario((SpriteMonje *)sprites[4]);
-	personajes[5] = new Severino((SpriteMonje *)sprites[5]);
-	personajes[6] = new Jorge((SpriteMonje *)sprites[6]);
-	personajes[7] = new Bernardo((SpriteMonje *)sprites[7]);
-
-	// inicia los valores comunes
-	for (int i = 0; i < 8; i++){
-		personajes[i]->despX = -2;
-		personajes[i]->despY = -34;
-	}
-	personajes[1]->despY = -32;
-	
-	// crea las puertas del juego
-	for (int i = 0; i < numPuertas; i++){
-		puertas[i] = new Puerta(sprites[primerSpritePuertas + i]);
-	}
-
-	// crea los objetos del juego
-	for (int i = 0; i < numObjetos; i++){
-		objetos[i] = new Objeto(sprites[primerSpriteObjetos + i]);
-	}
-	
 }

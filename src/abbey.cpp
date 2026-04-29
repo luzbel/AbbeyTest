@@ -38,7 +38,6 @@ Abbey::~Abbey()
 
 bool Abbey::init()
 {
-    // Registra los ficheros necesarios (antes en AbadiaDriver::createGameDataEntities)
     auto *roms = new GameDataEntity(MIXED, "Code + Graphics + Sound");
     roms->addFile(new GameFile("abadia.dsk", 0x00000, 0x27400, 0xd37cf8e7, 0));
     _gameFiles.push_back(roms);
@@ -58,19 +57,17 @@ bool Abbey::init()
     deallocateFilesMemory();
     finishInit();
 
-    // preRun: crea entidades del juego y arranca el estado inicial
     _game->preRun();
 
     return true;
 }
 
 // -------------------------------------------------------------------------
-// loadFiles  (antes GameDriver::loadFiles)
+// loadFiles
 // -------------------------------------------------------------------------
 
 bool Abbey::loadFiles()
 {
-
     for (size_t i = 0; i < _gameFiles.size(); i++) {
         if (!_fileLoader->loadGameData("abadia", _gameFiles[i])) {
             sys->print("Error: no se pueden cargar los ficheros del juego.\n");
@@ -83,7 +80,7 @@ bool Abbey::loadFiles()
 }
 
 // -------------------------------------------------------------------------
-// filesLoaded  (antes AbadiaDriver::filesLoaded)
+// filesLoaded
 // -------------------------------------------------------------------------
 
 void Abbey::filesLoaded()
@@ -91,7 +88,7 @@ void Abbey::filesLoaded()
     int bytesWritten;
     UINT8 auxBuffer[0xff00];
 
-    const int vgaSize   = _gameFiles[1]->getTotalSize();   // 174065
+    const int vgaSize   = _gameFiles[1]->getTotalSize();
     const int flipExtra = 21600;
 
     _romsPtr = new UINT8[0x24000 + (vgaSize + flipExtra) * 3];
@@ -103,36 +100,30 @@ void Abbey::filesLoaded()
 
     DskReader dsk(_gameFiles[0]->getData());
 
-    // Pistas 0x01-0x11
     for (int i = 0x01; i <= 0x11; i++)
         dsk.getTrackData(i, &auxBuffer[(i - 0x01) * 0x0f00], 0x0f00, bytesWritten);
 
-    reOrderAndCopy(&auxBuffer[0x0000], &_romsPtr[0x00000], 0x4000); // abadia0.bin
-    reOrderAndCopy(&auxBuffer[0x4000], &_romsPtr[0x0c000], 0x4000); // abadia3.bin
-    reOrderAndCopy(&auxBuffer[0x8000], &_romsPtr[0x20000], 0x4000); // abadia8.bin
-    reOrderAndCopy(&auxBuffer[0xc000], &_romsPtr[0x04100], 0x3f00); // abadia1.bin
+    reOrderAndCopy(&auxBuffer[0x0000], &_romsPtr[0x00000], 0x4000);
+    reOrderAndCopy(&auxBuffer[0x4000], &_romsPtr[0x0c000], 0x4000);
+    reOrderAndCopy(&auxBuffer[0x8000], &_romsPtr[0x20000], 0x4000);
+    reOrderAndCopy(&auxBuffer[0xc000], &_romsPtr[0x04100], 0x3f00);
 
-    // Pistas 0x12-0x16
     for (int i = 0x12; i <= 0x16; i++)
         dsk.getTrackData(i, &auxBuffer[(i - 0x12) * 0x0f00], 0x0f00, bytesWritten);
-    reOrderAndCopy(&auxBuffer[0x0000], &_romsPtr[0x1c000], 0x4000); // abadia7.bin
+    reOrderAndCopy(&auxBuffer[0x0000], &_romsPtr[0x1c000], 0x4000);
 
-    // Pistas 0x17-0x1b
     for (int i = 0x17; i <= 0x1b; i++)
         dsk.getTrackData(i, &auxBuffer[(i - 0x17) * 0x0f00], 0x0f00, bytesWritten);
-    reOrderAndCopy(&auxBuffer[0x0000], &_romsPtr[0x18000], 0x4000); // abadia6.bin
+    reOrderAndCopy(&auxBuffer[0x0000], &_romsPtr[0x18000], 0x4000);
 
-    // Pistas 0x1c-0x21
     for (int i = 0x1c; i <= 0x21; i++)
         dsk.getTrackData(i, &auxBuffer[(i - 0x1c) * 0x0f00], 0x0f00, bytesWritten);
-    reOrderAndCopy(&auxBuffer[0x0000], &_romsPtr[0x14000], 0x4000); // abadia5.bin
+    reOrderAndCopy(&auxBuffer[0x0000], &_romsPtr[0x14000], 0x4000);
 
-    // Pistas 0x21-0x25
     for (int i = 0x21; i <= 0x25; i++)
         dsk.getTrackData(i, &auxBuffer[(i - 0x21) * 0x0f00], 0x0f00, bytesWritten);
-    reOrderAndCopy(&auxBuffer[0x0000], &_romsPtr[0x08000], 0x4000); // abadia2.bin
+    reOrderAndCopy(&auxBuffer[0x0000], &_romsPtr[0x08000], 0x4000);
 
-    // Gráficos VGA y CPC después de la ROM
     const int base = 0x24000 - 1;
     memcpy(&_romsPtr[base],
            _gameFiles[1]->getData(), vgaSize);
@@ -141,7 +132,6 @@ void Abbey::filesLoaded()
     memcpy(&_romsPtr[base + (vgaSize + flipExtra) * 2],
            _gameFiles[2]->getData(), vgaSize);
 
-    // Parche texto COMPLETAS: - y . → # y ~
     UINT8 *tmp = &_romsPtr[0x4000 + 0x4fbc + 7 * 6];
     *(tmp + 3) = '#';
     *(tmp + 4) = '~'; 
@@ -154,36 +144,20 @@ void Abbey::deallocateFilesMemory()
 }
 
 // -------------------------------------------------------------------------
-// finishInit  (antes AbadiaDriver::finishInit)
+// finishInit
 // -------------------------------------------------------------------------
 
 void Abbey::finishInit()
 { 
-    _game    = new Abadia::Juego(_romsPtr); 
+    _game = new Abadia::Juego(_romsPtr); 
 }
 
 // -------------------------------------------------------------------------
-// mainLoop  (antes Game::mainLoop)
+// mainLoop
 // -------------------------------------------------------------------------
 
 void Abbey::mainLoop()
 { 
-	/*
-    while (!sys->exit)
-    {
-        auto frameTime = SDL_GetTicks();
-
-        handleEvents();
-        logic();
-	// (antes AbadiaDriver::render + Game::render)
-    	sys->updateTexture();
-    	sys->updateScreen();   // antes en Game::render  
-	// TODO: usar init y endFrame para ver cuando hacer updateTexture
-	// y cuando updateScreen
-
-        if (SDL_GetTicks() - frameTime < sys->minimumFrameTime)
-            SDL_Delay(sys->minimumFrameTime - (SDL_GetTicks() - frameTime)); 
-    }  */
 #ifndef __EMSCRIPTEN__
         while(!sys->exit)
         {
@@ -215,7 +189,7 @@ void Abbey::mainLoop()
 }
 
 // -------------------------------------------------------------------------
-// handleEvents  (antes Game::handleEvents)
+// handleEvents
 // -------------------------------------------------------------------------
 
 void Abbey::handleEvents()
@@ -229,29 +203,74 @@ void Abbey::handleEvents()
 }
 
 // -------------------------------------------------------------------------
-// logic  (antes Game::logic + Vigasoco::mainLoop + AbadiaDriver::runSync/runAsync)
+// logic
 // -------------------------------------------------------------------------
 
 void Abbey::logic()
 { 
     if (sys->informationMode) {
-        // antes: Vigasoco::toggleInformationMode → AbadiaDriver::showGameLogic
         _game->modoInformacion       = !_game->modoInformacion;
         _game->cambioModoInformacion = true;
         sys->informationMode = false;
     }
 
-    // runSync (AbadiaDriver): procesa frase del marcador si no está en pausa
-    SDL_Log("pausa %d\n",_game->pausa);
-    if (!_game->pausa)
+    SDL_Log("pausa %d\n", _game->estaPausado());
+    if (!_game->estaPausado())
         Abadia::elGestorFrases->procesaFraseActual();
 
-    // runAsync (AbadiaDriver): máquina de estados principal del juego 
-    _game->stateMachine(); 
+    // máquina de estados principal del juego
+    using Abadia::STATES;
+/*
+//    _game->pausa = false; // será actualizado por changeState si procede
+    // nota: stateMachine() actualizaba pausa al inicio; lo hacemos aquí
+    // para mantener el mismo comportamiento
+    {
+        bool pausaSolicitada = _game->pausa; // preservamos pausa del jugador si la hubiera
+        // recalculamos igual que hacía stateMachine
+        // (pausaSolicitadaPorElJugador es privado; por ahora usamos el valor actual de pausa
+        //  que ya viene calculado del frame anterior via changeState)
+    }
+*/
+    switch (_game->currentState)
+    {
+        case STATES::INTRO:
+            _game->muestraPresentacion();
+            break;
+        case STATES::LANGUAGE:
+            _game->menuIdioma();
+            break;
+        case STATES::MENU:
+            _game->menu();
+            break;
+        case STATES::LOAD:
+            _game->menuCargar2();
+            break;
+        case STATES::SAVE:
+            _game->menuGrabar2();
+            break;
+        case STATES::SCROLL:
+            _game->muestraIntroduccion();
+            break;
+        case STATES::PLAY:
+            _game->run();
+            break;
+        case STATES::ASK_NEW_GAME:
+            _game->askForNewGame();
+            break;
+        case STATES::ASK_CONTINUE:
+            _game->askToContinue();
+            break;
+        case STATES::ASK_EXIT:
+            _game->askExit();
+            break;
+        case STATES::ENDING:
+            _game->muestraFinal();
+            break;
+    }
 }
 
 // -------------------------------------------------------------------------
-// reOrderAndCopy  (antes AbadiaDriver::reOrderAndCopy)
+// reOrderAndCopy
 // -------------------------------------------------------------------------
 
 void Abbey::reOrderAndCopy(const UINT8 *src, UINT8 *dst, int size)

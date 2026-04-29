@@ -54,133 +54,68 @@ public:
 private:
 	bool mute;
 	unsigned short slot;
-	bool pausaSolicitadaPorElJugador;
 	bool pausaPorEstarEnMenus;
 public:		
-	int idioma;  // idioma de los textos TODO ponerlo como un enumerado
-	// GraficosCPC estaba como privado
-	// se pone como publico para que pueda acceder
-	// el MotorGrafico.cpp y decidir si tiene que parchear las pantallas
-	// o no
-	// TODO: Poner metodos get para no dar acceso directo y que lo 
-	// pueda cambiar por error desde otro lado
-	bool GraficosCPC; // Indica si se usan los datos del archivo GraficosCPC
-			  // o del GraficosVGA
-			  // En ambos casos, son de 8 bits
+	int idioma;
+	bool GraficosCPC;
 	
-	UINT8 buffer[8192*2];			// buffer para mezclar los sprites y para buscar las rutas
-	UINT8 *roms;				// puntero a las roms originales
-	Logica *logica;				// objeto que se encarga de gestionar la l??gica del juego
+	UINT8 buffer[8192*2];
+	UINT8 *roms;
+	Logica *logica;
 	
-	Pergamino *pergamino;			// pergamino para la presentación y el final
-	Marcador *marcador;			// marcador del juego
-	MotorGrafico *motor;			// motor gráfico
+	Pergamino *pergamino;
+	Marcador *marcador;
+	MotorGrafico *motor;
 
-	Sprite *sprites[numSprites];		// sprites del juego
-	Puerta *puertas[numPuertas];		// puertas del juego
-	Objeto *objetos[numObjetos];		// objetos del juego
-	Personaje *personajes[numPersonajes];	// personajes del juego
+	Sprite *sprites[numSprites];
+	Puerta *puertas[numPuertas];
+	Objeto *objetos[numObjetos];
+	Personaje *personajes[numPersonajes];
 
-	bool pausa;				// indica si el juego está pausado
-
-	bool modoInformacion;			// modo de información del juego
-	bool cambioModoInformacion; 		// se ha cambiado el estado
-	InfoJuego *infoJuego;			// objeto para mostrar información interna del juego
+	bool modoInformacion;
+	bool cambioModoInformacion;
+	InfoJuego *infoJuego;
 	Abadia::STATES currentState;
-	//int firstTime;	
 	int seleccionado;
 	ConfigReader *configReader;
 	int selectedSlot;
-
-
-private:
-	bool cargar(int slot);
-	void save(int slot);
-	
-    /////////////////////////////////////////////////////////
-	void pintaMenuCargar(int seleccionado,bool efecto=false);
-
-	bool menuCargar2();
-	void pintaMenuGrabar(int seleccionado,bool efecto=false);
-	bool menuGrabar2();
-	bool menuIntroduccion(void);
-	void pintaMenuTeclado(int seleccionado);
-	bool menuTeclado(void);
-	void pintaMenuCamaras(int seleccionado);
-	bool menuCamaras(void);
-	void pintaMenuMejoras(int seleccionado);
-	bool menuMejoras(void);
-	void pintaMenuTutorial(int seleccionado,bool efecto=false);
-	bool menuTutorial(void);
-	void pintaMenuAyuda(int seleccionado,bool efecto=false);
-	bool menuAyuda(void);
-	void pintaMenuIdioma(int seleccionado,bool efecto=false);
-	bool menuIdioma(void);
-	void pintaMenuPrincipal(int seleccionado,bool efecto=false);
-	bool menu(void);
-    ////////////////////////////////////////////////////////////
-    
-	void cambioCPC_VGA(void);
-	void compruebaCambioCPC_VGA(void);
-	bool compruebaMenu(void);
-//	void ReiniciaPantalla(void); // lo ponemos publico para que cada vez que se cambie la paleta se reinicie
-	// es muy abadia, y muy cpc 
-	// pero no tiene sentido tenerlo en una clase sola
-	// ni en system
-	// pixel packing
-	inline int packPixelMode1(int oldByte, int pixel, int color)
-	{
-		assert ((pixel >= 0) && (pixel < 4));
-		assert ((color >= 0) && (color < 4));
-
-		// find out the 2 bits of the new pixel
-		int mask = 0x88;
-		mask = mask >> pixel;
-
-		// save the other pixels
-		oldByte = (oldByte & (~mask)) & 0xff;
-
-		// array with the four colors
-		static int byteColors[4] = { 0x00, 0xf0, 0x0f, 0xff };
-
-		// combines the other pixels with the new pixel
-		return oldByte | (byteColors[color] & mask);
-	}
+	bool showingMenu;
+	bool activeGame;
 
 public:
-	void ReiniciaPantalla(bool mostrarDiaYMomentoDia=true); // lo ponemos publico para que cada vez que se cambie la paleta se reinicie
-	// es muy abadia, y muy cpc 
-	// pero no tiene sentido tenerlo en una clase sola
-	// ni en system
+	// inicialización y limpieza
+	Juego(UINT8 *romData);
+	~Juego();
+
+	// bucle principal del juego
+	void preRun();
+	void run();
+	void changeState(Abadia::STATES newState);
+	void ReiniciaPantalla(bool mostrarDiaYMomentoDia=true);
+	void limpiaAreaJuego(int color);
+
+	// estados gestionados desde Abbey
+	void muestraPresentacion();
+	void muestraIntroduccion();
+	void muestraFinal();
+	bool muestraPantallaFinInvestigacion();
+	bool menu();
+	bool menuCargar2();
+	bool menuGrabar2();
+	bool menuIdioma();
+	void askForNewGame();
+	void askToContinue();
+	void askExit();
+
+	bool estaPausado() { return pausaPorEstarEnMenus; };
+
 	inline int unpackPixelMode1(int data, int pixel)
 	{
 		return (((data >> (3 - pixel)) & 0x01) << 1) | ((data >> (7 - pixel)) & 0x01);
 	}
 
-
-	void muestraFinal();
-	void limpiaAreaJuego(int color);
-
-	// bucle principal del juego
-	void preRun();
-	void run();
-	void run2();
-	void stateMachine();
-	void changeState(Abadia::STATES newState);
-
-	// inicialización y limpieza
-	Juego(UINT8 *romData);
-	~Juego();
-	bool showingMenu;
-	bool activeGame;
-
 protected:
-	void muestraPresentacion();
-	void muestraIntroduccion();
-	bool muestraPantallaFinInvestigacion();
-
 	void creaEntidadesJuego();
-	
 	void actualizaLuz();
 	void generaGraficosFlipeados();
 	void flipeaGraficos(UINT8 *tablaFlip, UINT8 *src, UINT8 *dest, int ancho, int bytes);
@@ -194,17 +129,32 @@ protected:
 	bool readConfigFile();
 	bool saveConfigFile();
 	string getDateAndTime();
-	
-	void menuAsk();	
-	void askForNewGame();
+
 	void askForNewGameLogic();
-
-	void askToContinue();
 	void askToContinueLogic();
-
-	void askExit();
 	void askExitLogic();
 
+	void pintaMenuCargar(int seleccionado, bool efecto=false);
+	void pintaMenuGrabar(int seleccionado, bool efecto=false);
+	void pintaMenuIdioma(int seleccionado, bool efecto=false);
+	void pintaMenuPrincipal(int seleccionado, bool efecto=false);
+
+	bool cargar(int slot);
+	void save(int slot);
+
+	void cambioCPC_VGA();
+
+	inline int packPixelMode1(int oldByte, int pixel, int color)
+	{
+		assert ((pixel >= 0) && (pixel < 4));
+		assert ((color >= 0) && (color < 4));
+
+		int mask = 0x88;
+		mask = mask >> pixel;
+		oldByte = (oldByte & (~mask)) & 0xff;
+		static int byteColors[4] = { 0x00, 0xf0, 0x0f, 0xff };
+		return oldByte | (byteColors[color] & mask);
+	}
 };
 
 }

@@ -45,7 +45,7 @@ namespace Abadia {
 		Pasos = 10,
 		Tintineo = 11,
 
-		Count // para poder obtener el tamaño facilmente
+		Count
 	};
 
 	enum class STATES: UINT8 {
@@ -112,7 +112,7 @@ struct System
 	bool haveHapticDevice = false;
 	int w = WINDOW_WIDTH;
 	int h = WINDOW_HEIGHT;
-        Uint32 minimumFrameTime = GAME_FRAME_TIME;
+	Uint32 minimumFrameTime = GAME_FRAME_TIME;
 
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
 	const Uint32 rmask = 0xff000000;
@@ -127,7 +127,7 @@ struct System
 #endif
 
 	SDL_Surface *surface;
-	SDL_Rect dstrect; // para mantener proporción al escalar
+	SDL_Rect dstrect;
 	SDL_Renderer *renderer;
 	SDL_Texture *texture;
 	SDL_Window *window;
@@ -150,6 +150,13 @@ struct System
 	void quit();
 	void stopSound(Abadia::SONIDOS i);
 	void playSound(Abadia::SONIDOS i, bool loop=false);
+
+	// Pausa todos los canales de sonido activos y los reanuda.
+	// Usar al entrar/salir de menús para no cortar los sonidos
+	// de juego bruscamente sino congelarlos.
+	void pauseSounds();
+	void resumeSounds();
+
 	void updateScreen();
 	void handleEvents();
 	void hapticFeedback();
@@ -162,8 +169,8 @@ struct System
 	void print(const std::string message);
 
 	void initPaleta(UINT8 *dirPaleta) { _paleta=new Paleta(dirPaleta); }
-	void setGamePalette(UINT8 pal) { _paleta->setGamePalette(pal,surface->format); }; // todo, deberia todos ser del tipo setIntro
-	void setIntroPalette(void) { _paleta->setGamePalette(5,surface->format); }; // todo, deberia todos ser del tipo setIntro
+	void setGamePalette(UINT8 pal) { _paleta->setGamePalette(pal,surface->format); }
+	void setIntroPalette(void) { _paleta->setGamePalette(5,surface->format); }
 								    
 	void setRGBPixel(UINT32 x, UINT32 y, UINT32 color) {
 		assert((x >= 0) && (x < 320));
@@ -175,7 +182,6 @@ struct System
 	UINT32 getPixel(UINT32 x, UINT32 y) {
 		assert((x >= 0) && (x < 320));
 		assert((y >= 0) && (y < 200));
-
 		return _pixels[y * _pitch_pixels + x];
 	}
 								   
@@ -184,37 +190,35 @@ struct System
 		assert((y >= 0) && (y < 200));
 		assert((color >= 0) && (color < 256));
 		_pixels[y * _pitch_pixels + x] = _paleta->rgb[color];
-	};
+	}
 
 	void fillMode1Rect(int x, int y, int width, int height, int color) {
 		assert((x >= 0) && (x < 320));
 		assert((y >= 0) && (y < 200));
 		assert((color >= 0) && (color < 256)); 
 		assert(((x + width) <= 320) && ((y + height) <= 200));
-
 		fillRect(x, y, width, height, color);
 	}
+
 	private:
 	void fillRect(int x, int y, int width, int height, int color)
 	{
 		int xLimit = width + x - 1;
-
 		for (; height > 0; height--, y++){
 			if (xLimit < x) {
 				std::swap<int>(x, xLimit);
 			}
-
 			for (int xx = x; xx <= xLimit; xx++){
 				setPixel(xx, y, color);
 			}
 		}
-	};
+	}
 
 	UINT32 *_pixels;
 	UINT32 _pitch_pixels;
 	Paleta *_paleta;	
-
 };
+
 extern System *const sys;
 
 #endif

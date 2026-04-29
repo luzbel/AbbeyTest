@@ -28,7 +28,6 @@ void System::init()
 	windowFlags = windowFlags | SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN | SDL_WINDOW_RESIZABLE;
 #endif
 
-	// Joypad
 	if( SDL_NumJoysticks() < 1 ){		
 		print("Warning: controller not found.\n");		
 	}
@@ -58,8 +57,7 @@ void System::init()
 #endif
 
 #ifdef RG350
-	// soft haptic response
-	if (SDL_HapticRumblePlay(hapticDevice, 0.30f /* Strength */, 10 /* Time */) < 0){		
+	if (SDL_HapticRumblePlay(hapticDevice, 0.30f, 10) < 0){		
         print("Warning: SDL_HapticRumbleStop failed\n");
 	}
 #endif
@@ -74,19 +72,13 @@ void System::init()
 		SDL_GetWindowSize(window, &window_w, &window_h);
 		float scale_x = (float)window_w / TEXTURE_WIDTH;
 		float scale_y = (float)window_h / TEXTURE_HEIGHT;
-
-		float scale = fminf(scale_x, scale_y); // Escala uniforme más grande que cabe
+		float scale = fminf(scale_x, scale_y);
 
 		dstrect.w = (int)(TEXTURE_WIDTH * scale);
 		dstrect.h = (int)(TEXTURE_HEIGHT * scale);
-
 		dstrect.x = (window_w - dstrect.w) / 2;
 		dstrect.y = (window_h - dstrect.h) / 2;
-//	fprintf(stderr,"size  w %d h %d scale %f dw %d dh %d dx %d dy %d\n",
-//					window_w, window_h, scale, 
-//					dstrect.w , dstrect.h, dstrect.x , dstrect.y ); fflush(stderr);
-}
-
+	}
 #endif
 	
 	if (window == NULL){		
@@ -103,11 +95,10 @@ void System::init()
 		fprintf(stderr,"ERROR: Mix_OpenAudio %s.\n",SDL_GetError());
 	}
 	int nc=Mix_AllocateChannels(static_cast<UINT8>(Abadia::SONIDOS::Count));
-      	if (nc!=static_cast<UINT8>(Abadia::SONIDOS::Count)) {
+	if (nc!=static_cast<UINT8>(Abadia::SONIDOS::Count)) {
 		fprintf(stderr,"solo %d canales\n",nc); fflush(stderr);
 	}
 
-	//for (size_t i=0;i<std::size(Abadia::SOUND_FILE_NAMES);i++) esto requiere std=c++17
 	for (auto i=0;i<static_cast<UINT8>(Abadia::SONIDOS::Count);i++)
 	{
 		fprintf(stderr,"loadwav %s\n", Abadia::SOUND_FILE_NAMES[i]); fflush(stderr);
@@ -118,7 +109,6 @@ void System::init()
 	}
 
 	surface = SDL_CreateRGBSurface(0, TEXTURE_WIDTH,TEXTURE_HEIGHT,32, rmask, gmask,bmask, amask);
-
 	if (surface == NULL){		
 	        print ("Error: Can't create surface.\n");
 	}
@@ -126,7 +116,6 @@ void System::init()
 	_pixels=static_cast<Uint32*>(surface->pixels);
 	_pitch_pixels = surface->pitch / sizeof(UINT32);
 
-//fprintf(stderr,"SDL_GetPixelFormatName %s\n",(char *)SDL_GetPixelFormatName(surface->format->format)); fflush(stderr);
 	texture = SDL_CreateTextureFromSurface(renderer, surface);	
 	SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
 
@@ -137,11 +126,25 @@ void System::init()
 #endif
 }
 
+void System::pauseSounds()
+{
+	// Pausa todos los canales activos sin detenerlos.
+	// Mix_Pause(-1) actúa sobre todos los canales asignados.
+	Mix_Pause(-1);
+}
+
+void System::resumeSounds()
+{
+	// Reanuda todos los canales que estuvieran pausados.
+	// Los canales que ya estaban parados (halt) no se ven afectados.
+	Mix_Resume(-1);
+}
+
 void System::hapticFeedback()
 {
 	if (!haveHapticDevice) return;
     
-	if (SDL_HapticRumblePlay(hapticDevice, 0.80f /* Strength */, 200 /* Time */) < 0){
+	if (SDL_HapticRumblePlay(hapticDevice, 0.80f, 200) < 0){
 		print("Error: SDL_HapticRumblePlay failed\n");
 	}
 }
@@ -167,15 +170,10 @@ void System::updateScreen()
 	if (interruptCounter % 6 == 0 )
 	{
 #endif
-	// Test this line with all the supported platforms. Fixes video problems with 
-	// the raspberry pi with KMSDRM
 	SDL_RenderClear(renderer);
 #ifdef ANDROID
 	SDL_RenderCopy(renderer, texture, NULL, NULL);
 #else
-	// ponemos fondo negro para que si al escalar
-	// quedan bandas sin rellenar no queden en blanco
-	// que no casa con el fondo real del juego
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 	SDL_RenderCopy(renderer, texture, NULL, &dstrect);
 #endif
@@ -191,12 +189,14 @@ void System::stopSound(Abadia::SONIDOS index)
 	assert(i < static_cast<int>(Abadia::SONIDOS::Count));
 	Mix_HaltChannel(i);
 }
+
 void System::playSound(Abadia::SONIDOS index, bool loop)
 {
 	auto i=static_cast<int>(index);
 	assert(i < static_cast<int>(Abadia::SONIDOS::Count));
 	Mix_PlayChannel(i, sounds[i], loop);
 }
+
 void System::handleEvents()
 {
 	SDL_Event event;	
@@ -230,23 +230,23 @@ void System::handleEvents()
 					pad.down = true;
 					break;				
 #if RG350                    
-				case SDLK_LSHIFT: //Y (S)
+				case SDLK_LSHIFT:
 #else
                 case SDLK_RETURN:
 #endif		
 					pad.button3 = true;
 					break;
 #if RG350                    
-				case SDLK_LALT: //B (N)
+				case SDLK_LALT:
 #else
                 case SDLK_n:
 #endif                    
 					pad.button4 = true;
 					break;	
-				case SDLK_SPACE: //X (Drop)
+				case SDLK_SPACE:
 					pad.button1 = true;
 					break;
-				case SDLK_LCTRL: //A (?)
+				case SDLK_LCTRL:
 					pad.button2 = true;
 					break;
 #if RG350
@@ -277,23 +277,23 @@ void System::handleEvents()
 					pad.down = false;
 					break;
 #if RG350                    
-				case SDLK_LSHIFT: //Y (S)
+				case SDLK_LSHIFT:
 #else
                 case SDLK_RETURN:
 #endif                    
 					pad.button3 = false;
 					break;
 #if RG350                    
-				case SDLK_LALT: //B (N)
+				case SDLK_LALT:
 #else
                 case SDLK_n:
 #endif 
 					pad.button4 = false;
 					break;	
-				case SDLK_SPACE: //X (Drop)
+				case SDLK_SPACE:
 					pad.button1 = false;
 					break;
-				case SDLK_LCTRL: //A (?)
+				case SDLK_LCTRL:
 					pad.button2 = false;
 					break;
 #if RG350
@@ -309,7 +309,6 @@ void System::handleEvents()
 		}
 		else if (event.type == SDL_CONTROLLERBUTTONDOWN)
 		{
-			
 			switch(ev.button)
 			{
 				case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
@@ -324,22 +323,22 @@ void System::handleEvents()
 				case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
 					pad.down = true;
 					break;
-				case SDL_CONTROLLER_BUTTON_A: //Y (S)
+				case SDL_CONTROLLER_BUTTON_A:
 					pad.button3 = true;
 					break;
-				case SDL_CONTROLLER_BUTTON_X: //B (N)
+				case SDL_CONTROLLER_BUTTON_X:
 					pad.button4 = true;
 					break;	
-				case SDL_CONTROLLER_BUTTON_Y: //X (Drop)
+				case SDL_CONTROLLER_BUTTON_Y:
 					pad.button1 = true;
 					break;
-				case SDL_CONTROLLER_BUTTON_B: //A (?)
+				case SDL_CONTROLLER_BUTTON_B:
 					pad.button2 = true;
 					break;
 				case SDL_CONTROLLER_BUTTON_START:
 					pad.start = true;
 					break;
-				case SDL_CONTROLLER_BUTTON_BACK :
+				case SDL_CONTROLLER_BUTTON_BACK:
 					informationMode = !informationMode;					
 					break;		
 				default:
@@ -362,48 +361,40 @@ void System::handleEvents()
 				case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
 					pad.down = false;
 					break;
-				case SDL_CONTROLLER_BUTTON_A: //Y (S)
+				case SDL_CONTROLLER_BUTTON_A:
 					pad.button3 = false;
 					break;
-				case SDL_CONTROLLER_BUTTON_X: //B (N)
+				case SDL_CONTROLLER_BUTTON_X:
 					pad.button4 = false;
 					break;	
-				case SDL_CONTROLLER_BUTTON_Y: //X (Drop)
+				case SDL_CONTROLLER_BUTTON_Y:
 					pad.button1 = false;
 					break;
-				case SDL_CONTROLLER_BUTTON_B: //A (?)
+				case SDL_CONTROLLER_BUTTON_B:
 					pad.button2 = false;
 					break;
 				case SDL_CONTROLLER_BUTTON_START:
 					pad.start = false;
 					break;
-				case SDL_CONTROLLER_BUTTON_BACK :					
+				case SDL_CONTROLLER_BUTTON_BACK:
 				default:
 					break;
 			}
 		}
-		//else if (event.type == SDL_WINDOWEVENT_SIZE_CHANGED)
-		else if (event.type ==  SDL_WINDOWEVENT && 
+		else if (event.type == SDL_WINDOWEVENT && 
 				(event.window.event == SDL_WINDOWEVENT_RESIZED ||
-				event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
-			)
+				event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED))
 		{
 			int window_w, window_h=0;
 			SDL_GetWindowSize(window, &window_w, &window_h);
 			float scale_x = (float)window_w / TEXTURE_WIDTH;
 			float scale_y = (float)window_h / TEXTURE_HEIGHT;
-
-			float scale = fminf(scale_x, scale_y); // Escala uniforme más grande que cabe
+			float scale = fminf(scale_x, scale_y);
 
 			dstrect.w = (int)(TEXTURE_WIDTH * scale);
 			dstrect.h = (int)(TEXTURE_HEIGHT * scale);
-
 			dstrect.x = (window_w - dstrect.w) / 2;
 			dstrect.y = (window_h - dstrect.h) / 2;
-
-//			fprintf(stderr,"size changed w %d h %d scale %f dw %d dh %d dx %d dy %d\n",
-//					window_w, window_h, scale, 
-//					dstrect.w , dstrect.h, dstrect.x , dstrect.y ); fflush(stderr);
 		}
 	}
 }
@@ -411,23 +402,28 @@ void System::handleEvents()
 void System::setFastSpeed()
 {
 	minimumFrameTime = SCROLL_FRAME_TIME;
-}	
+}
+
 void System::setNormalSpeed()
 {
 	minimumFrameTime = GAME_FRAME_TIME;
 }
+
 Uint32 System::RGBA(Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 {
 	return SDL_MapRGBA(surface->format, r,g,b,a);
 }
+
 void System::updateTexture()
 {
 	SDL_UpdateTexture(texture, NULL, surface->pixels, surface->pitch);
 }
+
 void System::exitGame()
 {
 	exit = true;
 }
+
 void System::print(const std::string message)
 {
 	#ifdef ANDROID
@@ -449,22 +445,19 @@ void System::initFrame()
 void System::endFrame()
 {
 #ifndef __EMSCRIPTEN__
-	//cap the frame rate
 	if (SDL_GetTicks64() - frameTime < sys->minimumFrameTime) {
 		SDL_Delay(sys->minimumFrameTime - (SDL_GetTicks64() - frameTime));
 	}
 #else
 	if (logicInterrupt) {
-		targetFrameTime+=0x24*(1000./300.); // 300 ints x second, y 36 iteraciones por logica
+		targetFrameTime+=0x24*(1000./300.);
 		if (targetFrameTime<=frameTime) targetFrameTime=SDL_GetTicks64()+5;
 		logicInterrupt=false; 
 		
-		// log IPS 
 		static auto lastLogic = SDL_GetTicks64();
 		static int framesLogic = 0;
 		framesLogic++;
 		if (SDL_GetTicks64() - lastLogic > 1000) {
-			//if (framesLogic!=9) SDL_Log("IPS: %d Debería ser 9", framesLogic);
 			SDL_Log("IPS: %d Debería ser 9", framesLogic);
 			framesLogic = 0;
 			lastLogic = SDL_GetTicks64();
@@ -472,12 +465,10 @@ void System::endFrame()
 	}
 #endif	
 
-	// Log FPS
 	static auto last = SDL_GetTicks64();
 	static int frames = 0;
 	frames++;
 	if (SDL_GetTicks64() - last > 1000) {
-		//if (frames!=60) SDL_Log("FPS: %d", frames);
 		SDL_Log("FPS: %d", frames);
 		frames = 0;
 		last = SDL_GetTicks64();
