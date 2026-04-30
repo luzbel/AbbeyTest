@@ -152,7 +152,7 @@ void Juego::ReiniciaPantalla(bool mostrarDiaYMomentoDia)
 	marcador->decrementaObsequium(0);
 	marcador->limpiaAreaFrases();
 }
-
+/*
 void Juego::pintaMenuCargar(int seleccionado,bool efecto)
 {
 	pintaMenuGrabar(seleccionado,efecto);
@@ -209,6 +209,21 @@ bool Juego::menuCargar2()
 	}
 	return false;
 }
+*/
+bool Juego::menuCargar()
+{
+    if (loadMenu.isEmpty()) {
+        loadMenu.clear();
+        for (int i = 0; i < 7; ++i)
+            loadMenu.add([this, i]() { return saveFile[i]; }, [this, i]() {
+                selectedSlot = i;
+                if (activeGame) changeState(STATES::ASK_CONTINUE);
+                else { logica->inicia(); cargar(i); changeState(STATES::PLAY); }
+            });
+        loadMenu.add([this]() { return textSave[idioma]; }, [this]() { changeState(STATES::MENU); });
+    }
+    return loadMenu.tick(*marcador);
+}
 
 bool Juego::cargar(int slot)
 {	
@@ -257,7 +272,7 @@ string Juego::getDateAndTime()
 	std::string buffAsStdStr = buff;
   	return buffAsStdStr;
 }
-
+/*
 void Juego::askExitLogic()
 {
 	int i = 0;
@@ -335,7 +350,23 @@ void Juego::askExit()
 		marcador->imprimeFrase(noText[idioma], x2, 64, 0, 4);
 	}
 }
+*/
 
+void Juego::askExit()
+{
+    if (askExitMenu.isEmpty()) {
+        askExitMenu.clear();
+        askExitMenu.clear(); askExitMenu.setOrientation(MenuOrientation::HORIZONTAL);
+//        askExitMenu.setPrompt("¿Deseas salir?\nPerderás el progreso actual.");
+        askExitMenu.setPrompt(continueQuestionText[idioma]);
+        askExitMenu.add([this]() { return yesText[idioma]; }, [this]() { sys->exitGame(); });
+        askExitMenu.add([this]() { return noText[idioma]; }, [this]() {
+            changeState(STATES::PLAY); ReiniciaPantalla(); activeGame = true; sys->setNormalSpeed();
+        });
+    }
+    askExitMenu.tick(*marcador);
+}
+/*
 void Juego::askForNewGameLogic()
 {	
 	int i = 0;
@@ -411,7 +442,18 @@ void Juego::askForNewGame()
 		marcador->imprimeFrase(noText[idioma], x2, 64, 0, 4);
 	}
 }
-
+*/
+void Juego::askForNewGame()
+{
+    if (askNewMenu.isEmpty()) {
+        askNewMenu.clear(); askNewMenu.setOrientation(MenuOrientation::HORIZONTAL);
+        askNewMenu.setPrompt(newGameQuestionText[idioma]);
+        askNewMenu.add([this]() { return yesText[idioma]; }, [this]() { logica->inicia(); changeState(STATES::PLAY); ReiniciaPantalla(); });
+        askNewMenu.add([this]() { return noText[idioma]; }, [this]() { changeState(STATES::PLAY); ReiniciaPantalla(); });
+    }
+    askNewMenu.tick(*marcador);
+}
+/*
 void Juego::askToContinueLogic()
 {	
 	int i = 0;
@@ -492,6 +534,19 @@ void Juego::askToContinue()
 		marcador->imprimeFrase(noText[idioma], x2, 64, 0, 4);
 	}
 }
+*/
+void Juego::askToContinue()
+{
+    if (askContMenu.isEmpty()) {
+        askContMenu.clear(); askContMenu.setOrientation(MenuOrientation::HORIZONTAL);
+        askContMenu.setPrompt(continueQuestionText[idioma]);
+        askContMenu.add([this]() { return yesText[idioma]; }, [this]() {
+            logica->inicia(); cargar(selectedSlot); changeState(STATES::PLAY); ReiniciaPantalla();
+        });
+        askContMenu.add([this]() { return noText[idioma]; }, [this]() { changeState(STATES::PLAY); ReiniciaPantalla(); });
+    }
+    askContMenu.tick(*marcador);
+}
 
 void Juego::save(int slot)
 {
@@ -532,7 +587,7 @@ void Juego::save(int slot)
 		elMarcador->imprimeFrase("ERROR: PRESS SPACE", 100, 164, 4, 0);		
 	}
 }
-
+/*
 void Juego::pintaMenuGrabar(int seleccionado,bool efecto)
 {	
 	limpiaAreaJuego(0); 
@@ -602,7 +657,21 @@ bool Juego::menuGrabar2()
 	}
 	return false;	
 }
+*/
+bool Juego::menuGrabar()
+{
+    if (saveMenu.isEmpty()) {
+        saveMenu.clear();
+        for (int i = 0; i < 7; ++i)
+            saveMenu.add([this, i]() { return saveFile[i]; }, [this, i]() {
+                save(i); changeState(STATES::PLAY); ReiniciaPantalla();
+            });
+        saveMenu.add([this]() { return textSave[idioma]; }, [this]() { changeState(STATES::MENU); });
+    }
+    return saveMenu.tick(*marcador);
+}
 
+/*
 void Juego::pintaMenuIdioma(int seleccionado,bool efecto)
 {
 	limpiaAreaJuego(0); 
@@ -656,6 +725,25 @@ bool Juego::menuIdioma()
 	
 	return false;
 }
+*/
+bool Juego::menuIdioma()
+{
+    if (langMenu.isEmpty()) {
+        langMenu.clear();
+        for (int i = 0; i < 8; ++i) {
+            langMenu.add([this, i]() { return textLanguage[i]; }, [this, i]() {
+                idioma = i;
+                std::string d = getDateAndTime();
+                std::string token = "LANGUAGE"; token[4] = '0' + idioma;
+                configReader->setValue(token, d); saveConfigFile();
+                seleccionado = 4; changeState(STATES::MENU);
+            });
+        }
+    }
+    return langMenu.tick(*marcador);
+}
+
+
 /*
 void Juego::pintaMenuPrincipal(int seleccionado,bool efecto)
 {
@@ -802,7 +890,8 @@ bool Juego::menu()
 
 bool Juego::menu()
 {
-    if (!mainMenuReady) {
+    //if (!mainMenuReady) {
+    if (mainMenu.isEmpty()) {
         mainMenu.clear();
         
         // Item 0: Nueva Partida
@@ -851,13 +940,9 @@ bool Juego::menu()
         mainMenu.add([this]() { return principalMenuText[idioma][5]; }, [this]() {
             changeState(Abadia::STATES::ASK_EXIT);
         });
-
-        mainMenuReady = true;
     }
 
-    mainMenu.handleNavigation();
-    mainMenu.draw(*marcador);
-    return mainMenu.handleConfirm();
+    return mainMenu.tick(*marcador);
 }
 
 /////////////////////////////////////////////////////////////////////////////

@@ -3,107 +3,105 @@
 #include <vector>
 #include <functional>
 
-#include "Marcador.h"
 #include "system.h"
+#include "Marcador.h"
+
+enum class MenuOrientation { VERTICAL, HORIZONTAL };
 
 struct MenuEntry {
-    std::function<std::string()> getLabel;      // Se evalúa en cada frame
+    std::function<std::string()> getLabel;
     std::function<void()> onConfirm;
-    std::function<bool()> isEnabled = [](){ return true; }; // Opcional: para items grises
-
-    // Constructor explícito: resuelve el error de deducción con initializer lists
-    MenuEntry(std::function<std::string()> label,
-		    std::function<void()> confirm,
-		    std::function<bool()> enabled = [](){ return true; })
-	    : getLabel(std::move(label)),
-	    onConfirm(std::move(confirm)),
-	    isEnabled(std::move(enabled)) {}
+    std::function<bool()> isEnabled;
+    MenuEntry(std::function<std::string()> l, std::function<void()> a, std::function<bool()> e = [](){return true;})
+        : getLabel(std::move(l)), onConfirm(std::move(a)), isEnabled(std::move(e)) {}
 };
 
 class SimpleMenu {
     std::vector<MenuEntry> entries;
     size_t selected = 0;
-    const int startY = 32;
-    const int lineHeight = 16;
+    MenuOrientation orientation = MenuOrientation::VERTICAL;
+    std::string prompt;
+    const int lineSpacing = 16;
 
 public:
-    void clear() { entries.clear(); selected = 0; }
-    
-    // Acepta un callback que devuelve el texto actual
-    void add(std::function<std::string()> getText, 
-             std::function<void()> action, 
-             std::function<bool()> enabled = [](){ return true; }) {
+    void clear() { entries.clear(); selected = 0; prompt.clear(); }
+    void setOrientation(MenuOrientation o) { orientation = o; }
+    void setPrompt(const std::string& p) { prompt = p; }
+
+    void add(std::function<std::string()> getText, std::function<void()> action, std::function<bool()> enabled = [](){return true;}) {
         entries.emplace_back(std::move(getText), std::move(action), std::move(enabled));
     }
-/*
-    void handleNavigation() {
-        if (entries.empty()) return;
-        if (sys->pad.up)   { sys->pad.up = false;   selected--; }
-        if (sys->pad.down) { sys->pad.down = false; selected++; }
-        
-        size_t max = entries.size() - 1;
-        if (selected > max) selected = 0;
-        else if (selected < 0) selected = max;
 
-        // Saltar items deshabilitados al navegar
-        while (!entries[selected].isEnabled()) {
-            selected = (selected + 1) % entries.size();
-            // Evita bucle infinito si todos están deshabilitados
-            bool allDisabled = true;
-            for (const auto& e : entries) if (e.isEnabled()) { allDisabled = false; break; }
-            if (allDisabled) break;
-        }
-    } 
-    */
-    void handleNavigation() {
-        if (entries.empty()) return;
+    // ÚNICO PUNTO DE EJECUCIÓN: Input + Wrap + Confirm + Draw. Devuelve true al seleccionar.
+    bool tick(Abadia::Marcador& marcador) {
+        if (entries.empty()) return false;
+
+        // 1. Navegación
         int dir = 0;
-        if (sys->pad.up)   { sys->pad.up = false; dir = -1; }
-        if (sys->pad.down) { sys->pad.down = false; dir = 1; }
+        if (orientation == MenuOrientation::VERTICAL) {
+            if (sys->pad.up)   { dir = -1; sys->pad.up = false; }
+            if (sys->pad.down) { dir =  1; sys->pad.down = false; }
+        } else {
+            if (sys->pad.left)  { dir = -1; sys->pad.left = false; }
+            if (sys->pad.right) { dir =  1; sys->pad.right = false; }
+        }
 
         if (dir != 0) {
-            int next = selected;
-            int count = static_cast<int>(entries.size());
-
-            // Recorre como máximo 'count' posiciones en la dirección elegida
+            int next = selected + dir;
+            int count = entries.size();
             for (int i = 0; i < count; ++i) {
-                next += dir;
                 if (next >= count) next = 0;
                 else if (next < 0) next = count - 1;
-
-                if (entries[next].isEnabled()) {
-                    selected = next;
-                    return; // Encontrado, salir
-                }
+                if (entries[next].isEnabled()) { selected = next; break; }
+                next += dir;
             }
-            // Si todas las opciones están desactivadas, se queda en la última evaluada
-            // (evita bucles infinitos y mantiene el cursor estable)
         }
-    }
 
-    bool handleConfirm() {
+        // 2. Confirmación
         if (BUTTON_YES) {
             BUTTON_YES = false;
-            if (selected >= 0 && selected < entries.size() && entries[selected].isEnabled()) {
+            if (entries[selected].isEnabled()) {
                 entries[selected].onConfirm();
                 return true;
             }
         }
+
+        // 3. Dibujado (fondo ya limpio por changeState)
+        int y = prompt.empty() ? 48 : 32;
+        if (!prompt.empty()) {
+            size_t nl = prompt.find('\n');
+            std::string l1 = prompt.substr(0, nl);
+            std::string l2 = nl != std::string::npos ? prompt.substr(nl+1) : "";
+            int x = (320 - l1.length() * 8) >> 1;
+            marcador.imprimeFrase(l1, x, y, 4, 0);
+            if (!l2.empty()) {
+                x = (320 - l2.length() * 8) >> 1;
+                marcador.imprimeFrase(l2, x, y + 12, 4, 0);
+                y += 24;
+            } else y += 20;
+        }
+
+        if (orientation == MenuOrientation::VERTICAL) {
+            for (size_t i = 0; i < entries.size(); ++i) {
+                std::string txt = entries[i].getLabel();
+                size_t x = (320 - txt.length() * 8) >> 1;
+                bool isSel = (i == selected);
+                bool enabled = entries[i].isEnabled();
+                marcador.imprimeFrase(txt, x, y + i * lineSpacing, isSel ? 0 : (enabled ? 4 : 5), isSel ? 4 : 0);
+            }
+        } else {
+            int totalW = 0;
+            for (auto& e : entries) totalW += e.getLabel().length() * 8 + 40;
+            int xCursor = (320 - totalW) >> 1;
+            for (size_t i = 0; i < entries.size(); ++i) {
+                std::string txt = entries[i].getLabel();
+                bool isSel = (i == selected);
+                bool enabled = entries[i].isEnabled();
+                marcador.imprimeFrase(txt, xCursor, y, isSel ? 0 : (enabled ? 4 : 5), isSel ? 4 : 0);
+                xCursor += txt.length() * 8 + 40;
+            }
+        }
         return false;
     }
-
-    void draw(Abadia::Marcador& marcador) const {
-        for (size_t i = 0; i < entries.size(); ++i) {
-            std::string txt = entries[i].getLabel();
-            int x = (320 - txt.length() * 8) >> 1;
-            bool isSel = (i == selected);
-            bool enabled = entries[i].isEnabled();
-            
-            // Color 0=fondo/4=texto (normal), 5=gris (deshabilitado)
-            int fg = isSel ? 0 : (enabled ? 4 : 5);
-            int bg = isSel ? 4 : 0;
-            
-            marcador.imprimeFrase(txt, x, startY + i * lineHeight, fg, bg);
-        }
-    }
+    bool isEmpty() const { return entries.empty(); }
 };

@@ -57,9 +57,11 @@ private:
 	bool mute;
 	unsigned short slot;
 	bool pausaPorEstarEnMenus;
-	SimpleMenu mainMenu;
+	//SimpleMenu mainMenu, langMenu, askExitMenu;
+	SimpleMenu mainMenu, loadMenu, saveMenu, langMenu;
+	SimpleMenu askNewMenu, askContMenu, askExitMenu;
 	//bool menuInitialized=false;
-	bool mainMenuReady=false;
+	//bool mainMenuReady=false;
 public:		
 	int idioma;
 	bool GraficosCPC;
@@ -105,8 +107,8 @@ public:
 	void muestraFinal();
 	bool muestraPantallaFinInvestigacion();
 	bool menu();
-	bool menuCargar2();
-	bool menuGrabar2();
+	bool menuCargar();
+	bool menuGrabar();
 	bool menuIdioma();
 	void askForNewGame();
 	void askToContinue();

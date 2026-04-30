@@ -243,10 +243,10 @@ void Abbey::logic()
             _game->menu();
             break;
         case STATES::LOAD:
-            _game->menuCargar2();
+            _game->menuCargar();
             break;
         case STATES::SAVE:
-            _game->menuGrabar2();
+            _game->menuGrabar();
             break;
         case STATES::SCROLL:
             _game->muestraIntroduccion();
