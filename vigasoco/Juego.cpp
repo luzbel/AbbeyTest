@@ -939,8 +939,14 @@ bool Juego::menu()
             activeGame = true;
         }, [this]() { return activeGame; });
 
-        // Item 5: Salir
+        // Item 5: Alternar entre gráficos VGA y CPC
         mainMenu.add([this]() { return principalMenuText[idioma][5]; }, [this]() {
+	    cambioCPC_VGA();
+	    if (activeGame) changeState(Abadia::STATES::PLAY);
+        });
+
+        // Item 6: Salir
+        mainMenu.add([this]() { return principalMenuText[idioma][6]; }, [this]() {
             changeState(Abadia::STATES::ASK_EXIT);
         });
     }

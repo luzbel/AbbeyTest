@@ -20,15 +20,16 @@ enum LANGUAGE
 // Usamos literales UTF-8 explícitos para máxima compatibilidad multiplataforma
 // (GCC, Clang, Emscripten, etc. los soportan bien)
 
-const std::string principalMenuText[TOTAL_LANGUAGES][6] =
+const std::string principalMenuText[TOTAL_LANGUAGES][7] =
 {
 	{	// Castellano
-		u8"NUEVA PARTIDA",
-		u8"CARGAR",
-		u8"GUARDAR",
-		u8"IDIOMA",
-		u8"CONTINUAR",
-		u8"SALIR"
+		u8"0 NUEVA PARTIDA",
+		u8"1 CARGAR",
+		u8"2 GUARDAR",
+		u8"3 IDIOMA",
+		u8"4 CONTINUAR",
+		u8"5 GRÁFICOS VGA-CPC",
+		u8"6 SALIR"
 	},
 	{	// English
 		u8"NEW GAME",
@@ -36,6 +37,7 @@ const std::string principalMenuText[TOTAL_LANGUAGES][6] =
 		u8"SAVE",
 		u8"LANGUAGE",
 		u8"CONTINUE",
+		u8"GRAPHICS VGA-CPC",
 		u8"EXIT"
 	},
 	{	// Portugués Brasil
@@ -44,6 +46,7 @@ const std::string principalMenuText[TOTAL_LANGUAGES][6] =
 		u8"SALVAR",
 		u8"IDIOMA",
 		u8"CONTINUAR",
+		u8"GRAPHICS VGA-CPC",
 		u8"SAIR"
 	},
 	{	// Catalán
@@ -52,6 +55,7 @@ const std::string principalMenuText[TOTAL_LANGUAGES][6] =
 		u8"DESA",
 		u8"IDIOMA",
 		u8"CONTINUA",
+		u8"GRAPHICS VGA-CPC",
 		u8"SORTIR"
 	},
 	{	// Gallego
@@ -60,6 +64,7 @@ const std::string principalMenuText[TOTAL_LANGUAGES][6] =
 		u8"GARDAR",
 		u8"LINGUA",
 		u8"CONTINUAR",
+		u8"GRAPHICS VGA-CPC",
 		u8"SAIR"
 	},
 	{	// Italiano
@@ -68,6 +73,7 @@ const std::string principalMenuText[TOTAL_LANGUAGES][6] =
 		u8"SALVA",
 		u8"LINGUA",
 		u8"CONTINUA",
+		u8"GRAPHICS VGA-CPC",
 		u8"ESCI"
 	},	
 	{	// Finlandés
@@ -76,6 +82,7 @@ const std::string principalMenuText[TOTAL_LANGUAGES][6] =
 		u8"TALLENNA",
 		u8"KIELI",
 		u8"JATKA",
+		u8"GRAPHICS VGA-CPC",
 		u8"POISTU"
 	},
 	{	// Portugués Europeo
@@ -84,6 +91,7 @@ const std::string principalMenuText[TOTAL_LANGUAGES][6] =
 		u8"GUARDAR",
 		u8"IDIOMA",
 		u8"CONTINUAR",
+		u8"GRAPHICS VGA-CPC",
 		u8"SAIR"
 	}
 };
