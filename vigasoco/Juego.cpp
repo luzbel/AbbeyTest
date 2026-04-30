@@ -802,66 +802,57 @@ bool Juego::menu()
 
 bool Juego::menu()
 {
-    if (!menuInitialized) {
+    if (!mainMenuReady) {
         mainMenu.clear();
-
-        mainMenu.add(principalMenuText[idioma][0], [this]() {
-            if (!activeGame) {
-                changeState(Abadia::STATES::SCROLL);
-                sys->setGamePalette(2);
-                marcador->limpiaAreaMarcador();
-                ReiniciaPantalla();
-                sys->minimumFrameTime = SCROLL_FRAME_TIME;
-                sys->playSound(Abadia::SONIDOS::Inicio);
-                activeGame = true;
-            } else {
-                seleccionado = 1;
-                changeState(Abadia::STATES::ASK_NEW_GAME);
+        
+        // Item 0: Nueva Partida
+        mainMenu.add(
+            [this]() { return principalMenuText[idioma][0]; },
+            [this]() {
+                if (!activeGame) {
+                    changeState(Abadia::STATES::SCROLL);
+                    sys->setGamePalette(2);
+                    marcador->limpiaAreaMarcador();
+                    ReiniciaPantalla();
+                    sys->minimumFrameTime = SCROLL_FRAME_TIME;
+                    sys->playSound(Abadia::SONIDOS::Inicio);
+                    activeGame = true;
+                } else {
+                    changeState(Abadia::STATES::ASK_NEW_GAME);
+                }
             }
-        });
+        );
 
-        mainMenu.add(principalMenuText[idioma][1], [this]() {
+        // Item 1: Cargar
+        mainMenu.add([this]() { return principalMenuText[idioma][1]; }, [this]() {
             checkForSaveFiles();
             changeState(Abadia::STATES::LOAD);
-            sys->setGamePalette(2);
-            marcador->limpiaAreaMarcador();
-            ReiniciaPantalla();
         });
 
-        mainMenu.add(principalMenuText[idioma][2], [this]() {
-            if (activeGame) {
-                checkForSaveFiles();
-                changeState(Abadia::STATES::SAVE);
-                sys->setGamePalette(2);
-                marcador->limpiaAreaMarcador();
-                ReiniciaPantalla();
-            }
-        });
+        // Item 2: Guardar (deshabilitado si no hay partida)
+        mainMenu.add([this]() { return principalMenuText[idioma][2]; }, [this]() {
+            checkForSaveFiles();
+            changeState(Abadia::STATES::SAVE);
+        }, [this]() { return activeGame; });
 
-        mainMenu.add(principalMenuText[idioma][3], [this]() {
+        // Item 3: Idioma
+        mainMenu.add([this]() { return principalMenuText[idioma][3]; }, [this]() {
             seleccionado = idioma;
             changeState(Abadia::STATES::LANGUAGE);
-            sys->setGamePalette(2);
-            marcador->limpiaAreaMarcador();
-            ReiniciaPantalla();
         });
 
-        mainMenu.add(principalMenuText[idioma][4], [this]() {
-            if (activeGame) {
-                changeState(Abadia::STATES::PLAY);
-                activeGame = true;
-            }
-        });
+        // Item 4: Continuar (deshabilitado si no hay partida)
+        mainMenu.add([this]() { return principalMenuText[idioma][4]; }, [this]() {
+            changeState(Abadia::STATES::PLAY);
+            activeGame = true;
+        }, [this]() { return activeGame; });
 
-        mainMenu.add(principalMenuText[idioma][5], [this]() {
-            seleccionado = 1;
+        // Item 5: Salir
+        mainMenu.add([this]() { return principalMenuText[idioma][5]; }, [this]() {
             changeState(Abadia::STATES::ASK_EXIT);
-            sys->setGamePalette(2);
-            marcador->limpiaAreaMarcador();
-            ReiniciaPantalla();
         });
 
-        menuInitialized = true;
+        mainMenuReady = true;
     }
 
     mainMenu.handleNavigation();
@@ -945,6 +936,7 @@ void Juego::changeState(Abadia::STATES newState)
 			// no si veníamos de SCROLL o ENDING que tienen sus propios sonidos
 			if (currentState != STATES::SCROLL && currentState != STATES::ENDING)
 				sys->resumeSounds();
+			ReiniciaPantalla();
 			break;
 
 		case STATES::INTRO:
@@ -958,6 +950,8 @@ void Juego::changeState(Abadia::STATES newState)
 			pausaPorEstarEnMenus = true;
 			// congelamos los sonidos de juego sin detenerlos
 			sys->pauseSounds();
+			sys->setGamePalette(2);
+			limpiaAreaJuego(0);
 			break;
 
 		case STATES::SCROLL:

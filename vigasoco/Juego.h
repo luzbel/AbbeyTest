@@ -58,7 +58,8 @@ private:
 	unsigned short slot;
 	bool pausaPorEstarEnMenus;
 	SimpleMenu mainMenu;
-	bool menuInitialized=false;
+	//bool menuInitialized=false;
+	bool mainMenuReady=false;
 public:		
 	int idioma;
 	bool GraficosCPC;
