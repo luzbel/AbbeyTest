@@ -656,7 +656,7 @@ bool Juego::menuIdioma()
 	
 	return false;
 }
-
+/*
 void Juego::pintaMenuPrincipal(int seleccionado,bool efecto)
 {
 	limpiaAreaJuego(0); 
@@ -794,6 +794,79 @@ bool Juego::menu()
 	}	
 
 	return false;
+}
+*/
+// En Juego.h, añade como miembro privado:
+// SimpleMenu mainMenu;
+// bool menuInitialized = false;
+
+bool Juego::menu()
+{
+    if (!menuInitialized) {
+        mainMenu.clear();
+
+        mainMenu.add(principalMenuText[idioma][0], [this]() {
+            if (!activeGame) {
+                changeState(Abadia::STATES::SCROLL);
+                sys->setGamePalette(2);
+                marcador->limpiaAreaMarcador();
+                ReiniciaPantalla();
+                sys->minimumFrameTime = SCROLL_FRAME_TIME;
+                sys->playSound(Abadia::SONIDOS::Inicio);
+                activeGame = true;
+            } else {
+                seleccionado = 1;
+                changeState(Abadia::STATES::ASK_NEW_GAME);
+            }
+        });
+
+        mainMenu.add(principalMenuText[idioma][1], [this]() {
+            checkForSaveFiles();
+            changeState(Abadia::STATES::LOAD);
+            sys->setGamePalette(2);
+            marcador->limpiaAreaMarcador();
+            ReiniciaPantalla();
+        });
+
+        mainMenu.add(principalMenuText[idioma][2], [this]() {
+            if (activeGame) {
+                checkForSaveFiles();
+                changeState(Abadia::STATES::SAVE);
+                sys->setGamePalette(2);
+                marcador->limpiaAreaMarcador();
+                ReiniciaPantalla();
+            }
+        });
+
+        mainMenu.add(principalMenuText[idioma][3], [this]() {
+            seleccionado = idioma;
+            changeState(Abadia::STATES::LANGUAGE);
+            sys->setGamePalette(2);
+            marcador->limpiaAreaMarcador();
+            ReiniciaPantalla();
+        });
+
+        mainMenu.add(principalMenuText[idioma][4], [this]() {
+            if (activeGame) {
+                changeState(Abadia::STATES::PLAY);
+                activeGame = true;
+            }
+        });
+
+        mainMenu.add(principalMenuText[idioma][5], [this]() {
+            seleccionado = 1;
+            changeState(Abadia::STATES::ASK_EXIT);
+            sys->setGamePalette(2);
+            marcador->limpiaAreaMarcador();
+            ReiniciaPantalla();
+        });
+
+        menuInitialized = true;
+    }
+
+    mainMenu.handleNavigation();
+    mainMenu.draw(*marcador);
+    return mainMenu.handleConfirm();
 }
 
 /////////////////////////////////////////////////////////////////////////////

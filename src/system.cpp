@@ -458,7 +458,7 @@ void System::endFrame()
 		static int framesLogic = 0;
 		framesLogic++;
 		if (SDL_GetTicks64() - lastLogic > 1000) {
-			SDL_Log("IPS: %d Debería ser 9", framesLogic);
+			//SDL_Log("IPS: %d Debería ser 9", framesLogic);
 			framesLogic = 0;
 			lastLogic = SDL_GetTicks64();
 		} 
@@ -469,7 +469,7 @@ void System::endFrame()
 	static int frames = 0;
 	frames++;
 	if (SDL_GetTicks64() - last > 1000) {
-		SDL_Log("FPS: %d", frames);
+		//SDL_Log("FPS: %d", frames);
 		frames = 0;
 		last = SDL_GetTicks64();
 	}

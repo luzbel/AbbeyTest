@@ -18,6 +18,8 @@
 #include "Types.h"
 #include "configreader.h"
 
+#include "SimpleMenu.h"
+
 #include "system.h"
 
 namespace Abadia {
@@ -55,6 +57,8 @@ private:
 	bool mute;
 	unsigned short slot;
 	bool pausaPorEstarEnMenus;
+	SimpleMenu mainMenu;
+	bool menuInitialized=false;
 public:		
 	int idioma;
 	bool GraficosCPC;
@@ -137,7 +141,7 @@ protected:
 	void pintaMenuCargar(int seleccionado, bool efecto=false);
 	void pintaMenuGrabar(int seleccionado, bool efecto=false);
 	void pintaMenuIdioma(int seleccionado, bool efecto=false);
-	void pintaMenuPrincipal(int seleccionado, bool efecto=false);
+//	void pintaMenuPrincipal(int seleccionado, bool efecto=false);
 
 	bool cargar(int slot);
 	void save(int slot);

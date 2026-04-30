@@ -214,7 +214,7 @@ void Abbey::logic()
         sys->informationMode = false;
     }
 
-    SDL_Log("pausa %d\n", _game->estaPausado());
+    //SDL_Log("pausa %d\n", _game->estaPausado());
     if (!_game->estaPausado())
         Abadia::elGestorFrases->procesaFraseActual();
 
