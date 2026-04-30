@@ -358,7 +358,8 @@ void Juego::askExit()
         askExitMenu.clear();
         askExitMenu.clear(); askExitMenu.setOrientation(MenuOrientation::HORIZONTAL);
 //        askExitMenu.setPrompt("¿Deseas salir?\nPerderás el progreso actual.");
-        askExitMenu.setPrompt(continueQuestionText[idioma]);
+//        askExitMenu.setPrompt(continueQuestionText[idioma]);
+	askExitMenu.setPrompt([this]() { return continueQuestionText[idioma]; });
         askExitMenu.add([this]() { return yesText[idioma]; }, [this]() { sys->exitGame(); });
         askExitMenu.add([this]() { return noText[idioma]; }, [this]() {
             changeState(STATES::PLAY); ReiniciaPantalla(); activeGame = true; sys->setNormalSpeed();
@@ -447,7 +448,8 @@ void Juego::askForNewGame()
 {
     if (askNewMenu.isEmpty()) {
         askNewMenu.clear(); askNewMenu.setOrientation(MenuOrientation::HORIZONTAL);
-        askNewMenu.setPrompt(newGameQuestionText[idioma]);
+        //askNewMenu.setPrompt(newGameQuestionText[idioma]);
+	askNewMenu.setPrompt([this]() { return newGameQuestionText[idioma]; });
         askNewMenu.add([this]() { return yesText[idioma]; }, [this]() { logica->inicia(); changeState(STATES::PLAY); ReiniciaPantalla(); });
         askNewMenu.add([this]() { return noText[idioma]; }, [this]() { changeState(STATES::PLAY); ReiniciaPantalla(); });
     }
@@ -539,7 +541,8 @@ void Juego::askToContinue()
 {
     if (askContMenu.isEmpty()) {
         askContMenu.clear(); askContMenu.setOrientation(MenuOrientation::HORIZONTAL);
-        askContMenu.setPrompt(continueQuestionText[idioma]);
+        //askContMenu.setPrompt(continueQuestionText[idioma]);
+	askContMenu.setPrompt([this]() { return continueQuestionText[idioma]; });
         askContMenu.add([this]() { return yesText[idioma]; }, [this]() {
             logica->inicia(); cargar(selectedSlot); changeState(STATES::PLAY); ReiniciaPantalla();
         });

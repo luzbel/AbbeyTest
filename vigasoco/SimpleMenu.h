@@ -20,13 +20,16 @@ class SimpleMenu {
     std::vector<MenuEntry> entries;
     size_t selected = 0;
     MenuOrientation orientation = MenuOrientation::VERTICAL;
-    std::string prompt;
+//    std::string prompt;
+    std::function<std::string()> getPrompt; 
     const int lineSpacing = 16;
 
 public:
-    void clear() { entries.clear(); selected = 0; prompt.clear(); }
+    //void clear() { entries.clear(); selected = 0; prompt.clear(); }
+    void clear() { entries.clear(); selected = 0; getPrompt = nullptr; }
     void setOrientation(MenuOrientation o) { orientation = o; }
-    void setPrompt(const std::string& p) { prompt = p; }
+    //void setPrompt(const std::string& p) { prompt = p; }
+    void setPrompt(std::function<std::string()> p) { getPrompt = std::move(p); }
 
     void add(std::function<std::string()> getText, std::function<void()> action, std::function<bool()> enabled = [](){return true;}) {
         entries.emplace_back(std::move(getText), std::move(action), std::move(enabled));
@@ -67,6 +70,7 @@ public:
         }
 
         // 3. Dibujado (fondo ya limpio por changeState)
+	/*
         int y = prompt.empty() ? 48 : 32;
         if (!prompt.empty()) {
             size_t nl = prompt.find('\n');
@@ -79,7 +83,23 @@ public:
                 marcador.imprimeFrase(l2, x, y + 12, 4, 0);
                 y += 24;
             } else y += 20;
-        }
+        } */
+	// Reemplaza el bloque que empieza por "int y = prompt.empty() ? 48 : 32;"
+	int y = 48;
+	if (getPrompt) {
+		std::string p = getPrompt();
+		y = 32;
+		size_t nl = p.find('\n');
+		std::string l1 = p.substr(0, nl);
+		std::string l2 = nl != std::string::npos ? p.substr(nl+1) : "";
+		int x = (320 - l1.length() * 8) >> 1;
+		marcador.imprimeFrase(l1, x, y, 4, 0);
+		if (!l2.empty()) {
+			x = (320 - l2.length() * 8) >> 1;
+			marcador.imprimeFrase(l2, x, y + 12, 4, 0);
+			y += 24;
+		} else y += 20;
+	}
 
         if (orientation == MenuOrientation::VERTICAL) {
             for (size_t i = 0; i < entries.size(); ++i) {
