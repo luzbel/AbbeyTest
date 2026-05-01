@@ -94,6 +94,7 @@ Juego::Juego(UINT8 *romData)
 	seleccionado = 0;
 	
 	currentState = Abadia::STATES::INTRO; 
+	//previousState = Abadia::STATES::INTRO; 
 	showingMenu = false;
 	activeGame = false;
 	
@@ -109,7 +110,12 @@ Juego::Juego(UINT8 *romData)
 
 	selectedSlot = -1;
 
+	// Leer configuración. Si hay preferencia de CPC la aplicamos ahora
+	// (antes de que creaEntidadesJuego/generaGraficosFlipeados usen los datos).
 	checkConfigFile();
+	// aplicaGraficos copia los datos correctos al buffer activo según GraficosCPC.
+	// Los gráficos flipeados se generan después en preRun().
+	aplicaGraficos(GraficosCPC);
 }
 
 Juego::~Juego()
@@ -140,7 +146,9 @@ Juego::~Juego()
 
 void Juego::ReiniciaPantalla(bool mostrarDiaYMomentoDia)
 {
-	limpiaAreaJuego(12);
+//orig	limpiaAreaJuego(12);
+	limpiaAreaJuego(0);
+	marcador->limpiaAreaMarcador();
 
 	marcador->dibujaMarcador();
 
@@ -152,64 +160,98 @@ void Juego::ReiniciaPantalla(bool mostrarDiaYMomentoDia)
 	marcador->decrementaObsequium(0);
 	marcador->limpiaAreaFrases();
 }
-/*
-void Juego::pintaMenuCargar(int seleccionado,bool efecto)
+
+
+/////////////////////////////////////////////////////////////////////////////
+// helpers gráficos
+/////////////////////////////////////////////////////////////////////////////
+
+// Copia al buffer activo los datos VGA (slot índice 1 del bloque de roms)
+// o los datos CPC (slot índice 2). Actualiza GraficosCPC.
+// NO regenera flipeados ni toca paleta: el llamador decide cuándo hacerlo.
+void Juego::aplicaGraficos(bool usarCPC)
 {
-	pintaMenuGrabar(seleccionado,efecto);
+	const int vgaSize   = 174065;
+	const int flipExtra = 21600;
+
+	// El layout en memoria (establecido en Abbey::filesLoaded) es:
+	//   base                          -> VGA original (slot 0, usado en juego)
+	//   base + vgaSize + flipExtra    -> copia VGA   (slot 1, fuente inmutable)
+	//   base + (vgaSize+flipExtra)*2  -> datos CPC   (slot 2, fuente inmutable)
+	UINT8 *base    = &roms[0x24000-1-0x4000];
+	UINT8 *srcVGA  = base + (vgaSize + flipExtra);
+	UINT8 *srcCPC  = base + (vgaSize + flipExtra) * 2;
+
+	memcpy(base, usarCPC ? srcCPC : srcVGA, vgaSize);
+	GraficosCPC = usarCPC;
 }
 
-bool Juego::menuCargar2()
+// Pinta la imagen de portada en pantalla y establece la paleta intro.
+// Puede llamarse tanto desde muestraPresentacion() como desde
+// repintaEstadoActual() cuando el estado actual es INTRO.
+void Juego::pintaPortada()
 {
-	pintaMenuCargar(seleccionado,true);
-	int i = 0;	
-	if (sys->pad.up)
-	{
-		i--;
-		sys->pad.up = false;
-	}		
-	else if (sys->pad.down)
-	{
-		i++;
-		sys->pad.down = false;
-	}				
-	seleccionado += i;
-	if (seleccionado > 7){
-		seleccionado = 0;
-	}
-	else if (seleccionado < 0){
-		seleccionado = 7;
-	}	
-	pintaMenuCargar(seleccionado,true);
-	
-	if (BUTTON_YES)
-	{
-		BUTTON_YES = false;
-		if (seleccionado != 7)
-		{
-			selectedSlot = seleccionado;
+	sys->setIntroPalette();
+	UINT8 *romsVGA = &roms[0x24000-1-0x4000];
+	UINT8 *screen  = romsVGA + 0x1ADF0;
+	for (int j = 0; j < 200; j++)
+		for (int i = 0; i < 320; i++)
+			sys->setPixel(i, j, *screen++);
+}
 
-			if (activeGame)
-			{
-				changeState(Abadia::STATES::ASK_CONTINUE);
-				ReiniciaPantalla();
-				marcador->limpiaAreaMarcador();	
-				return false;
-			}
+// Repinta la pantalla completa usando la paleta y el contenido adecuados
+// para el estado actual. Se llama tras un cambio de gráficos en caliente.
+void Juego::repintaEstadoActual()
+{
+	switch (currentState)
+	{
+		case STATES::INTRO:
+			pintaPortada();
+			break;
 
-			laLogica->inicia();			
-			cargar(seleccionado);			
-			changeState(Abadia::STATES::PLAY);
+		case STATES::SCROLL:
+			// El pergamino se redibuja completamente en el siguiente tick;
+			// solo necesitamos establecer la paleta correcta.
+			sys->setGamePalette(1);
+			break;
+
+		case STATES::PLAY:
+			sys->resetPalette();
 			ReiniciaPantalla();
-		}
-		else
-		{
-			seleccionado = 4;
-			changeState(Abadia::STATES::MENU);
-		}		
+			motor->compruebaCambioPantalla(true);
+			break;
+
+		case STATES::ENDING:
+			sys->setGamePalette(1);
+			// El pergamino final se redibuja en el siguiente tick.
+			break;
+
+		default:
+			// Menús y diálogos: paleta 2, área de juego limpia.
+			sys->setGamePalette(2);
+			ReiniciaPantalla();
+			break;
 	}
-	return false;
 }
-*/
+
+// Alterna entre gráficos VGA y CPC, guarda la preferencia y repinta.
+void Juego::cambioCPC_VGA()
+{
+	aplicaGraficos(!GraficosCPC);   // alterna y copia datos al buffer activo
+	generaGraficosFlipeados();      // recalcula todos los sprites flipeados
+
+	// Persistir preferencia
+	configReader->setValue("GRAPHICSCPC", GraficosCPC ? "1" : "0");
+	saveConfigFile();
+
+	repintaEstadoActual();
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// menús
+/////////////////////////////////////////////////////////////////////////////
+
 bool Juego::menuCargar()
 {
     if (loadMenu.isEmpty()) {
@@ -272,281 +314,59 @@ string Juego::getDateAndTime()
 	std::string buffAsStdStr = buff;
   	return buffAsStdStr;
 }
-/*
-void Juego::askExitLogic()
-{
-	int i = 0;
-	
-	if (sys->pad.left)
-	{
-		i++;
-		sys->pad.left = false;
-	}		
-	else if (sys->pad.right)
-	{
-		i--;
-		sys->pad.right = false;
-	}				
-	seleccionado += i;
-	if (seleccionado > 1){
-		seleccionado = 0;
-	}
-	else if (seleccionado < 0){
-		seleccionado = 1;
-	}	
-
-	if (BUTTON_YES)
-	{
-		BUTTON_YES = false;
-
-		if (seleccionado == 0){				
-			sys->exitGame();
-		}
-		else if (seleccionado==1)
-		{
-			changeState(Abadia::STATES::PLAY);
-			ReiniciaPantalla();
-			sys->setGamePalette(2);
-			marcador->limpiaAreaMarcador();	
-			ReiniciaPantalla();
-			BUTTON_YES = false;
-
-			sys->setNormalSpeed();
-			activeGame = true;
-		}
-	}	
-}
-
-void Juego::askExit()
-{
-	int x = 0;	
-
-	askExitLogic();
-
-	limpiaAreaJuego(0); 
-	
-	x = 32;
-
-	int delimiterPosition = continueQuestionText[idioma].find("\n");
-	
-	string line1 = continueQuestionText[idioma].substr(0, delimiterPosition);
-	string line2 = continueQuestionText[idioma].substr(delimiterPosition+1,
-		continueQuestionText[idioma].length());
-
-	x = (320 - line1.length()*8)>>1;
-	marcador->imprimeFrase(line1, x, 32, 4, 0);
-	x = (320 - line2.length()*8)>>1;
-	marcador->imprimeFrase(line2, x, 43, 4, 0);
-
-	const int x1 = 140;
-	marcador->imprimeFrase(yesText[idioma], x1, 64, 4, 0);
-	const int x2 = 170;
-	marcador->imprimeFrase(noText[idioma], x2, 64, 4, 0);
-
-	if (seleccionado == 0){
-		marcador->imprimeFrase(yesText[idioma], x1, 64, 0, 4);
-	}
-	else{		
-		marcador->imprimeFrase(noText[idioma], x2, 64, 0, 4);
-	}
-}
-*/
 
 void Juego::askExit()
 {
     if (askExitMenu.isEmpty()) {
         askExitMenu.clear();
-        askExitMenu.clear(); askExitMenu.setOrientation(MenuOrientation::HORIZONTAL);
-//        askExitMenu.setPrompt("¿Deseas salir?\nPerderás el progreso actual.");
-//        askExitMenu.setPrompt(continueQuestionText[idioma]);
-	askExitMenu.setPrompt([this]() { return continueQuestionText[idioma]; });
+        askExitMenu.setOrientation(MenuOrientation::HORIZONTAL);
+        askExitMenu.setPrompt([this]() { return continueQuestionText[idioma]; });
         askExitMenu.add([this]() { return yesText[idioma]; }, [this]() { sys->exitGame(); });
         askExitMenu.add([this]() { return noText[idioma]; }, [this]() {
-            changeState(STATES::PLAY); ReiniciaPantalla(); activeGame = true; sys->setNormalSpeed();
+            changeState(STATES::PLAY);
+            ReiniciaPantalla();
+            activeGame = true;
+            sys->setNormalSpeed();
         });
     }
     askExitMenu.tick(*marcador);
 }
-/*
-void Juego::askForNewGameLogic()
-{	
-	int i = 0;
-	
-	if (sys->pad.left)
-	{
-		i++;
-		sys->pad.left = false;
-	}		
-	else if (sys->pad.right)
-	{
-		i--;
-		sys->pad.right = false;
-	}				
-	seleccionado += i;
-	if (seleccionado > 1){
-		seleccionado = 0;
-	}
-	else if (seleccionado < 0){
-		seleccionado = 1;
-	}	
 
-	if (BUTTON_YES)
-	{
-		BUTTON_YES = false;
-
-		if (seleccionado == 0){				
-			logica->inicia();		
-		}
-
-		changeState(Abadia::STATES::PLAY);
-		ReiniciaPantalla();
-		sys->setGamePalette(2);
-		marcador->limpiaAreaMarcador();	
-		ReiniciaPantalla();
-		BUTTON_YES = false;
-
-		sys->setNormalSpeed();
-		activeGame = true;
-	}
-}
-
-void Juego::askForNewGame()
-{
-	int x = 0;	
-
-	askForNewGameLogic();
-
-	limpiaAreaJuego(0); 
-	
-	x = 32;
-
-	int delimiterPosition = newGameQuestionText[idioma].find("\n");
-	
-	string line1 = newGameQuestionText[idioma].substr(0, delimiterPosition);
-	string line2 = newGameQuestionText[idioma].substr(delimiterPosition+1,
-		newGameQuestionText[idioma].length());
-
-	x = (320 - line1.length()*8)>>1;
-	marcador->imprimeFrase(line1, x, 32, 4, 0);
-	x = (320 - line2.length()*8)>>1;
-	marcador->imprimeFrase(line2, x, 43, 4, 0);
-
-	const int x1 = 140;
-	marcador->imprimeFrase(yesText[idioma], x1, 64, 4, 0);
-	const int x2 = 170;
-	marcador->imprimeFrase(noText[idioma], x2, 64, 4, 0);
-
-	if (seleccionado == 0){
-		marcador->imprimeFrase(yesText[idioma], x1, 64, 0, 4);
-	}
-	else{		
-		marcador->imprimeFrase(noText[idioma], x2, 64, 0, 4);
-	}
-}
-*/
 void Juego::askForNewGame()
 {
     if (askNewMenu.isEmpty()) {
-        askNewMenu.clear(); askNewMenu.setOrientation(MenuOrientation::HORIZONTAL);
-        //askNewMenu.setPrompt(newGameQuestionText[idioma]);
-	askNewMenu.setPrompt([this]() { return newGameQuestionText[idioma]; });
-        askNewMenu.add([this]() { return yesText[idioma]; }, [this]() { logica->inicia(); changeState(STATES::PLAY); ReiniciaPantalla(); });
-        askNewMenu.add([this]() { return noText[idioma]; }, [this]() { changeState(STATES::PLAY); ReiniciaPantalla(); });
+        askNewMenu.clear();
+        askNewMenu.setOrientation(MenuOrientation::HORIZONTAL);
+        askNewMenu.setPrompt([this]() { return newGameQuestionText[idioma]; });
+        askNewMenu.add([this]() { return yesText[idioma]; }, [this]() {
+            logica->inicia();
+            changeState(STATES::PLAY);
+            ReiniciaPantalla();
+        });
+        askNewMenu.add([this]() { return noText[idioma]; }, [this]() {
+            changeState(STATES::PLAY);
+            ReiniciaPantalla();
+        });
     }
     askNewMenu.tick(*marcador);
 }
-/*
-void Juego::askToContinueLogic()
-{	
-	int i = 0;
-	
-	if (sys->pad.left)
-	{
-		i++;
-		sys->pad.left = false;
-	}		
-	else if (sys->pad.right)
-	{
-		i--;
-		sys->pad.right = false;
-	}				
-	seleccionado += i;
-	if (seleccionado > 1){
-		seleccionado = 0;
-	}
-	else if (seleccionado < 0){
-		seleccionado = 1;
-	}	
 
-	if (BUTTON_YES)
-	{
-		BUTTON_YES = false;
-		if (seleccionado == 1) //NO
-		{	
-			changeState(Abadia::STATES::PLAY);
-			ReiniciaPantalla();
-			sys->setGamePalette(2);
-			marcador->limpiaAreaMarcador();	
-			ReiniciaPantalla();
-			BUTTON_YES = false;
-
-			sys->setNormalSpeed();
-			activeGame = true;		
-		}
-		else //YES
-		{	
-			laLogica->inicia();
-			cargar(selectedSlot);						
-			changeState(Abadia::STATES::PLAY);
-			ReiniciaPantalla();
-		}
-	}
-}
-
-void Juego::askToContinue()
-{
-	int x = 0;	
-
-	askToContinueLogic();
-
-	limpiaAreaJuego(0); 
-	
-	x = 32;
-
-	int delimiterPosition = continueQuestionText[idioma].find("\n");
-	
-	string line1 = continueQuestionText[idioma].substr(0, delimiterPosition);
-	string line2 = continueQuestionText[idioma].substr(delimiterPosition+1,
-		continueQuestionText[idioma].length());
-
-	x = (320 - line1.length()*8)>>1;
-	marcador->imprimeFrase(line1, x, 32, 4, 0);
-	x = (320 - line2.length()*8)>>1;
-	marcador->imprimeFrase(line2, x, 43, 4, 0);
-
-	const int x1 = 140;
-	marcador->imprimeFrase(yesText[idioma], x1, 64, 4, 0);
-	const int x2 = 170;
-	marcador->imprimeFrase(noText[idioma], x2, 64, 4, 0);
-
-	if (seleccionado == 0){
-		marcador->imprimeFrase(yesText[idioma], x1, 64, 0, 4);
-	}
-	else{		
-		marcador->imprimeFrase(noText[idioma], x2, 64, 0, 4);
-	}
-}
-*/
 void Juego::askToContinue()
 {
     if (askContMenu.isEmpty()) {
-        askContMenu.clear(); askContMenu.setOrientation(MenuOrientation::HORIZONTAL);
-        //askContMenu.setPrompt(continueQuestionText[idioma]);
-	askContMenu.setPrompt([this]() { return continueQuestionText[idioma]; });
+        askContMenu.clear();
+        askContMenu.setOrientation(MenuOrientation::HORIZONTAL);
+        askContMenu.setPrompt([this]() { return continueQuestionText[idioma]; });
         askContMenu.add([this]() { return yesText[idioma]; }, [this]() {
-            logica->inicia(); cargar(selectedSlot); changeState(STATES::PLAY); ReiniciaPantalla();
+            logica->inicia();
+            cargar(selectedSlot);
+            changeState(STATES::PLAY);
+            ReiniciaPantalla();
         });
-        askContMenu.add([this]() { return noText[idioma]; }, [this]() { changeState(STATES::PLAY); ReiniciaPantalla(); });
+        askContMenu.add([this]() { return noText[idioma]; }, [this]() {
+            changeState(STATES::PLAY);
+            ReiniciaPantalla();
+        });
     }
     askContMenu.tick(*marcador);
 }
@@ -590,145 +410,22 @@ void Juego::save(int slot)
 		elMarcador->imprimeFrase("ERROR: PRESS SPACE", 100, 164, 4, 0);		
 	}
 }
-/*
-void Juego::pintaMenuGrabar(int seleccionado,bool efecto)
-{	
-	limpiaAreaJuego(0); 
-	marcador->limpiaAreaMarcador();	
 
-	int x = 0;
-	const int y = 32;
-	sys->fillMode1Rect(8, 0, 88, 160, 0);
-	for (int i=0;i<7;i++)
-	{
-		if (i == seleccionado){
-			x = (320 - saveFile[i].length()*8)>>1;
-			marcador->imprimeFrase(saveFile[i], x, y+(i*16),0, 4);
-		}
-		else{
-			x = (320 - saveFile[i].length()*8)>>1;
-			marcador->imprimeFrase(saveFile[i], x, y+(i*16),4, 0);
-		}		
-	}
-	if (seleccionado == 7){
-		x = (320 - textSave[idioma].length()*8)>>1;
-		marcador->imprimeFrase(textSave[idioma], x, y+(7*16),0, 4);
-	}
-	else{
-		x = (320 - textSave[idioma].length()*8)>>1;
-		marcador->imprimeFrase(textSave[idioma], x, y+(7*16),4, 0);
-	}
-}
-
-bool Juego::menuGrabar2()
-{
-	pintaMenuGrabar(seleccionado,true);
-	int i = 0;	
-	if (sys->pad.up)
-	{
-		i--;
-		sys->pad.up = false;
-	}		
-	else if (sys->pad.down)
-	{
-		i++;
-		sys->pad.down = false;
-	}				
-	seleccionado += i;
-	if (seleccionado > 7){
-		seleccionado = 0;
-	}
-	else if (seleccionado < 0){
-		seleccionado = 7;
-	}	
-	pintaMenuCargar(seleccionado,true);	
-	if (BUTTON_YES)
-	{
-		BUTTON_YES = false;
-		if (seleccionado != 7)
-		{			
-			save(seleccionado);						
-			changeState(Abadia::STATES::PLAY);
-			ReiniciaPantalla();
-			return true;
-		}
-		else
-		{
-			seleccionado = 4;
-			changeState(Abadia::STATES::MENU);
-		}
-	}
-	return false;	
-}
-*/
 bool Juego::menuGrabar()
 {
     if (saveMenu.isEmpty()) {
         saveMenu.clear();
         for (int i = 0; i < 7; ++i)
             saveMenu.add([this, i]() { return saveFile[i]; }, [this, i]() {
-                save(i); changeState(STATES::PLAY); ReiniciaPantalla();
+                save(i);
+                changeState(STATES::PLAY);
+                ReiniciaPantalla();
             });
         saveMenu.add([this]() { return textSave[idioma]; }, [this]() { changeState(STATES::MENU); });
     }
     return saveMenu.tick(*marcador);
 }
 
-/*
-void Juego::pintaMenuIdioma(int seleccionado,bool efecto)
-{
-	limpiaAreaJuego(0); 
-
-	int x = 0;
-	
-	for (int i=0;i<8;i++){
-		x = (320 - textLanguage[i].length()*8)>>1;
-		marcador->imprimeFrase(textLanguage[i], x, 32+(i*16),4, 0);
-	}
-
-	x = (320 - textLanguage[seleccionado].length()*8)>>1;
-	marcador->imprimeFrase(textLanguage[seleccionado], x, 
-		32+(seleccionado*16), 0, 4);
-}
-
-bool Juego::menuIdioma()
-{
-	limpiaAreaJuego(0);
-
-	pintaMenuIdioma(seleccionado,true);
-				
-	if (sys->pad.down) {
-		seleccionado++;		
-		sys->pad.down = false;
-	}
-	else if (sys->pad.up) {
-		seleccionado--;						
-		sys->pad.up = false;
-	}
-	if (seleccionado==8) seleccionado=0;
-	else if (seleccionado==-1) seleccionado=7;
-
-	pintaMenuIdioma(seleccionado);
-
-	if (BUTTON_YES)
-	{
-		BUTTON_YES = false;
-		idioma=seleccionado;
-
-		string d = getDateAndTime();
-		string token = "LANGUAGE";
-		token[4] = '0' + idioma;		
-		configReader->setValue(token, d);
-		saveConfigFile();
-
-		seleccionado = 4;
-		changeState(Abadia::STATES::MENU);
-		return true;
-	}	
-	
-	return false;
-}
-*/
 bool Juego::menuIdioma()
 {
     if (langMenu.isEmpty()) {
@@ -737,163 +434,20 @@ bool Juego::menuIdioma()
             langMenu.add([this, i]() { return textLanguage[i]; }, [this, i]() {
                 idioma = i;
                 std::string d = getDateAndTime();
-                std::string token = "LANGUAGE"; token[4] = '0' + idioma;
-                configReader->setValue(token, d); saveConfigFile();
-                seleccionado = 4; changeState(STATES::MENU);
+                std::string token = "LANGUAGE";
+                token[4] = '0' + idioma;
+                configReader->setValue(token, d);
+                saveConfigFile();
+                seleccionado = 4;
+                changeState(STATES::MENU);
             });
         }
     }
     return langMenu.tick(*marcador);
 }
 
-
-/*
-void Juego::pintaMenuPrincipal(int seleccionado,bool efecto)
-{
-	limpiaAreaJuego(0); 
-
-	int x = 0;
-	const int y = 32;
-
-	for (int i=0;i<6;i++)
-	{						
-		if ((i==4 || i==2) && !activeGame){
-			x = (320 - principalMenuText[idioma][i].length()*8)>>1;
-			marcador->imprimeFrase(principalMenuText[idioma][i], x, y+(i*16),5, 0);
-		}
-		else{
-			x = (320 - principalMenuText[idioma][i].length()*8)>>1;
-			marcador->imprimeFrase(principalMenuText[idioma][i], x, y+(i*16),4, 0);
-		}
-	}
-	
-	x = (320 - principalMenuText[idioma][seleccionado].length()*8)>>1;
-	marcador->imprimeFrase(principalMenuText[idioma][seleccionado], x, 
-		y+(seleccionado*16), 0, 4);	
-}
-
-bool Juego::menu()
-{	
-	if (BUTTON_YES)
-	{
-		BUTTON_YES = false;
-		switch(seleccionado)
-		{
-			case 0: //New game					
-				if (!activeGame)
-				{									
-					changeState(Abadia::STATES::SCROLL);
-					ReiniciaPantalla();
-					sys->setGamePalette(2);
-					marcador->limpiaAreaMarcador();	
-					ReiniciaPantalla();
-					BUTTON_YES = false;
-
-					sys->minimumFrameTime = SCROLL_FRAME_TIME;
-					sys->playSound(Abadia::SONIDOS::Inicio);
-					activeGame = true;						
-				}
-				else
-				{
-					seleccionado = 1;
-					changeState(Abadia::STATES::ASK_NEW_GAME);
-					ReiniciaPantalla();
-					sys->setGamePalette(2);
-					marcador->limpiaAreaMarcador();					
-					BUTTON_YES = false;
-
-					activeGame = true;	
-					return true;
-				}
-				return true;		
-				break;		
-			case 1: //Load				
-				checkForSaveFiles();				
-				changeState(Abadia::STATES::LOAD);
-				ReiniciaPantalla();
-				sys->setGamePalette(2);
-				marcador->limpiaAreaMarcador();					
-				BUTTON_YES = false;
-
-				activeGame = true;
-				
-				return true;
-				break;
-			case 2: //save
-				if (activeGame)
-				{
-					checkForSaveFiles();
-					changeState(Abadia::STATES::SAVE);
-					ReiniciaPantalla();				
-					sys->setGamePalette(2);
-					marcador->limpiaAreaMarcador();						
-					BUTTON_YES = false;
-
-					activeGame = true;	
-				}
-				return true;
-				break;
-			case 3: //Language
-				seleccionado = idioma;
-				changeState(Abadia::STATES::LANGUAGE);
-				ReiniciaPantalla();
-				sys->setGamePalette(2);
-				marcador->limpiaAreaMarcador();					
-				BUTTON_YES = false;
-
-				return true;
-				break;					
-			case 4: //Continue
-				if (activeGame)
-				{
-					changeState(Abadia::STATES::PLAY);
-					ReiniciaPantalla();
-					activeGame = true;	
-					return true;
-				}
-				break;
-			case 5: //EXIT
-				seleccionado = 1;
-				changeState(Abadia::STATES::ASK_EXIT);
-				ReiniciaPantalla();				
-				sys->setGamePalette(2);
-				marcador->limpiaAreaMarcador();						
-				BUTTON_YES = false;
-
-				break;
-		}
-	}
-
-	pintaMenuPrincipal(seleccionado,true);		
-	
-	if (sys->pad.up)
-	{
-		seleccionado--;
-		sys->pad.up = false;
-	}		
-	else if (sys->pad.down)
-	{
-		seleccionado++;
-		sys->pad.down = false;
-	}					
-
-	if (seleccionado > 5){
-		seleccionado = 0;
-	}	
-	else if (seleccionado < 0){
-		seleccionado = 5;
-	}	
-
-	return false;
-}
-*/
-// En Juego.h, añade como miembro privado:
-// SimpleMenu mainMenu;
-// bool menuInitialized = false;
-
 bool Juego::menu()
 {
-    //if (!mainMenuReady) {
     if (mainMenu.isEmpty()) {
         mainMenu.clear();
         
@@ -903,12 +457,10 @@ bool Juego::menu()
             [this]() {
                 if (!activeGame) {
                     changeState(Abadia::STATES::SCROLL);
-                    sys->setGamePalette(1);
                     marcador->limpiaAreaMarcador();
                     ReiniciaPantalla();
                     sys->minimumFrameTime = SCROLL_FRAME_TIME;
                     sys->playSound(Abadia::SONIDOS::Inicio);
-                    //activeGame = true;
                 } else {
                     changeState(Abadia::STATES::ASK_NEW_GAME);
                 }
@@ -921,7 +473,7 @@ bool Juego::menu()
             changeState(Abadia::STATES::LOAD);
         });
 
-        // Item 2: Guardar (deshabilitado si no hay partida)
+        // Item 2: Guardar (deshabilitado si no hay partida activa)
         mainMenu.add([this]() { return principalMenuText[idioma][2]; }, [this]() {
             checkForSaveFiles();
             changeState(Abadia::STATES::SAVE);
@@ -933,7 +485,7 @@ bool Juego::menu()
             changeState(Abadia::STATES::LANGUAGE);
         });
 
-        // Item 4: Continuar (deshabilitado si no hay partida)
+        // Item 4: Continuar (deshabilitado si no hay partida activa)
         mainMenu.add([this]() { return principalMenuText[idioma][4]; }, [this]() {
             changeState(Abadia::STATES::PLAY);
             activeGame = true;
@@ -941,9 +493,11 @@ bool Juego::menu()
 
         // Item 5: Alternar entre gráficos VGA y CPC
         mainMenu.add([this]() { return principalMenuText[idioma][5]; }, [this]() {
-	    cambioCPC_VGA();
-	    if (activeGame) changeState(Abadia::STATES::PLAY);
-        });
+            cambioCPC_VGA();
+            if (activeGame) changeState(Abadia::STATES::PLAY);
+        }, [this]() { return estadoContenido != STATES::INTRO && estadoContenido != STATES::SCROLL; });
+        //}, [this]() { return !_secuenciaEnCurso; });
+        //}, [this]() { return previousState != STATES::INTRO && previousState != STATES::SCROLL; });
 
         // Item 6: Salir
         mainMenu.add([this]() { return principalMenuText[idioma][6]; }, [this]() {
@@ -954,15 +508,21 @@ bool Juego::menu()
     return mainMenu.tick(*marcador);
 }
 
+
 /////////////////////////////////////////////////////////////////////////////
 // método principal del juego
 /////////////////////////////////////////////////////////////////////////////
+
 void Juego::preRun()
 {	
 	marcador->limpiaAreaMarcador();
 
 	creaEntidadesJuego();
+
+	// Los gráficos correctos (VGA o CPC) ya fueron copiados al buffer activo
+	// en el constructor por aplicaGraficos(). Solo generamos los flipeados.
 	generaGraficosFlipeados();
+
 	motor->personaje = personajes[0];
 	infoJuego->inicia();
 	logica->despHabitacionEspejo();
@@ -975,43 +535,15 @@ void Juego::preRun()
 /*
 void Juego::changeState(Abadia::STATES newState)
 {
+	if (currentState == newState) return;
 	ReiniciaPantalla();
 	marcador->limpiaAreaMarcador();
 
-	switch (newState)
-	{
-		case STATES::PLAY:
-			pausaPorEstarEnMenus=false;
-			break;
-		case STATES::INTRO:			
-		case STATES::LANGUAGE:			
-		case STATES::MENU:
-		case STATES::LOAD:
-		case STATES::SAVE:
-		case STATES::SCROLL:
-		case STATES::ASK_NEW_GAME:
-		case STATES::ASK_CONTINUE:
-		case STATES::ASK_EXIT:
-		case STATES::ENDING:
-			pausaPorEstarEnMenus=true;
-			break;
-	}
-
-	currentState = newState;
-}
-*/
-
-void Juego::changeState(Abadia::STATES newState)
-{
-	ReiniciaPantalla();
-	marcador->limpiaAreaMarcador();
-
-	// limpieza según el estado del que salimos
+	// Limpieza al salir del estado actual
 	switch (currentState)
 	{
 		case STATES::SCROLL:
-			// el pergamino de introducción tiene su propio sonido;
-			// lo paramos siempre al salir, independientemente del destino
+			// El pergamino tiene su propio sonido; lo paramos siempre al salir.
 			sys->stopSound(Abadia::SONIDOS::Inicio);
 			break;
 		case STATES::ENDING:
@@ -1021,45 +553,130 @@ void Juego::changeState(Abadia::STATES newState)
 			break;
 	}
 
-	// ajuste de pausa y sonidos según el estado al que entramos
+	switch (newState) 
+	{
+		case STATES::INTRO:
+		case STATES::SCROLL:
+		case STATES::PLAY:
+		case STATES::ENDING:
+			estadoContenido = newState;
+			break;
+		default: break;
+	}
+
+	// Ajuste de pausa, sonidos y paleta al entrar en el nuevo estado
 	switch (newState)
 	{
 		case STATES::PLAY:
-			if (!activeGame) activeGame=true;
+			if (!activeGame) activeGame = true;
 			pausaPorEstarEnMenus = false;
-			// solo reanudamos si veníamos de un estado de menú,
-			// no si veníamos de SCROLL o ENDING que tienen sus propios sonidos
+			// Reanudamos solo si veníamos de un menú, no de estados con
+			// banda sonora propia (SCROLL, ENDING).
 			if (currentState != STATES::SCROLL && currentState != STATES::ENDING)
 				sys->resumeSounds();
 			ReiniciaPantalla();
+//			_secuenciaEnCurso=false;
 			break;
 
 		case STATES::INTRO:
-			sys->setGamePalette(1);
+			// La portada tiene su propia paleta; no usamos la paleta de menú.
+			pausaPorEstarEnMenus = true;
+			sys->pauseSounds();
+			// La imagen se pinta en muestraPresentacion() cada frame.
+//			_secuenciaEnCurso=true;
+			break;
+
 		case STATES::LANGUAGE:
 		case STATES::MENU:
+//			_secuenciaEnCurso=false;
 		case STATES::LOAD:
 		case STATES::SAVE:
 		case STATES::ASK_NEW_GAME:
 		case STATES::ASK_CONTINUE:
 		case STATES::ASK_EXIT:
 			pausaPorEstarEnMenus = true;
-			// congelamos los sonidos de juego sin detenerlos
 			sys->pauseSounds();
 			sys->setGamePalette(2);
 			limpiaAreaJuego(0);
 			break;
 
 		case STATES::SCROLL:
+//			_secuenciaEnCurso=true;
 		case STATES::ENDING:
-			sys->setGamePalette(1);
-			// estados con su propia banda sonora; no pausamos ni reanudamos
-			// los sonidos de juego porque en estos estados no hay partida activa
+			// Estados con banda sonora propia; no pausamos ni reanudamos
+			// los sonidos de juego.
 			pausaPorEstarEnMenus = true;
+			sys->setGamePalette(1);
 			break;
 	}
-
+//SDL_Log("A ps %d cs %d ns %d\n", (int)previousState, (int)currentState, (int)newState);
+//	if (previousState != currentState) previousState=currentState; // por si pulsas varias veces ir a menú
+//SDL_Log("B ps %d cs %d ns %d\n", (int)previousState, (int)currentState, (int)newState);
 	currentState = newState;
+//SDL_Log("C ps %d cs %d ns %d\n", (int)previousState, (int)currentState, (int)newState);
+	
+}
+*/
+void Juego::changeState(Abadia::STATES newState)
+{
+    if (newState == currentState) return;
+
+    marcador->limpiaAreaMarcador();  // solo el marcador, no ReiniciaPantalla completo
+
+    switch (currentState) {
+        case STATES::SCROLL:  sys->stopSound(Abadia::SONIDOS::Inicio); break;
+        case STATES::ENDING:  sys->stopSound(Abadia::SONIDOS::Final);  break;
+        default: break;
+    }
+
+    switch (newState) {
+        case STATES::PLAY:
+            if (!activeGame) activeGame = true;
+            pausaPorEstarEnMenus = false;
+            if (currentState != STATES::SCROLL && currentState != STATES::ENDING)
+                sys->resumeSounds();
+	    //sys->setGamePalette(2);
+            //limpiaAreaJuego(0);
+            ReiniciaPantalla();   // aquí sí tiene sentido
+            break;
+        case STATES::INTRO:
+            pausaPorEstarEnMenus = true;
+            sys->pauseSounds();
+            // pintaPortada() se llama cada frame desde muestraPresentacion()
+            break;
+        case STATES::LANGUAGE:
+        case STATES::MENU:
+        case STATES::LOAD:
+        case STATES::SAVE:
+        case STATES::ASK_NEW_GAME:
+        case STATES::ASK_CONTINUE:
+        case STATES::ASK_EXIT:
+            pausaPorEstarEnMenus = true;
+            sys->pauseSounds();
+            sys->setGamePalette(2);
+            limpiaAreaJuego(0);
+	    marcador->limpiaAreaMarcador();  // solo el marcador, no ReiniciaPantalla completo
+            //ReiniciaPantalla();   // aquí sí tiene sentido
+            break;
+        case STATES::SCROLL:
+        case STATES::ENDING:
+            pausaPorEstarEnMenus = true;
+            sys->setGamePalette(1);
+            pergamino->reset();   // <- fuerza redibujado limpio desde muestraTexto()
+            break;
+    }
+
+    switch (newState) {
+	    case STATES::INTRO:
+	    case STATES::SCROLL:
+	    case STATES::PLAY:
+	    case STATES::ENDING:
+		    estadoContenido = newState;
+		    break;
+	    default: break;
+    }
+
+    currentState = newState;
 }
 
 void Juego::run()
@@ -1116,9 +733,16 @@ void Juego::run()
 
 void Juego::limpiaAreaJuego(int color)
 {
+	// esta es es el margen izquierdo de la zona de juego
+	// que en la intro (imagen de portada) si se escribe
 	sys->fillMode1Rect(0, 0, 32, 160, 0);
+	// esta es la parte de la zona de juego
 	sys->fillMode1Rect(32, 0, 256, 160, color);
+	// esta es es el margen derecho de la zona de juego
+	// que en la intro (imagen de portada) si se escribe
 	sys->fillMode1Rect(32 + 256, 0, 32, 160, 0);	
+	// pero esto no borra la zona del marcador
+	// que se tendría que borrar con limpiaAreaMarcador
 }
 
 void Juego::generaGraficosFlipeados()
@@ -1259,27 +883,6 @@ void Juego::actualizaLuz()
 	sprLuz->ajustaAPersonaje(personajes[1]);
 }
 
-void Juego::cambioCPC_VGA()
-{
-	if (GraficosCPC)
-	{
-		memcpy(	&roms[0x24000-1-0x4000],
-				&roms[0x24000-1-0x4000+(174065+21600)],
-				174065);
-		GraficosCPC=false;
-	}
-	else
-	{
-		memcpy(	&roms[0x24000-1-0x4000],
-				&roms[0x24000-1-0x4000+(174065+21600)*2],
-				174065);
-		GraficosCPC=true;
-	}
-
-	generaGraficosFlipeados();
-	sys->resetPalette();
-	ReiniciaPantalla();		
-}
 
 /////////////////////////////////////////////////////////////////////////////
 // métodos para mostrar distintas pantallas
@@ -1287,20 +890,14 @@ void Juego::cambioCPC_VGA()
 
 void Juego::muestraPresentacion()
 {
-	sys->setIntroPalette();
-	UINT8 *romsVGA = &roms[0x24000-1-0x4000];
-	UINT8 *screen=romsVGA+0x1ADF0;
-	for (int j = 0; j < 200; j++){
-		for (int i = 0; i < 320; i++){
-			sys->setPixel(i,j,*screen++);
-		}
-	}
+	// Pintamos la portada cada frame (la paleta intro puede haberse
+	// sobreescrito si se vuelve aquí desde otro estado).
+	pintaPortada();
 
 	if (BUTTON_YES)
 	{
-		currentState = Abadia::STATES::MENU;
-		ReiniciaPantalla();
-		marcador->limpiaAreaMarcador();
+		BUTTON_YES = false;
+		changeState(Abadia::STATES::MENU);
 	}
 }
 
@@ -1310,18 +907,10 @@ void Juego::muestraIntroduccion()
 	
 	if (pergamino->finished)
 	{
-		sys->setGamePalette(0);
-		currentState = Abadia::STATES::PLAY;
-	
-		sys->stopSound(Abadia::SONIDOS::Inicio);
-		ReiniciaPantalla();
-		sys->setGamePalette(2);
-		marcador->limpiaAreaMarcador();
-
-		ReiniciaPantalla();
 		BUTTON_YES = false;
-		
 		sys->setNormalSpeed();
+		changeState(Abadia::STATES::PLAY);
+		// changeState ya gestiona paleta, marcador y sonidos.
 	}
 }
 
@@ -1369,20 +958,14 @@ bool Juego::muestraPantallaFinInvestigacion()
 
 	if (sys->pad.button1 ||sys->pad.button2 ||sys->pad.button3 ||sys->pad.button4)
 	{
-		sys->setIntroPalette();
-		UINT8 *romsVGA = &roms[0x24000-1-0x4000];
-		UINT8 *screen=romsVGA+0x1ADF0;
-		for (int j = 0; j < 200; j++){
-			for (int i = 0; i < 320; i++){
-				sys->setPixel(i,j,*screen++);
-			}
-		}
-
-		currentState = Abadia::STATES::INTRO;
+		changeState(Abadia::STATES::INTRO);
+		// changeState INTRO no pinta la portada; se pintará en el
+		// siguiente tick de muestraPresentacion().
 	}
 
 	return true;
 }
+
 
 /////////////////////////////////////////////////////////////////////////////
 // creación de las entidades del juego
@@ -1510,7 +1093,7 @@ bool Juego::readConfigFile()
 		r = true;
 
 		s = configReader->getValue("GRAPHICSCPC");
-		GraficosCPC=atoi(s.c_str());
+		GraficosCPC = atoi(s.c_str());
 		SDL_Log("graficos CPC según conf: %d\n", GraficosCPC);
 	}
 

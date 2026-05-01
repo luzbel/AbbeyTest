@@ -56,6 +56,8 @@ public:
 	//TODO: revisar si pasar a privado
 	std::string::difference_type OneByteFromUTF8(const unsigned char *firstByte, unsigned char *pcaracter ) ;
 
+	void reset() { writing = false; finished = false; }
+
 	// inicialización y limpieza
 	Pergamino();
 	~Pergamino();

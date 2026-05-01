@@ -57,11 +57,11 @@ private:
 	bool mute;
 	unsigned short slot;
 	bool pausaPorEstarEnMenus;
-	//SimpleMenu mainMenu, langMenu, askExitMenu;
 	SimpleMenu mainMenu, loadMenu, saveMenu, langMenu;
 	SimpleMenu askNewMenu, askContMenu, askExitMenu;
-	//bool menuInitialized=false;
-	//bool mainMenuReady=false;
+	// bool _secuenciaEnCurso;
+	Abadia::STATES estadoContenido = Abadia::STATES::INTRO;
+
 public:		
 	int idioma;
 	bool GraficosCPC;
@@ -83,6 +83,7 @@ public:
 	bool cambioModoInformacion;
 	InfoJuego *infoJuego;
 	Abadia::STATES currentState;
+//	Abadia::STATES previousState;
 	int seleccionado;
 	ConfigReader *configReader;
 	int selectedSlot;
@@ -144,10 +145,24 @@ protected:
 	void pintaMenuCargar(int seleccionado, bool efecto=false);
 	void pintaMenuGrabar(int seleccionado, bool efecto=false);
 	void pintaMenuIdioma(int seleccionado, bool efecto=false);
-//	void pintaMenuPrincipal(int seleccionado, bool efecto=false);
 
 	bool cargar(int slot);
 	void save(int slot);
+
+	// --- helpers gráficos ---
+
+	// Copia al buffer activo los gráficos VGA (slot 0) o CPC (slot 1).
+	// Actualiza GraficosCPC y regenera los gráficos flipeados.
+	// NO modifica la paleta ni repinta; cada llamador hace eso.
+	void aplicaGraficos(bool usarCPC);
+
+	// Pinta la pantalla completa de portada (imagen de presentación).
+	// Establece la paleta intro antes de pintar.
+	void pintaPortada();
+
+	// Repinta la pantalla completa para el estado actual tras un cambio
+	// de gráficos en caliente (cambioCPC_VGA). Aplica la paleta correcta.
+	void repintaEstadoActual();
 
 	void cambioCPC_VGA();
 
