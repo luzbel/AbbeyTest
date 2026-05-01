@@ -142,6 +142,7 @@ struct System
 	uint64_t targetFrameTime=0;
 	bool logicInterrupt=false;
 #endif
+	int currentPalette=0;
 
 	void initFrame();
 	void endFrame();
@@ -169,8 +170,11 @@ struct System
 	void print(const std::string message);
 
 	void initPaleta(UINT8 *dirPaleta) { _paleta=new Paleta(dirPaleta); }
-	void setGamePalette(UINT8 pal) { _paleta->setGamePalette(pal,surface->format); }
+	void setGamePalette(UINT8 pal) { currentPalette=pal; _paleta->setGamePalette(pal,surface->format); }
 	void setIntroPalette(void) { _paleta->setGamePalette(5,surface->format); }
+	//void setIntroPalette(void) { _paleta->setGamePalette(1,surface->format); }
+	// para que al cambiar de VGA a CPC se puede regenerar la paleta necesaria
+	void resetPalette(void) { _paleta->setGamePalette(currentPalette,surface->format); }
 								    
 	void setRGBPixel(UINT32 x, UINT32 y, UINT32 color) {
 		assert((x >= 0) && (x < 320));

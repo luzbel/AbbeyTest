@@ -903,12 +903,12 @@ bool Juego::menu()
             [this]() {
                 if (!activeGame) {
                     changeState(Abadia::STATES::SCROLL);
-                    sys->setGamePalette(2);
+                    sys->setGamePalette(1);
                     marcador->limpiaAreaMarcador();
                     ReiniciaPantalla();
                     sys->minimumFrameTime = SCROLL_FRAME_TIME;
                     sys->playSound(Abadia::SONIDOS::Inicio);
-                    activeGame = true;
+                    //activeGame = true;
                 } else {
                     changeState(Abadia::STATES::ASK_NEW_GAME);
                 }
@@ -1025,6 +1025,7 @@ void Juego::changeState(Abadia::STATES newState)
 	switch (newState)
 	{
 		case STATES::PLAY:
+			if (!activeGame) activeGame=true;
 			pausaPorEstarEnMenus = false;
 			// solo reanudamos si veníamos de un estado de menú,
 			// no si veníamos de SCROLL o ENDING que tienen sus propios sonidos
@@ -1034,6 +1035,7 @@ void Juego::changeState(Abadia::STATES newState)
 			break;
 
 		case STATES::INTRO:
+			sys->setGamePalette(1);
 		case STATES::LANGUAGE:
 		case STATES::MENU:
 		case STATES::LOAD:
@@ -1050,6 +1052,7 @@ void Juego::changeState(Abadia::STATES newState)
 
 		case STATES::SCROLL:
 		case STATES::ENDING:
+			sys->setGamePalette(1);
 			// estados con su propia banda sonora; no pausamos ni reanudamos
 			// los sonidos de juego porque en estos estados no hay partida activa
 			pausaPorEstarEnMenus = true;
@@ -1274,6 +1277,7 @@ void Juego::cambioCPC_VGA()
 	}
 
 	generaGraficosFlipeados();
+	sys->resetPalette();
 	ReiniciaPantalla();		
 }
 
@@ -1504,6 +1508,10 @@ bool Juego::readConfigFile()
 		string s = configReader->getValue("LANGUAGE");
 		idioma = atoi(s.c_str());
 		r = true;
+
+		s = configReader->getValue("GRAPHICSCPC");
+		GraficosCPC=atoi(s.c_str());
+		SDL_Log("graficos CPC según conf: %d\n", GraficosCPC);
 	}
 
 	return r;
@@ -1537,6 +1545,7 @@ bool Juego::saveConfigFile()
 	f.open((path + "config.txt").c_str());
 
 	f << "LANGUAGE="<< idioma <<"\n";
+	f << "GRAPHICSCPC="<< GraficosCPC << "\n";
 
 	for (int i=0;i<7;i++)
 	{
