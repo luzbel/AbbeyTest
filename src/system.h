@@ -157,6 +157,8 @@ struct System
 	// de juego bruscamente sino congelarlos.
 	void pauseSounds();
 	void resumeSounds();
+	// activar/desactivar el sonido
+	void mute(bool mute);
 
 	void updateScreen();
 	void handleEvents();

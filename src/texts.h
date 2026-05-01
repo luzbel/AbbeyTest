@@ -20,7 +20,7 @@ enum LANGUAGE
 // Usamos literales UTF-8 explícitos para máxima compatibilidad multiplataforma
 // (GCC, Clang, Emscripten, etc. los soportan bien)
 
-const std::string principalMenuText[TOTAL_LANGUAGES][7] =
+const std::string principalMenuText[TOTAL_LANGUAGES][10] =
 {
 	{	// Castellano
 		u8"0 NUEVA PARTIDA",
@@ -29,7 +29,11 @@ const std::string principalMenuText[TOTAL_LANGUAGES][7] =
 		u8"3 IDIOMA",
 		u8"4 CONTINUAR",
 		u8"5 GRÁFICOS VGA-CPC",
-		u8"6 SALIR"
+		u8"6 SALIR",
+		u8"7 INTRO",
+		u8"8 PERGAMINO INICIAL",
+		u8"9 SONIDO"
+
 	},
 	{	// English
 		u8"NEW GAME",
@@ -38,7 +42,10 @@ const std::string principalMenuText[TOTAL_LANGUAGES][7] =
 		u8"LANGUAGE",
 		u8"CONTINUE",
 		u8"GRAPHICS VGA-CPC",
-		u8"EXIT"
+		u8"EXIT",
+		u8"7 INTRO",
+		u8"8 INITIAL SCROLL",
+		u8"9 SOUND"
 	},
 	{	// Portugués Brasil
 		u8"NOVO JOGO",
@@ -47,7 +54,10 @@ const std::string principalMenuText[TOTAL_LANGUAGES][7] =
 		u8"IDIOMA",
 		u8"CONTINUAR",
 		u8"GRAPHICS VGA-CPC",
-		u8"SAIR"
+		u8"SAIR",
+		u8"7 INTRO",
+		u8"8 INITIAL SCROLL",
+		u8"9 SOUND"
 	},
 	{	// Catalán
 		u8"NOU JOC",
@@ -56,7 +66,10 @@ const std::string principalMenuText[TOTAL_LANGUAGES][7] =
 		u8"IDIOMA",
 		u8"CONTINUA",
 		u8"GRAPHICS VGA-CPC",
-		u8"SORTIR"
+		u8"SORTIR",
+		u8"7 INTRO",
+		u8"8 INITIAL SCROLL",
+		u8"9 SOUND"
 	},
 	{	// Gallego
 		u8"NOVO XOGO",
@@ -65,7 +78,10 @@ const std::string principalMenuText[TOTAL_LANGUAGES][7] =
 		u8"LINGUA",
 		u8"CONTINUAR",
 		u8"GRAPHICS VGA-CPC",
-		u8"SAIR"
+		u8"SAIR",
+		u8"7 INTRO",
+		u8"8 INITIAL SCROLL",
+		u8"9 SOUND"
 	},
 	{	// Italiano
 		u8"NUOVO GIOCO",
@@ -74,7 +90,10 @@ const std::string principalMenuText[TOTAL_LANGUAGES][7] =
 		u8"LINGUA",
 		u8"CONTINUA",
 		u8"GRAPHICS VGA-CPC",
-		u8"ESCI"
+		u8"ESCI",
+		u8"7 INTRO",
+		u8"8 INITIAL SCROLL",
+		u8"9 SOUND"
 	},	
 	{	// Finlandés
 		u8"UUSI PELI",
@@ -83,7 +102,10 @@ const std::string principalMenuText[TOTAL_LANGUAGES][7] =
 		u8"KIELI",
 		u8"JATKA",
 		u8"GRAPHICS VGA-CPC",
-		u8"POISTU"
+		u8"POISTU",
+		u8"7 INTRO",
+		u8"8 INITIAL SCROLL",
+		u8"9 SOUND"
 	},
 	{	// Portugués Europeo
 		u8"NOVO JOGO",
@@ -92,7 +114,10 @@ const std::string principalMenuText[TOTAL_LANGUAGES][7] =
 		u8"IDIOMA",
 		u8"CONTINUAR",
 		u8"GRAPHICS VGA-CPC",
-		u8"SAIR"
+		u8"SAIR",
+		u8"7 INTRO",
+		u8"8 INITIAL SCROLL",
+		u8"9 SOUND"
 	}
 };
 

@@ -126,6 +126,10 @@ void System::init()
 #endif
 }
 
+void System::mute(bool mute) {
+	mute ? Mix_Volume(-1, 0) : Mix_Volume(-1, MIX_MAX_VOLUME);
+}
+
 void System::pauseSounds()
 {
 	// Pausa todos los canales activos sin detenerlos.
@@ -426,6 +430,9 @@ void System::exitGame()
 
 void System::print(const std::string message)
 {
+
+	// revisar si cambiando por SDL_LOG se quitan los problemas
+	// de distintas maneras según la plataforma
 	#ifdef ANDROID
 		__android_log_print(ANDROID_LOG_DEBUG, "ABBEY", "%s\n", message.c_str());
 	#else

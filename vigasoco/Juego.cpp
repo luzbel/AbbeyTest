@@ -498,12 +498,33 @@ bool Juego::menu()
         }, [this]() { return estadoContenido != STATES::INTRO && estadoContenido != STATES::SCROLL; });
         //}, [this]() { return !_secuenciaEnCurso; });
         //}, [this]() { return previousState != STATES::INTRO && previousState != STATES::SCROLL; });
+	
 
-        // Item 6: Salir
+       // Item 6: Salir
         mainMenu.add([this]() { return principalMenuText[idioma][6]; }, [this]() {
             changeState(Abadia::STATES::ASK_EXIT);
         });
+
+// Ver portada - solo si ya salimos de ella
+mainMenu.add([this]() { return principalMenuText[idioma][7]; }, [this]() {
+		changeState(STATES::INTRO);
+		}, [this]() { return estadoContenido != STATES::INTRO; });
+
+// Ver pergamino - solo si ya se ha visto una vez
+mainMenu.add([this]() { return principalMenuText[idioma][8]; }, [this]() {
+		changeState(STATES::SCROLL);
+		sys->minimumFrameTime = SCROLL_FRAME_TIME;
+		sys->playSound(Abadia::SONIDOS::Inicio);
+		}, [this]() { return estadoContenido != STATES::INTRO; });
+// Sonido
+mainMenu.add([this]() { return principalMenuText[idioma][9]+ (mute ? " ON" : " OFF"); }, [this]() {
+		 mute=!mute;
+		 sys->mute(mute);
+			
+		}, [this]() { return true; });
+
     }
+
 
     return mainMenu.tick(*marcador);
 }
