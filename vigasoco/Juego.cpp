@@ -532,91 +532,7 @@ void Juego::preRun()
 	logica->inicia();
 	ReiniciaPantalla();
 }
-/*
-void Juego::changeState(Abadia::STATES newState)
-{
-	if (currentState == newState) return;
-	ReiniciaPantalla();
-	marcador->limpiaAreaMarcador();
 
-	// Limpieza al salir del estado actual
-	switch (currentState)
-	{
-		case STATES::SCROLL:
-			// El pergamino tiene su propio sonido; lo paramos siempre al salir.
-			sys->stopSound(Abadia::SONIDOS::Inicio);
-			break;
-		case STATES::ENDING:
-			sys->stopSound(Abadia::SONIDOS::Final);
-			break;
-		default:
-			break;
-	}
-
-	switch (newState) 
-	{
-		case STATES::INTRO:
-		case STATES::SCROLL:
-		case STATES::PLAY:
-		case STATES::ENDING:
-			estadoContenido = newState;
-			break;
-		default: break;
-	}
-
-	// Ajuste de pausa, sonidos y paleta al entrar en el nuevo estado
-	switch (newState)
-	{
-		case STATES::PLAY:
-			if (!activeGame) activeGame = true;
-			pausaPorEstarEnMenus = false;
-			// Reanudamos solo si veníamos de un menú, no de estados con
-			// banda sonora propia (SCROLL, ENDING).
-			if (currentState != STATES::SCROLL && currentState != STATES::ENDING)
-				sys->resumeSounds();
-			ReiniciaPantalla();
-//			_secuenciaEnCurso=false;
-			break;
-
-		case STATES::INTRO:
-			// La portada tiene su propia paleta; no usamos la paleta de menú.
-			pausaPorEstarEnMenus = true;
-			sys->pauseSounds();
-			// La imagen se pinta en muestraPresentacion() cada frame.
-//			_secuenciaEnCurso=true;
-			break;
-
-		case STATES::LANGUAGE:
-		case STATES::MENU:
-//			_secuenciaEnCurso=false;
-		case STATES::LOAD:
-		case STATES::SAVE:
-		case STATES::ASK_NEW_GAME:
-		case STATES::ASK_CONTINUE:
-		case STATES::ASK_EXIT:
-			pausaPorEstarEnMenus = true;
-			sys->pauseSounds();
-			sys->setGamePalette(2);
-			limpiaAreaJuego(0);
-			break;
-
-		case STATES::SCROLL:
-//			_secuenciaEnCurso=true;
-		case STATES::ENDING:
-			// Estados con banda sonora propia; no pausamos ni reanudamos
-			// los sonidos de juego.
-			pausaPorEstarEnMenus = true;
-			sys->setGamePalette(1);
-			break;
-	}
-//SDL_Log("A ps %d cs %d ns %d\n", (int)previousState, (int)currentState, (int)newState);
-//	if (previousState != currentState) previousState=currentState; // por si pulsas varias veces ir a menú
-//SDL_Log("B ps %d cs %d ns %d\n", (int)previousState, (int)currentState, (int)newState);
-	currentState = newState;
-//SDL_Log("C ps %d cs %d ns %d\n", (int)previousState, (int)currentState, (int)newState);
-	
-}
-*/
 void Juego::changeState(Abadia::STATES newState)
 {
     if (newState == currentState) return;
@@ -635,14 +551,11 @@ void Juego::changeState(Abadia::STATES newState)
             pausaPorEstarEnMenus = false;
             if (currentState != STATES::SCROLL && currentState != STATES::ENDING)
                 sys->resumeSounds();
-	    //sys->setGamePalette(2);
-            //limpiaAreaJuego(0);
-            ReiniciaPantalla();   // aquí sí tiene sentido
+            ReiniciaPantalla();  
             break;
         case STATES::INTRO:
             pausaPorEstarEnMenus = true;
             sys->pauseSounds();
-            // pintaPortada() se llama cada frame desde muestraPresentacion()
             break;
         case STATES::LANGUAGE:
         case STATES::MENU:
@@ -656,7 +569,6 @@ void Juego::changeState(Abadia::STATES newState)
             sys->setGamePalette(2);
             limpiaAreaJuego(0);
 	    marcador->limpiaAreaMarcador();  // solo el marcador, no ReiniciaPantalla completo
-            //ReiniciaPantalla();   // aquí sí tiene sentido
             break;
         case STATES::SCROLL:
         case STATES::ENDING:
@@ -1094,7 +1006,6 @@ bool Juego::readConfigFile()
 
 		s = configReader->getValue("GRAPHICSCPC");
 		GraficosCPC = atoi(s.c_str());
-		SDL_Log("graficos CPC según conf: %d\n", GraficosCPC);
 	}
 
 	return r;
