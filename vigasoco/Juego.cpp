@@ -500,8 +500,8 @@ bool Juego::menu()
             activeGame = true;
         }, [this]() { return activeGame; });
 
-        // Item 5: Alternar entre gráficos VGA y CPC
-        mainMenu.add([this]() { return principalMenuText[idioma][5]; }, [this]() {
+        // Item 5: Alternar entre gráficos VGA y CPC 666
+mainMenu.add([this]() { return principalMenuText[idioma][5]+(GraficosCPC?" VGA":" CPC"); }, [this]() {
             cambioCPC_VGA();
             if (activeGame) changeState(Abadia::STATES::PLAY);
         }, [this]() { return estadoContenido != STATES::INTRO && estadoContenido != STATES::SCROLL; });

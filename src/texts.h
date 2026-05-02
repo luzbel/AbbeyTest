@@ -28,7 +28,7 @@ const std::string principalMenuText[TOTAL_LANGUAGES][10] =
 		u8"2 GUARDAR",
 		u8"3 IDIOMA",
 		u8"4 CONTINUAR",
-		u8"5 GRÁFICOS VGA-CPC",
+		u8"5 GRÁFICOS",
 		u8"6 SALIR",
 		u8"7 INTRO",
 		u8"8 PERGAMINO INICIAL",
