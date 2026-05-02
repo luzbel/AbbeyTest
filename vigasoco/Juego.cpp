@@ -112,7 +112,9 @@ Juego::Juego(UINT8 *romData)
 
 	// Leer configuración. Si hay preferencia de CPC la aplicamos ahora
 	// (antes de que creaEntidadesJuego/generaGraficosFlipeados usen los datos).
+SDL_Log("mute debería ser falso 0 y es %d\n", mute);
 	checkConfigFile();
+SDL_Log("mute deberia ser el del fichero %d\n", mute);
 	// aplicaGraficos copia los datos correctos al buffer activo según GraficosCPC.
 	// Los gráficos flipeados se generan después en preRun().
 	aplicaGraficos(GraficosCPC);
@@ -529,6 +531,8 @@ mainMenu.add([this]() { return principalMenuText[idioma][8]; }, [this]() {
 mainMenu.add([this]() { return principalMenuText[idioma][9]+ (mute ? " ON " : " OFF"); }, [this]() {
 		 mute=!mute;
 		 sys->setMute(mute);
+		 configReader->setValue("MUTESOUND", mute?"1":"0"); // TODO: considerar llevar a sys
+		 saveConfigFile();
 			
 		}, [this]() { return true; });
 
@@ -1037,6 +1041,13 @@ bool Juego::readConfigFile()
 
 		s = configReader->getValue("GRAPHICSCPC");
 		GraficosCPC = atoi(s.c_str());
+
+		s = configReader->getValue("MUTESOUND");
+		SDL_Log("leo mutesound y es %s\n",s.c_str());
+		SDL_Log("mute antes de aplicar conf es %d\n",mute);
+		mute = atoi(s.c_str());
+		sys->setMute(mute); // TODO, esto debería ser más limpio
+		SDL_Log("mute despues  de aplicar conf es %d\n",mute);
 	}
 
 	return r;
@@ -1071,6 +1082,7 @@ bool Juego::saveConfigFile()
 
 	f << "LANGUAGE="<< idioma <<"\n";
 	f << "GRAPHICSCPC="<< GraficosCPC << "\n";
+	f << "MUTESOUND="<< mute << "\n";
 
 	for (int i=0;i<7;i++)
 	{
