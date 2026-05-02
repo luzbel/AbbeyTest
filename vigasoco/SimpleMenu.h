@@ -8,6 +8,7 @@
 
 enum class MenuOrientation { VERTICAL, HORIZONTAL };
 enum class MenuAlignment   { CENTER, LEFT };
+enum class MenuMode { NORMAL, YESNO };
 
 struct MenuEntry {
     std::function<std::string()> getLabel;
@@ -22,14 +23,16 @@ class SimpleMenu {
     size_t selected = 0;
     MenuOrientation orientation = MenuOrientation::VERTICAL;
     MenuAlignment   alignment   = MenuAlignment::CENTER;
+    MenuMode mode = MenuMode::NORMAL;
     std::function<std::string()> getPrompt; 
     const int lineSpacing = 16;
     const int leftMargin  = 80;
 
 public:
-    void clear() { entries.clear(); selected = 0; getPrompt = nullptr; }
+    void clear() { entries.clear(); selected = 0; getPrompt = nullptr; mode = MenuMode::NORMAL; }
     void setOrientation(MenuOrientation o) { orientation = o; }
     void setAlignment(MenuAlignment a)     { alignment   = a; }
+    void setMode(MenuMode m) { mode = m; }
     void setPrompt(std::function<std::string()> p) { getPrompt = std::move(p); }
 
     void add(
@@ -92,6 +95,20 @@ public:
 			selected = idx;
 			entries[idx].onConfirm();
 			return true;
+		}
+	}
+
+	// Atajo directo S/N en diálogos binarios
+	if (mode == MenuMode::YESNO) {
+		if (sys->pad.confirm) {
+			sys->pad.confirm = false;
+			// buscar la entrada "sí" (índice 0 por convención)
+			if (entries[0].isEnabled()) { entries[0].onConfirm(); return true; }
+		}
+		if (sys->pad.cancel) {
+			sys->pad.cancel = false;
+			// buscar la entrada "no" (índice 1 por convención)
+			if (entries[1].isEnabled()) { entries[1].onConfirm(); return true; }
 		}
 	}
 

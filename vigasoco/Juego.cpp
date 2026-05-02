@@ -320,14 +320,20 @@ void Juego::askExit()
     if (askExitMenu.isEmpty()) {
         askExitMenu.clear();
         askExitMenu.setOrientation(MenuOrientation::HORIZONTAL);
+	askExitMenu.setMode(MenuMode::YESNO);
         askExitMenu.setPrompt([this]() { return continueQuestionText[idioma]; });
         askExitMenu.add([this]() { return yesText[idioma]; }, [this]() { sys->exitGame(); });
-        askExitMenu.add([this]() { return noText[idioma]; }, [this]() {
-            changeState(STATES::PLAY);
-            ReiniciaPantalla();
-            activeGame = true;
-            sys->setNormalSpeed();
-        });
+	askExitMenu.add([this]() { return noText[idioma]; }, [this]() {
+		if (activeGame) { 
+			changeState(STATES::PLAY);
+			ReiniciaPantalla();
+			activeGame = true;
+			sys->setNormalSpeed();
+		} else {
+			changeState(STATES::SCROLL);
+			ReiniciaPantalla();
+		}
+	});
     }
     askExitMenu.tick(*marcador);
 }
@@ -337,6 +343,7 @@ void Juego::askForNewGame()
     if (askNewMenu.isEmpty()) {
         askNewMenu.clear();
         askNewMenu.setOrientation(MenuOrientation::HORIZONTAL);
+	askNewMenu.setMode(MenuMode::YESNO);
         askNewMenu.setPrompt([this]() { return newGameQuestionText[idioma]; });
         askNewMenu.add([this]() { return yesText[idioma]; }, [this]() {
             logica->inicia();
@@ -356,6 +363,7 @@ void Juego::askToContinue()
     if (askContMenu.isEmpty()) {
         askContMenu.clear();
         askContMenu.setOrientation(MenuOrientation::HORIZONTAL);
+	askContMenu.setMode(MenuMode::YESNO);
         askContMenu.setPrompt([this]() { return continueQuestionText[idioma]; });
         askContMenu.add([this]() { return yesText[idioma]; }, [this]() {
             logica->inicia();
@@ -518,7 +526,7 @@ mainMenu.add([this]() { return principalMenuText[idioma][8]; }, [this]() {
 		sys->playSound(Abadia::SONIDOS::Inicio);
 		}, [this]() { return estadoContenido != STATES::INTRO; });
 // Sonido
-mainMenu.add([this]() { return principalMenuText[idioma][9]+ (mute ? " ON" : " OFF"); }, [this]() {
+mainMenu.add([this]() { return principalMenuText[idioma][9]+ (mute ? " ON " : " OFF"); }, [this]() {
 		 mute=!mute;
 		 sys->setMute(mute);
 			

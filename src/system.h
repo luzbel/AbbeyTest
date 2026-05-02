@@ -197,8 +197,19 @@ struct System
 	void handleEvents();
 	void hapticFeedback();
 	bool isConfirm() {
+		// pad.confirm es la tecla 's'
+		// pero no confirma, es solo para cuando se pide 
+		// explicitamente un S o N
+		// confirmar es enter o espacio para confirmar 
+		// la opción de menu seleccionado o avanzar
+		// en la pantalla de intro o en el pergamino
+		/*
 		if (pad.confirm || pad.advanceTime || pad.action ) {
 			pad.confirm = pad.advanceTime = pad.action = false;
+			return true;
+		} */
+		if (pad.advanceTime || pad.action ) {
+			pad.advanceTime = pad.action = false;
 			return true;
 		}
 		return false;
