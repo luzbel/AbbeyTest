@@ -520,7 +520,7 @@ mainMenu.add([this]() { return principalMenuText[idioma][8]; }, [this]() {
 // Sonido
 mainMenu.add([this]() { return principalMenuText[idioma][9]+ (mute ? " ON" : " OFF"); }, [this]() {
 		 mute=!mute;
-		 sys->mute(mute);
+		 sys->setMute(mute);
 			
 		}, [this]() { return true; });
 
@@ -830,7 +830,7 @@ void Juego::muestraPresentacion()
 
 	if (BUTTON_YES)
 	{
-		BUTTON_YES = false;
+		//BUTTON_YES = false;
 		changeState(Abadia::STATES::MENU);
 	}
 }
@@ -841,7 +841,7 @@ void Juego::muestraIntroduccion()
 	
 	if (pergamino->finished)
 	{
-		BUTTON_YES = false;
+		//BUTTON_YES = false;
 		sys->setNormalSpeed();
 		changeState(Abadia::STATES::PLAY);
 		// changeState ya gestiona paleta, marcador y sonidos.
@@ -890,7 +890,8 @@ bool Juego::muestraPantallaFinInvestigacion()
 	x = (320 - frase4[idioma].length()*8)>>1;
 	marcador->imprimeFrase(frase4[idioma], x, 128, 4, 0);
 
-	if (sys->pad.button1 ||sys->pad.button2 ||sys->pad.button3 ||sys->pad.button4)
+	//if (sys->pad.button1 ||sys->pad.button2 ||sys->pad.button3 ||sys->pad.button4)
+	if (sys->pad.action || sys->pad.confirm || sys->pad.cancel)
 	{
 		changeState(Abadia::STATES::INTRO);
 		// changeState INTRO no pinta la portada; se pintará en el

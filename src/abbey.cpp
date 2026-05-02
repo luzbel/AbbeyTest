@@ -196,9 +196,9 @@ void Abbey::handleEvents()
 {
     sys->handleEvents();
 
-    if (sys->pad.start) {
+    if (sys->pad.menu) {
         _game->changeState(Abadia::STATES::MENU);
-        sys->pad.start = false;
+        sys->pad.menu= false;
     } 
 }
 

@@ -93,14 +93,52 @@ namespace Abadia {
 	};
 } // namespace Abadia
 
+// ----------------------------------------------------------------------------
+// PlayerInput: acciones semánticas del juego, independientes del dispositivo.
+// handleEvents() mapea teclado y mando a estos campos.
+// Los campos booleanos de movimiento/acción siguen siendo "nivel sostenido"
+// (true mientras se mantiene pulsado). Los campos de acción puntual
+// (confirm, cancel, menu, etc.) se activan en KEYDOWN/BUTTONDOWN y el
+// código del juego los pone a false tras consumirlos.
+// lastNumberPressed: 1-9 si se pulsó una tecla numérica este frame, -1 si no.
+// cameraTarget: 0-7 si se pulsó 1-7 para cambio de cámara durante el juego, -1 si no.
+// ----------------------------------------------------------------------------
 struct PlayerInput
 {
-	bool up, down, left, right, button1, button2, button3, button4;
-	bool start;
+	// --- movimiento (nivel sostenido) ---
+	bool up    = false;
+	bool down  = false;
+	bool left  = false;
+	bool right = false;
+
+	// --- acciones en juego (nivel sostenido) ---
+	bool action  = false;   // Espacio / Cruz:      coger/dejar objetos, avanzar cinemáticas
+	bool actionQ = false;   // Q / L2:              acción espejo izquierda
+	bool actionR = false;   // R / R2:              acción espejo derecha
+
+	// --- acciones puntales (consumir tras usar) ---
+	bool confirm = false;   // S,Y / Círculo:       sí / confirmar en menú
+	bool cancel  = false;   // N   / Cuadrado:      no  / cancelar en menú
+	bool menu    = false;   // Escape / Start:      abrir menú
+	bool map     = false;   // F5 / Select:         mostrar mapa
+	bool save    = false;   // G,W / R1:            grabar partida
+	bool load    = false;   // C,L / L1:            cargar partida
+	bool toggleGfx = false; // F2 / Triángulo:      cambiar VGA/CPC
+	bool toggleFullscreen = false; // F3:           pantalla completa
+	bool toggleMute = false;       // M:             silencio
+	bool advanceTime = false;      // Enter:         avanzar tiempo (modo info/debug)
+	bool cycleCamera = false;      // Tab / L3:      ciclar personaje cámara
+
+	// --- selección directa en menús (1-9), -1 si no se pulsó ---
+	int lastNumberPressed = -1;
+
+	// --- cámara directa durante el juego (1-7 → personajes), -1 si no ---
+	int cameraTarget = -1;
 };
 
-#define BUTTON_YES sys->pad.button3
-#define BUTTON_NO sys->pad.button2
+// Compatibilidad con código antiguo que usa BUTTON_YES / BUTTON_NO
+#define BUTTON_YES sys->isConfirm()
+#define BUTTON_NO  sys->isCancel()
 
 struct System
 {	
@@ -126,23 +164,23 @@ struct System
 	const Uint32 amask = 0;
 #endif
 
-	SDL_Surface *surface;
-	SDL_Rect dstrect;
-	SDL_Renderer *renderer;
-	SDL_Texture *texture;
-	SDL_Window *window;
-	SDL_GameController *gamepad;
-	SDL_Haptic *hapticDevice;
+	SDL_Surface  *surface     = nullptr;
+	SDL_Rect      dstrect     = {};
+	SDL_Renderer *renderer    = nullptr;
+	SDL_Texture  *texture     = nullptr;
+	SDL_Window   *window      = nullptr;
+	SDL_GameController *gamepad      = nullptr;
+	SDL_Haptic         *hapticDevice = nullptr;
 
-	std::vector<Mix_Chunk*>sounds;
+	std::vector<Mix_Chunk*> sounds;
 
-	uint64_t frameTime=0;
+	uint64_t frameTime = 0;
 #ifdef __EMSCRIPTEN__
-	uint64_t interruptCounter=0;
-	uint64_t targetFrameTime=0;
-	bool logicInterrupt=false;
+	uint64_t interruptCounter = 0;
+	uint64_t targetFrameTime  = 0;
+	bool     logicInterrupt   = false;
 #endif
-	int currentPalette=0;
+	int currentPalette = 0;
 
 	void initFrame();
 	void endFrame();
@@ -150,22 +188,28 @@ struct System
 	void init();
 	void quit();
 	void stopSound(Abadia::SONIDOS i);
-	void playSound(Abadia::SONIDOS i, bool loop=false);
-
-	// Pausa todos los canales de sonido activos y los reanuda.
-	// Usar al entrar/salir de menús para no cortar los sonidos
-	// de juego bruscamente sino congelarlos.
+	void playSound(Abadia::SONIDOS i, bool loop = false);
 	void pauseSounds();
 	void resumeSounds();
-	// activar/desactivar el sonido
-	void mute(bool mute);
+	void setMute(bool mute);
 
 	void updateScreen();
 	void handleEvents();
 	void hapticFeedback();
-	bool isNumberKeyPressed(int n) {
-		//return SDL_GetKeyboardState(nullptr)[SDL_SCANCODE_1 + (n - 1)];
-		return SDL_GetKeyboardState(nullptr)[SDL_SCANCODE_1 + (n - 2)];
+	bool isConfirm() {
+		if (pad.confirm || pad.advanceTime || pad.action ) {
+			pad.confirm = pad.advanceTime = pad.action = false;
+			return true;
+		}
+		return false;
+	}
+
+	bool isCancel() {
+		if (pad.cancel) {
+			pad.cancel = false;
+			return true;
+		}
+		return false;
 	}
 
 	void setFastSpeed();
@@ -174,59 +218,45 @@ struct System
 	void updateTexture();
 	void exitGame();
 	void print(const std::string message);
+	void toggleFullscreenMode();
 
-	void initPaleta(UINT8 *dirPaleta) { _paleta=new Paleta(dirPaleta); }
-	void setGamePalette(UINT8 pal) { currentPalette=pal; _paleta->setGamePalette(pal,surface->format); }
-	void setIntroPalette(void) { _paleta->setGamePalette(5,surface->format); }
-	//void setIntroPalette(void) { _paleta->setGamePalette(1,surface->format); }
-	// para que al cambiar de VGA a CPC se puede regenerar la paleta necesaria
-	void resetPalette(void) { _paleta->setGamePalette(currentPalette,surface->format); }
-								    
+	void initPaleta(UINT8 *dirPaleta) { _paleta = new Paleta(dirPaleta); }
+	void setGamePalette(UINT8 pal)    { currentPalette = pal; _paleta->setGamePalette(pal, surface->format); }
+	void setIntroPalette()            { _paleta->setGamePalette(5, surface->format); }
+	void resetPalette()               { _paleta->setGamePalette(currentPalette, surface->format); }
+
 	void setRGBPixel(UINT32 x, UINT32 y, UINT32 color) {
-		assert((x >= 0) && (x < 320));
-		assert((y >= 0) && (y < 200));
-		assert(color >= 0);
+		assert(x < 320); assert(y < 200);
 		_pixels[y * _pitch_pixels + x] = color;
 	}
-
 	UINT32 getPixel(UINT32 x, UINT32 y) {
-		assert((x >= 0) && (x < 320));
-		assert((y >= 0) && (y < 200));
+		assert(x < 320); assert(y < 200);
 		return _pixels[y * _pitch_pixels + x];
 	}
-								   
 	void setPixel(UINT32 x, UINT32 y, UINT8 color) {
-		assert((x >= 0) && (x < 320));
-		assert((y >= 0) && (y < 200));
-		assert((color >= 0) && (color < 256));
+		assert(x < 320); assert(y < 200); assert(color < 256);
 		_pixels[y * _pitch_pixels + x] = _paleta->rgb[color];
 	}
-
 	void fillMode1Rect(int x, int y, int width, int height, int color) {
-		assert((x >= 0) && (x < 320));
-		assert((y >= 0) && (y < 200));
-		assert((color >= 0) && (color < 256)); 
-		assert(((x + width) <= 320) && ((y + height) <= 200));
+		assert(x >= 0 && x < 320); assert(y >= 0 && y < 200);
+		assert(color >= 0 && color < 256);
+		assert((x + width) <= 320 && (y + height) <= 200);
 		fillRect(x, y, width, height, color);
 	}
 
-	private:
-	void fillRect(int x, int y, int width, int height, int color)
-	{
+private:
+	void fillRect(int x, int y, int width, int height, int color) {
 		int xLimit = width + x - 1;
-		for (; height > 0; height--, y++){
-			if (xLimit < x) {
-				std::swap<int>(x, xLimit);
-			}
-			for (int xx = x; xx <= xLimit; xx++){
+		for (; height > 0; height--, y++) {
+			if (xLimit < x) std::swap(x, xLimit);
+			for (int xx = x; xx <= xLimit; xx++)
 				setPixel(xx, y, color);
-			}
 		}
 	}
 
-	UINT32 *_pixels;
-	UINT32 _pitch_pixels;
-	Paleta *_paleta;	
+	UINT32  *_pixels       = nullptr;
+	UINT32   _pitch_pixels = 0;
+	Paleta  *_paleta       = nullptr;
 };
 
 extern System *const sys;

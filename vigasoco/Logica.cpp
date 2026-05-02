@@ -399,7 +399,8 @@ void Logica::compruebaCogerDejarObjetos()
 	// comprueba si los personajes dejan algún objeto
 	// si se pulsa el espacio, deja un objeto (si tiene)
 	//if (losControles->estaSiendoPulsado(P1_BUTTON1)){
-	if (sys->pad.button1){
+	//if (sys->pad.button1){
+	if (sys->pad.action){
 		dejaObjeto(guillermo);
 	}
 
@@ -718,8 +719,12 @@ int Logica::pulsadoQR()
 
 	// si no se ha pulsado la Q y la R, sale
 	//if (!losControles->estaSiendoPulsado(KEYBOARD_Q) || !losControles->estaSiendoPulsado(KEYBOARD_R)){
+	/*
 	if (sys->pad.button1 || sys->pad.button2){
 		return 0;
+	} */
+	if (!sys->pad.actionQ || !sys->pad.actionR){
+	    return 0;
 	}
 
 	// comprueba si se ha pulsado la Q y la R en una de las escaleras

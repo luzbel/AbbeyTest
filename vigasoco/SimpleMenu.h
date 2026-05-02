@@ -64,7 +64,8 @@ public:
             }
         }
 
-	// 1.5 Acceso directo por número (1-9, posición absoluta)
+	// 1.5 Acceso directo por número (1-9, posición absoluta) 
+	/*
         {
             //const Uint8 *keys = SDL_GetKeyboardState(nullptr);
             // SDL_SCANCODE_1..9
@@ -81,11 +82,22 @@ public:
                     break;
                 }
             }
-        }
+        } */
+	// Acceso directo por número (1-9, posición absoluta)
+	if (sys->pad.lastNumberPressed >= 1 && 
+			sys->pad.lastNumberPressed <= (int)entries.size()) {
+		size_t idx = sys->pad.lastNumberPressed - 1;
+		sys->pad.lastNumberPressed = -1;  // consumir
+		if (entries[idx].isEnabled()) {
+			selected = idx;
+			entries[idx].onConfirm();
+			return true;
+		}
+	}
 
-        // 2. Confirmación
+	// 2. Confirmación
         if (BUTTON_YES) {
-            BUTTON_YES = false;
+//            BUTTON_YES = false;
             if (entries[selected].isEnabled()) {
                 entries[selected].onConfirm();
                 return true;

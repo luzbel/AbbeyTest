@@ -369,11 +369,13 @@ void Adso::piensa()
 
 						// comprueba si se pulso la S o la N
 						if ((cntParaDormir & 0x01) == 0x01){
-							if (sys->pad.button3){
+							if (BUTTON_YES){
+								SDL_Log("adso preguntó y se contesta SI\n");
 								laLogica->avanzarMomentoDia = true;
 							}
 
-							if (sys->pad.button4){
+							if (BUTTON_NO){
+								SDL_Log("adso preguntó y se contesta NO\n");
 								estado = 5;
 							}
 						}
