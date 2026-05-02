@@ -7,6 +7,7 @@
 #include "Marcador.h"
 
 enum class MenuOrientation { VERTICAL, HORIZONTAL };
+enum class MenuAlignment   { CENTER, LEFT };
 
 struct MenuEntry {
     std::function<std::string()> getLabel;
@@ -20,18 +21,21 @@ class SimpleMenu {
     std::vector<MenuEntry> entries;
     size_t selected = 0;
     MenuOrientation orientation = MenuOrientation::VERTICAL;
-//    std::string prompt;
+    MenuAlignment   alignment   = MenuAlignment::CENTER;
     std::function<std::string()> getPrompt; 
     const int lineSpacing = 16;
+    const int leftMargin  = 80;
 
 public:
-    //void clear() { entries.clear(); selected = 0; prompt.clear(); }
     void clear() { entries.clear(); selected = 0; getPrompt = nullptr; }
     void setOrientation(MenuOrientation o) { orientation = o; }
-    //void setPrompt(const std::string& p) { prompt = p; }
+    void setAlignment(MenuAlignment a)     { alignment   = a; }
     void setPrompt(std::function<std::string()> p) { getPrompt = std::move(p); }
 
-    void add(std::function<std::string()> getText, std::function<void()> action, std::function<bool()> enabled = [](){return true;}) {
+    void add(
+		    std::function<std::string()> getText,
+		    std::function<void()> action,
+		    std::function<bool()> enabled = [](){return true;}) {
         entries.emplace_back(std::move(getText), std::move(action), std::move(enabled));
     }
 
@@ -57,6 +61,25 @@ public:
                 else if (next < 0) next = count - 1;
                 if (entries[next].isEnabled()) { selected = next; break; }
                 next += dir;
+            }
+        }
+
+	// 1.5 Acceso directo por número (1-9, posición absoluta)
+        {
+            //const Uint8 *keys = SDL_GetKeyboardState(nullptr);
+            // SDL_SCANCODE_1..9
+            for (int n = 1; n <= 9 && n <= (int)entries.size(); ++n) {
+                //if (keys[SDL_SCANCODE_0 + n]) {
+		if (sys->isNumberKeyPressed(n)) {
+                    size_t idx = n - 1;
+                    if (entries[idx].isEnabled()) {
+                        selected = idx;
+                        BUTTON_YES = false;
+                        entries[idx].onConfirm();
+                        return true;
+                    }
+                    break;
+                }
             }
         }
 
@@ -105,7 +128,10 @@ public:
         if (orientation == MenuOrientation::VERTICAL) {
             for (size_t i = 0; i < entries.size(); ++i) {
                 std::string txt = entries[i].getLabel();
-                size_t x = (320 - txt.length() * 8) >> 1;
+                size_t x = (alignment == MenuAlignment::LEFT)
+                        ? leftMargin
+                        : (320 - (int)txt.length() * 8) >> 1;
+                // size_t x = (320 - txt.length() * 8) >> 1;
                 bool isSel = (i == selected);
                 bool enabled = entries[i].isEnabled();
                 marcador.imprimeFrase(txt, x, y + i * lineSpacing, isSel ? 0 : (enabled ? 4 : 5), isSel ? 4 : 0);

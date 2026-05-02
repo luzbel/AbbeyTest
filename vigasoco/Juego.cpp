@@ -450,6 +450,7 @@ bool Juego::menu()
 {
     if (mainMenu.isEmpty()) {
         mainMenu.clear();
+	mainMenu.setAlignment(MenuAlignment::LEFT);
         
         // Item 0: Nueva Partida
         mainMenu.add(

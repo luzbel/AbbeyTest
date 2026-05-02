@@ -163,6 +163,10 @@ struct System
 	void updateScreen();
 	void handleEvents();
 	void hapticFeedback();
+	bool isNumberKeyPressed(int n) {
+		//return SDL_GetKeyboardState(nullptr)[SDL_SCANCODE_1 + (n - 1)];
+		return SDL_GetKeyboardState(nullptr)[SDL_SCANCODE_1 + (n - 2)];
+	}
 
 	void setFastSpeed();
 	void setNormalSpeed();
