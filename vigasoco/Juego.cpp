@@ -860,6 +860,7 @@ bool Juego::menuAyuda()
             [this]() {
 	    	changeState(STATES::HELP_REFERENCIAS);
 		sys->setFastSpeed();
+		pergamino->reset();
             },
 	    [this]() { return true; }
         );
