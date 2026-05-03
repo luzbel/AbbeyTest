@@ -270,22 +270,22 @@ constexpr const char* configSndMenuText[8][4] = {
 // Menú ayuda — 7 items: 6 secciones + volver
 // -----------------------------------------------------------------
 constexpr const char* helpMenuText[8][7] = {
-    { "0 INTRODUCCION", "1 MANEJO DEL TECLADO", "2 CAMARAS",
-      "3 PERGAMINO INICIAL", "4 REFERENCIAS", "5 CREDITOS", "9 VOLVER" },
-    { "0 INTRODUCTION",  "1 KEYBOARD CONTROLS", "2 CAMERAS",
-      "3 OPENING SCROLL","4 REFERENCES",   "5 CREDITS",  "9 BACK"   },
-    { "0 INTRODUCAO", "1 CONTROLES DO TECLADO", "2 CAMERAS",
-      "4 PERGAMINHO INICIAL",  "4 REFERENCIAS",  "5 CREDITOS", "9 VOLTAR" },
-    { "0 INTRODUCCIO",  "1 ÚS DE TECLAT", "2 CAMERAS",
-      "3 PERGAMI INICIAL", "4 REFERENCIES",  "5 CREDITS",  "9 TORNAR" },
-    { "0 INTRODUCION", "1 MANEXO DO TECLADO", "2 CAMARAS",
-      "3 PERGAMINO INICIAL", "4 REFERENCIAS",  "5 CREDITOS", "9 VOLVER" },
-    { "0 INTRODUZIONE", "1 USO DELLA TASTIERA",   "2 CAMERE",
-      "3 PERGAMENA INIZIALE","4 RIFERIMENTI",  "5 CREDITI",  "9 INDIETRO"},
-    { "0 JOHDANTO",  "1 NÄPPÄIMISTÖN KÄYTTÖ",  "2 KAMERAT",
-      "3 ALKUPERAINEN PERGAMENTTI",   "4 VIITTEET",      "5 ANSIOLUETTELO","9 TAKAISIN"},
-    { "0 INTRODUCAO", "1 UTILIZAÇÃO DO TECLADO", "2 CAMERAS",
-      "3 PERGAMINHO INICIAL",  "4 REFERENCIAS",  "5 CREDITOS", "9 VOLTAR" }
+    { "0 INTRODUCCION", "1 MANEJO DEL TECLADO", "2 AYUDAS Y MEJORAS",
+      "3 CAMARAS", "4 REFERENCIAS", "5 PERGAMINO INICIAL", "9 VOLVER" },
+    { "0 INTRODUCTION",  "1 KEYBOARD CONTROLS", "2 ASSISTS AND ENHACEMENTS",
+      "3 CAMERAS","4 REFERENCES",   "5 OPENING SCROLL",  "9 BACK"   },
+    { "0 INTRODUCAO", "1 CONTROLES DO TECLADO", "2 AJUDAS E MELHORIAS",
+      "3 CAMERAS",  "4 REFERENCIAS",  "5 PERGAMINHO INICIAL", "9 VOLTAR" },
+    { "0 INTRODUCCIO",  "1 ÚS DE TECLAT", "2 AJUDES I MILLORES",
+      "3 CAMERAS", "4 REFERENCIES",  "5 PERGAMI INICIAL",  "9 TORNAR" },
+    { "0 INTRODUCION", "1 MANEXO DO TECLADO", "2 AXUDAS E MELLORAS",
+      "3 CAMARAS", "4 REFERENCIAS",  "5 PERGAMINO INICIAL", "9 VOLVER" },
+    { "0 INTRODUZIONE", "1 USO DELLA TASTIERA",   "2 AIUTI E MIGLIORAMENTI",
+      "3 CAMERE","4 RIFERIMENTI",  "5 PERGAMENA INIZIALE",  "9 INDIETRO"},
+    { "0 JOHDANTO",  "1 NÄPPÄIMISTÖN KÄYTTÖ",  "2 APU JA PARANNUKSET",
+      "3 KAMERAT",   "4 VIITTEET",      "5 ALKUPERAINEN PERGAMENTTI","9 TAKAISIN"},
+    { "0 INTRODUCAO", "1 UTILIZAÇÃO DO TECLADO", "2 AJUDAS E MELHORIAS",
+      "3 CAMERAS",  "4 REFERENCIAS",  "5 PERGAMINHO INICIAL", "9 VOLTAR" }
 };
 
 constexpr const char* helpManejoText[TOTAL_LANGUAGES][9] = {
@@ -370,6 +370,188 @@ constexpr const char* helpManejoText[TOTAL_LANGUAGES][9] = {
 			"ESPACIO: DEJAR OBJETOS",
 			"SUPR: PAUSA",
 			"",
+		}
+};
+constexpr const char* helpCamarasText[TOTAL_LANGUAGES][9] = {
+	{ // 0 Castellano
+		"   USA ESTAS TECLAS DURANTE EL JUEGO    " , 
+		"1 DEJAD PULSADO PARA SEGUIR AL ABAD",
+		"2 DEJAD PULSADO PARA SEGUIR A SEVERINO",
+		"3 DEJAD PULSADO PARA SEGUIR A MALAQUIAS",
+		"4 DEJAD PULSADO PARA SEGUIR A BERENGARIO",
+		"5 DEJAD PULSADO PARA SEGUIR A JORGE",
+		"6 DEJAD PULSADO PARA SEGUIR A BERNARDO",
+		"7 DEJAD PULSADO PARA SEGUIR A ADSO",
+		"    -PULSA ESPACIO PARA CONTINUAR-" 
+	//	"0","1","2","3", "4",	"5","6","7","8"
+	},
+	{ // 1 INGLES
+		"ERR",
+		"",
+		"",
+		"",
+		"" ,
+		"",
+		"",
+		"",
+		"PRESS SPACE TO CONTINUE"
+	},
+	{ // 2 PORTUGUES BRASIL
+		"TODO" , 
+		"",
+		"",
+		"",
+		"" ,
+		"",
+		"",
+		"",
+		"PRESS SPACE TO CONTINUE"
+	},
+	{ // 3 CATALAN
+		"TODO" , 
+		"" ,
+		"" ,
+		"" ,
+		"" ,
+		"",
+		"",
+		"",
+		"PRESS SPACE TO CONTINUE"
+	},
+	{ // 4 GALLEGO
+		"TODO" , 
+		"" ,
+		"" ,
+		"" ,
+		"" ,
+		"",
+		"",
+		"",
+		"PRESS SPACE TO CONTINUE"
+	},
+	{ // 5 ITALIANO
+		"TODO",
+		"" ,
+		"" ,
+		"" ,
+		"" ,
+		"",
+		"",
+		"",
+		"PRESS SPACE TO CONTINUE"
+	},
+	{ // 6 FINES
+		"TODO",
+		"" ,
+		"" ,
+		"" ,
+		"" ,
+		"",
+		"",
+		"",
+		"PRESS SPACE TO CONTINUE"
+	},
+	{ // 7 PORTUGUES
+		"TODO" ,
+		"" ,
+		"" ,
+		"" ,
+		"" ,
+		"",
+		"",
+		"",
+		"PRESS SPACE TO CONTINUE"
+	}
+};
+
+constexpr const char* helpAyudasText[TOTAL_LANGUAGES][9] = {
+	{ // 0 Castellano
+			"   USA ESTAS TECLAS DURANTE EL JUEGO  " ,
+			"G GRABAR LA PARTIDA" ,
+			"C CARGAR LA PARTIDA" ,
+			"F2 CAMBIAR ENTRE GRÁFICOS VGA O CPC",
+			"F3 PANTALLA COMPLETA",
+			"F5 MOSTRAR MAPAS",
+			"SUPR PAUSA",
+			"",
+			"    -PULSA ESPACIO PARA CONTINUAR-"
+		},
+		{ // 1 INGLES
+			"            KEYBOARD SHORTCUTS         ",
+			"G SAVE GAME",
+			"C LOAD GAME",
+			"F2 SWITCH VGA CPC GRAPHICS",
+			"F3 FULLSCREEN" ,
+			"F5 SHOW MAPS",
+			"SUPR PAUSE",
+			"",
+			"           -PRESS SPACE-          "
+		},
+		{ // 2 PORTUGUES BRASIL
+			"   USA ESTAS TECLAS DURANTE EL JUEGO   " ,
+			"G GRABAR LA PARTIDA" ,
+			"C CARGAR LA PARTIDA" ,
+			"F2 CAMBIAR ENTRE GRÁFICOS VGA O CPC",
+			"F3 PANTALLA COMPLETA",
+			"F5 MOSTRAR MAPAS",
+			"SUPR PAUSA",
+			"",
+			"    -PULSA ESPACIO PARA CONTINUAR-"
+		},
+		{ // 3 CATALAN
+			"   USA ESTAS TECLAS DURANTE EL JUEGO   " ,
+			"G GRABAR LA PARTIDA" ,
+			"C CARGAR LA PARTIDA" ,
+			"F2 CAMBIAR ENTRE GRÁFICOS VGA O CPC",
+			"F3 PANTALLA COMPLETA",
+			"F5 MOSTRAR MAPAS",
+			"SUPR PAUSA",
+			"",
+			"    -PULSA ESPACIO PARA CONTINUAR-"
+		},
+		{ // 4 GALLEGO
+			"   USA ESTAS TECLAS DURANTE EL JUEGO   " ,
+			"G GRABAR LA PARTIDA" ,
+			"C CARGAR LA PARTIDA" ,
+			"F2 CAMBIAR ENTRE GRÁFICOS VGA O CPC",
+			"F3 PANTALLA COMPLETA",
+			"F5 MOSTRAR MAPAS",
+			"SUPR PAUSA",
+			"",
+			"    -PULSA ESPACIO PARA CONTINUAR-"
+		},
+		{ // 5 ITALIANO
+			"   USA ESTAS TECLAS DURANTE EL JUEGO   " ,
+			"G GRABAR LA PARTIDA" ,
+			"C CARGAR LA PARTIDA" ,
+			"F2 CAMBIAR ENTRE GRÁFICOS VGA O CPC",
+			"F3 PANTALLA COMPLETA",
+			"F5 MOSTRAR MAPAS",
+			"SUPR PAUSA",
+			"",
+			"    -PULSA ESPACIO PARA CONTINUAR-"
+		},
+		{ // 6 FINES
+			"            KEYBOARD SHORTCUTS         ",
+			"G SAVE GAME",
+			"C LOAD GAME",
+			"F2 SWITCH VGA CPC GRAPHICS",
+			"F3 FULLSCREEN" ,
+			"F5 SHOW MAPS",
+			"SUPR PAUSE",
+			"",
+			"           -PRESS SPACE-          "
+		},
+		{ // 7 PORTUGUES
+			"   USA ESTAS TECLAS DURANTE EL JUEGO   " ,
+			"G GRABAR LA PARTIDA" ,
+			"C CARGAR LA PARTIDA" ,
+			"F2 CAMBIAR ENTRE GRÁFICOS VGA O CPC",
+			"F3 PANTALLA COMPLETA",
+			"F5 MOSTRAR MAPAS",
+			"SUPR PAUSA",
+			"",
+			"    -PULSA ESPACIO PARA CONTINUAR-"
 		}
 };
 

@@ -77,6 +77,9 @@ namespace Abadia {
 		HELP_INTRODUCCION, // el texto de las instrucciones
 		HELP_MANEJO_PERGAMINO, //
 	 	HELP_MANEJO , //
+	 	HELP_AYUDAS, //
+		HELP_CAMARAS,
+		HELP_REFERENCIAS,
 		CONFIG,         // submenú configuración
 		CONFIG_GFX,     // submenú gráficos
 		CONFIG_SND,     // submenú sonido

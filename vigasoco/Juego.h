@@ -120,6 +120,9 @@ public:
 	bool helpIntroduccion();
 	bool helpManejoPergamino();
 	bool helpManejo();
+	bool helpAyudas();
+	bool helpCamaras();
+	bool helpReferencias();
 	bool menuConfig();
 	bool menuConfigGfx();
 	bool menuConfigSnd();

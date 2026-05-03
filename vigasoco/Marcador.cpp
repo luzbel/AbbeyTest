@@ -382,6 +382,7 @@ void Marcador::limpiaAreaFrases()
 // recorre los caracteres de la frase, mostrándolos por pantalla
 void Marcador::imprimeFrase(std::string frase, int x, int y, int colorTexto, int colorFondo)
 {
+//	SDL_Log("frase %s\n",frase.c_str());
 	
 	//for (unsigned int i = 0; i < frase.length(); i++){
         // 		imprimirCaracter(frase[i], x + 8*i, y, colorTexto, colorFondo);

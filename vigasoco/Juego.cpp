@@ -836,18 +836,37 @@ bool Juego::menuAyuda()
 	    [this]() { return true; }
         );
 
-        // 2 Cámaras
+        // 2 Ayudas y mejoras
         helpMenu.add(
             [this]() { return helpMenuText[idioma][2]; },
             [this]() {
-                SDL_Log("menuAyuda: camaras no implementado");
+		changeState(STATES::HELP_AYUDAS);
             },
-	    [this]() { return false; }
+	    [this]() { return true; }
         );
 
-        // 3 Introducción (pergamino de inicio)
+	// 3 ayuda cámaras
         helpMenu.add(
             [this]() { return helpMenuText[idioma][3]; },
+            [this]() {
+	    	changeState(STATES::HELP_CAMARAS);
+            },
+	    [this]() { return true; }
+        );
+
+                // 4 Referencias
+        helpMenu.add(
+            [this]() { return helpMenuText[idioma][4]; },
+            [this]() {
+	    	changeState(STATES::HELP_REFERENCIAS);
+		sys->setFastSpeed();
+            },
+	    [this]() { return true; }
+        );
+
+	// 5 Introducción (pergamino de inicio)
+        helpMenu.add(
+            [this]() { return helpMenuText[idioma][5]; },
             [this]() {
                 changeState(STATES::SCROLL);
                 //sys->minimumFrameTime = SCROLL_FRAME_TIME;
@@ -856,24 +875,7 @@ bool Juego::menuAyuda()
             }
         );
 
-        // 4 Referencias
-        helpMenu.add(
-            [this]() { return helpMenuText[idioma][4]; },
-            [this]() {
-                SDL_Log("menuAyuda: referencias no implementado");
-            },
-	    [this]() { return false; }
-        );
-
-        // 5 Créditos
-        helpMenu.add(
-            [this]() { return helpMenuText[idioma][5]; },
-            [this]() {
-                SDL_Log("menuAyuda: creditos no implementado");
-            },
-	    [this]() { return false; }
-        );
-/*
+        /*
 	// 7-8 desactivados para que volver sea siempre el 9
         for (int i = 0; i < 2; i++)
             helpMenu.add([this]() { return ""; }, [this]() {}, [this]() { return false; }); */
@@ -948,7 +950,8 @@ bool Juego::helpManejo() {
 	if (BUTTON_YES) {
 		changeState(STATES::MENU); 
 	} else {
-		for (int i=0;i<9;i++)
+		marcador->imprimeFrase(helpManejoText[idioma][0], 8, 16+(0*16),4, 0);
+		for (int i=1;i<9;i++)
 		{
 			marcador->imprimeFrase(helpManejoText[idioma][i], 8, 16+(i*16),0, 4);
 		}
@@ -956,6 +959,44 @@ bool Juego::helpManejo() {
 	return true;
 }
 
+bool Juego::helpAyudas() {
+	if (BUTTON_YES) {
+		changeState(STATES::HELP); 
+	} else {
+		marcador->imprimeFrase(helpAyudasText[idioma][0], 8, 16+(0*16),4, 0);
+		for (int i=1;i<9;i++)
+		{
+			marcador->imprimeFrase(helpAyudasText[idioma][i], 8, 16+(i*16),0, 4);
+		}
+	}
+	return true;
+}
+
+bool Juego::helpCamaras() {
+	if (BUTTON_YES) {
+		changeState(STATES::HELP); 
+	} else {
+		marcador->imprimeFrase(helpCamarasText[idioma][0], 0, 16+(0*16),4, 0);
+		for (int i=1;i<9;i++)
+		{
+			marcador->imprimeFrase(helpCamarasText[idioma][i], 0, 16+(i*16),0, 4);
+		}
+	}
+	return true;
+}
+
+bool Juego::helpReferencias() {
+	pergamino->muestraTexto(Pergamino::pergaminoReferencias[idioma]);
+	
+	if (pergamino->finished)
+	{
+		//BUTTON_YES = false;
+		sys->setNormalSpeed();
+		changeState(Abadia::STATES::HELP);
+		// changeState ya gestiona paleta, marcador y sonidos.
+	}
+	return true;
+}
 /////////////////////////////////////////////////////////////////////////////
 // método principal del juego
 /////////////////////////////////////////////////////////////////////////////
@@ -1008,6 +1049,9 @@ void Juego::changeState(Abadia::STATES newState)
 	case STATES::HELP_INTRODUCCION:
 	case STATES::HELP_MANEJO_PERGAMINO:
 	case STATES::HELP_MANEJO:
+	case STATES::HELP_AYUDAS:
+	case STATES::HELP_CAMARAS:
+	case STATES::HELP_REFERENCIAS:
 	case STATES::CONFIG:
 	case STATES::CONFIG_GFX:
 	case STATES::CONFIG_SND:
