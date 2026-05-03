@@ -59,6 +59,17 @@ public:
     bool tick(Abadia::Marcador& marcador) {
         if (entries.empty()) return false;
 
+	// 0. Si selected está fuera de rango o en entrada deshabilitada, buscar la primera habilitada.
+	{
+		int count = (int)entries.size();
+		bool ok = (selected < (size_t)count) && entries[selected].isEnabled();
+		if (!ok) {
+			for (int i = 0; i < count; ++i) {
+				if (entries[i].isEnabled()) { selected = i; break; }
+			}
+		}
+	}
+
         // 1. Navegación
         int dir = 0;
         if (orientation == MenuOrientation::VERTICAL) {
@@ -178,7 +189,8 @@ public:
                 // size_t x = (320 - txt.length() * 8) >> 1;
                 bool isSel = (i == selected);
                 bool enabled = entries[i].isEnabled();
-                marcador.imprimeFrase(txt, x, y + i * lineSpacing, isSel ? 0 : (enabled ? 4 : 5), isSel ? 4 : 0);
+		//
+                marcador.imprimeFrase(txt, x, y + i * lineSpacing, isSel ? 0 : (enabled ? 4 : 1), isSel ? 4 : 0);
             }
         } else {
             int totalW = 0;
@@ -188,7 +200,8 @@ public:
                 std::string txt = entries[i].getLabel();
                 bool isSel = (i == selected);
                 bool enabled = entries[i].isEnabled();
-                marcador.imprimeFrase(txt, xCursor, y, isSel ? 0 : (enabled ? 4 : 5), isSel ? 4 : 0);
+                //marcador.imprimeFrase(txt, xCursor, y, isSel ? 0 : (enabled ? 4 : 5), isSel ? 4 : 0);
+                marcador.imprimeFrase(txt, xCursor, y, isSel ? 0 : (enabled ? 4 : 1), isSel ? 4 : 0);
                 xCursor += txt.length() * 8 + 40;
             }
         }

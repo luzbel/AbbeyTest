@@ -256,7 +256,7 @@ constexpr const char* configGfxMenuText[8][4] = {
 // Menú sonido — 4 items: mute, vol música, vol efectos, volver
 // -----------------------------------------------------------------
 constexpr const char* configSndMenuText[8][4] = {
-    { "0 SILENCIO", "1 MUSICA",  "2 EFECTOS", "9 VOLVER"   },
+    { "0 SONIDO", "1 MUSICA",  "2 EFECTOS", "9 VOLVER"   },
     { "0 MUTE",     "1 MUSIC",   "2 EFFECTS", "9 BACK"     },
     { "0 MUDO",     "1 MUSICA",  "2 EFEITOS", "9 VOLTAR"   },
     { "0 MUT",      "1 MUSICA",  "2 EFECTES", "9 TORNAR"   },

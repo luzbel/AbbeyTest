@@ -707,7 +707,8 @@ bool Juego::menuConfigGfx()
             },
             [this]() {
                 SDL_Log("menuConfigGfx: filtro no implementado");
-            }
+            },
+	    [this]() { return false; }
         );
 
         // 2 Paleta — no implementado
@@ -718,7 +719,8 @@ bool Juego::menuConfigGfx()
             },
             [this]() {
                 SDL_Log("menuConfigGfx: paleta no implementado");
-            }
+            },
+	    [this]() { return false; }
         );
 /*
 	// 4-8 desactivados para que volver sea siempre el 9
@@ -765,7 +767,8 @@ bool Juego::menuConfigSnd()
             },
             [this]() {
                 SDL_Log("menuConfigSnd: volumen musica no implementado");
-            }
+            },
+	    [this]() { return false; }
         );
 
         // 2 Volumen efectos — no implementado
@@ -776,8 +779,9 @@ bool Juego::menuConfigSnd()
             },
             [this]() {
                 SDL_Log("menuConfigSnd: volumen efectos no implementado");
-            }
-        );
+            },
+	    [this]() { return false; }
+	);
 /*
 	// 4-8 desactivados para que volver sea siempre el 9
         for (int i = 0; i < 5; i++)
@@ -805,7 +809,8 @@ bool Juego::menuAyuda()
             [this]() { return helpMenuText[idioma][0]; },
             [this]() {
                 SDL_Log("menuAyuda: controles no implementado");
-            }
+            },
+	    [this]() { return false; }
         );
 
         // 1 Teclas rápidas
@@ -813,7 +818,8 @@ bool Juego::menuAyuda()
             [this]() { return helpMenuText[idioma][1]; },
             [this]() {
                 SDL_Log("menuAyuda: teclas rapidas no implementado");
-            }
+            },
+	    [this]() { return false; }
         );
 
         // 2 Cámaras
@@ -821,7 +827,8 @@ bool Juego::menuAyuda()
             [this]() { return helpMenuText[idioma][2]; },
             [this]() {
                 SDL_Log("menuAyuda: camaras no implementado");
-            }
+            },
+	    [this]() { return false; }
         );
 
         // 3 Introducción (pergamino de inicio)
@@ -839,7 +846,8 @@ bool Juego::menuAyuda()
             [this]() { return helpMenuText[idioma][4]; },
             [this]() {
                 SDL_Log("menuAyuda: referencias no implementado");
-            }
+            },
+	    [this]() { return false; }
         );
 
         // 5 Créditos
@@ -847,7 +855,8 @@ bool Juego::menuAyuda()
             [this]() { return helpMenuText[idioma][5]; },
             [this]() {
                 SDL_Log("menuAyuda: creditos no implementado");
-            }
+            },
+	    [this]() { return false; }
         );
 /*
 	// 7-8 desactivados para que volver sea siempre el 9
