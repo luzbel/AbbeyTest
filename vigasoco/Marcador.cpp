@@ -264,7 +264,8 @@ void Marcador::limpiaAreaMarcador()
 //TODO revisar si al poner las traducciones con caracteres de 8x10
 // en vez de 8x8, hay que cambiar esto
 	// CPC cpc6128->fillMode1Rect(0, 160, 320, 40, 3);
-	sys->fillMode1Rect(0, 160, 320, 40, 0); // VGA
+	//sys->fillMode1Rect(0, 160, 320, 40, 0); // VGA
+	sys->fillMode1Rect(0, 160, 320, 40, 4); 
 }
 
 // dibuja el marcador

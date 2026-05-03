@@ -30,6 +30,7 @@ public:
 
 	void setColor(UINT8 index,UINT8 red,UINT8 green,UINT8 blue, const SDL_PixelFormat * format) {
 		assert((index >= 0) && (index < 256)); // TODO, quitar valor a fuego
+//SDL_Log("setColor %d r %d, g %d , b %d\n",index, red,green,blue);
 		rgb[index]=SDL_MapRGB(format,red,green,blue);
 	};
 private:

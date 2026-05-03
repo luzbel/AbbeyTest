@@ -135,7 +135,7 @@ constexpr const char* principalMenuText[8][10] = {
         "5 IDIOMA",
         "6 SONIDO",
         "7 AYUDA",
-	"8 ",
+	"8 MAPA",
         "9 SALIR"
     },
     { // 1 English
@@ -147,7 +147,7 @@ constexpr const char* principalMenuText[8][10] = {
         "5 LANGUAGE",
         "6 SOUND",
         "7 HELP",
-	"8 ",
+	"8 MAP",
         "9 EXIT"
     },
     { // 2 Portugues Brasil
@@ -159,7 +159,7 @@ constexpr const char* principalMenuText[8][10] = {
         "5 IDIOMA",
         "6 SOM",
         "7 AJUDA",
-	"8 ",
+	"8 MAPA",
         "9 SAIR"
     },
     { // 3 Catalan
@@ -171,7 +171,7 @@ constexpr const char* principalMenuText[8][10] = {
         "5 IDIOMA",
         "6 SO",
         "7 AJUDA",
-	"8 ",
+	"8 MAPA",
         "9 SORTIR"
     },
     { // 4 Gallego
@@ -183,7 +183,7 @@ constexpr const char* principalMenuText[8][10] = {
         "5 IDIOMA",
         "6 SON",
         "7 AXUDA",
-	"8 ",
+	"8 MAP",
         "9 SAÍR"
     },
     { // 5 Italiano
@@ -195,7 +195,7 @@ constexpr const char* principalMenuText[8][10] = {
         "5 LINGUA",
         "6 SUONO",
         "7 AIUTO",
-	"8 ",
+	"8 MAPPA",
         "9 ESCI"
     },
     { // 6 Fines
@@ -207,7 +207,7 @@ constexpr const char* principalMenuText[8][10] = {
         "5 KIELI",
         "6 AANI",
         "7 OHJE",
-	"8 ",
+	"8 KARTTA",
         "9 LOPETA"
     },
     { // 7 Portugues
@@ -219,7 +219,7 @@ constexpr const char* principalMenuText[8][10] = {
         "5 IDIOMA",
         "6 SOM",
         "7 AJUDA",
-	"8 ",
+	"8 MAPA",
         "9 SAIR"
     }
 };

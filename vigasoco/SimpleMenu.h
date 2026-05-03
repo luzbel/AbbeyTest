@@ -110,7 +110,7 @@ public:
                 }
             }
         } */
-	SDL_Log ("lastNumberPressed %d size %d\n",sys->pad.lastNumberPressed ,(int)entries.size());
+//	SDL_Log ("lastNumberPressed %d size %d\n",sys->pad.lastNumberPressed ,(int)entries.size());
 	// Acceso directo por número (1-9, posición absoluta)
 	if (sys->pad.lastNumberPressed >= 0 && 
 			sys->pad.lastNumberPressed <= (int)entries.size()-1) {
@@ -172,10 +172,10 @@ public:
 		std::string l1 = p.substr(0, nl);
 		std::string l2 = nl != std::string::npos ? p.substr(nl+1) : "";
 		int x = (320 - l1.length() * 8) >> 1;
-		marcador.imprimeFrase(l1, x, y, 4, 0);
+		marcador.imprimeFrase(l1, x, y, 0, 4);
 		if (!l2.empty()) {
 			x = (320 - l2.length() * 8) >> 1;
-			marcador.imprimeFrase(l2, x, y + 12, 4, 0);
+			marcador.imprimeFrase(l2, x, y + 12, 0, 4);
 			y += 24;
 		} else y += 20;
 	}
@@ -190,7 +190,7 @@ public:
                 bool isSel = (i == selected);
                 bool enabled = entries[i].isEnabled();
 		//
-                marcador.imprimeFrase(txt, x, y + i * lineSpacing, isSel ? 0 : (enabled ? 4 : 1), isSel ? 4 : 0);
+                marcador.imprimeFrase(txt, x, y + i * lineSpacing, isSel ? 4 : (enabled ? 0 : 1), isSel ? 0 : 4);
             }
         } else {
             int totalW = 0;
@@ -201,7 +201,7 @@ public:
                 bool isSel = (i == selected);
                 bool enabled = entries[i].isEnabled();
                 //marcador.imprimeFrase(txt, xCursor, y, isSel ? 0 : (enabled ? 4 : 5), isSel ? 4 : 0);
-                marcador.imprimeFrase(txt, xCursor, y, isSel ? 0 : (enabled ? 4 : 1), isSel ? 4 : 0);
+                marcador.imprimeFrase(txt, xCursor, y, isSel ? 4 : (enabled ? 0 : 1), isSel ? 0 : 4);
                 xCursor += txt.length() * 8 + 40;
             }
         }

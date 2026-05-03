@@ -201,27 +201,25 @@ void System::updateTexture()
 // ----------------------------------------------------------------------------
 // handleEvents
 //
-// Mapeo acordado:
-//
 //  Acción           Teclado              Mando
 //  ─────────────────────────────────────────────────────
 //  Mover            Cursores             Cruceta / analógico izq
-//  Confirmar/Sí     S, Y                 Círculo  (BUTTON_B en SDL)
-//  Cancelar/No      N                    Cuadrado (BUTTON_X en SDL)
+//  Confirmar/Sí     S(i), Y(es)          Círculo  (BUTTON_B en SDL)
+//  Cancelar/No      N(o)                 Cuadrado (BUTTON_X en SDL)
 //  Acción           Espacio              Cruz     (BUTTON_A en SDL)
 //  Menú             Escape               Start
-//  Mapa             F5                   Select   (BACK)
-//  Grabar           G, W                 R1       (RIGHTSHOULDER)
-//  Cargar           C, L                 L1       (LEFTSHOULDER)
-//  Cambiar VGA/CPC  F2                   Triángulo(BUTTON_Y en SDL)
+//  Mapa             F5,I(nformación)     Select   (BACK)
+//  Grabar           G(rabar), W(rite)    R1       (RIGHTSHOULDER)
+//  Cargar           C(argar), L(oad)     L1       (LEFTSHOULDER)
+//  Cambiar VGA/CPC  F2,V(GA)             Triángulo(BUTTON_Y en SDL)
 //  Pantalla completa F3                  —
 //  Avanzar tiempo   Enter                —
-//  Mute             M                    —
+//  Mute             M(ute)               —
 //  Ciclar cámara    Tab                  L3       (LEFTSTICK)
 //  Acción Q espejo  Q                    L2       (TRIGGERLEFT via axis)
 //  Acción R espejo  R                    R2       (TRIGGERRIGHT via axis)
 //  Cámara 1-7       Teclas 1-7           —
-//  Selección menú   Teclas 1-9           —
+//  Selección menú   Teclas 0-9           —
 //
 // Nota sobre L2/R2: son ejes analógicos en SDL2 (SDL_CONTROLLER_AXIS_TRIGGERLEFT/RIGHT),
 // no botones. Se consideran pulsados cuando superan la mitad de su recorrido (> 16383).
@@ -300,6 +298,7 @@ void System::handleEvents()
 
 			// Mapa (puntual, sin repeat)
 			case SDLK_F5:
+			case SDLK_i:
 				if (!repeat) pad.map = true;
 				break;
 
@@ -316,6 +315,7 @@ void System::handleEvents()
 				break;
 
 			// Cambiar VGA/CPC (puntual, sin repeat)
+			case SDLK_v:
 			case SDLK_F2:
 				if (!repeat) pad.toggleGfx = true;
 				break;

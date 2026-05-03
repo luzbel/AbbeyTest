@@ -629,6 +629,14 @@ bool Juego::menu()
             [this]() { changeState(STATES::HELP); }
         );
 
+        // 8 MAPA
+        mainMenu.add(
+            [this]() { return std::string(principalMenuText[idioma][8]) + (modoInformacion ? " ON " : " OFF"); },
+            [this]() { modoInformacion=!modoInformacion; },
+	    [this]() { return estadoContenido == STATES::PLAY; }
+        );
+
+
 	mainMenu.fill();
 
         // 9 Salir
@@ -936,7 +944,7 @@ void Juego::changeState(Abadia::STATES newState)
             pausaPorEstarEnMenus = true;
             sys->pauseSounds();
             sys->setGamePalette(2);
-            limpiaAreaJuego(0);
+            limpiaAreaJuego(4);
 	    marcador->limpiaAreaMarcador();  // solo el marcador, no ReiniciaPantalla completo
             break;
         case STATES::SCROLL:
@@ -962,6 +970,11 @@ void Juego::changeState(Abadia::STATES newState)
 
 void Juego::run()
 {
+	if (sys->pad.map) { 
+		modoInformacion=!modoInformacion; 
+		limpiaAreaJuego(12);
+                motor->compruebaCambioPantalla(true);
+        }
 	elBuscadorDeRutas->contadorAnimGuillermo = laLogica->guillermo->contadorAnimacion;
 	
 	logica->compruebaAbreEspejo();
@@ -1014,14 +1027,28 @@ void Juego::run()
 
 void Juego::limpiaAreaJuego(int color)
 {
+// colores compatibles con el modo en que 
+// el mapa se superpone al juego
+// y el fondo no se mezcla con el mapa
+// tanto en VGA como en CPC
+// 4
+// 16 regulero
+// 19 regulero
+// 20 feo
+// 21 feo
+int fondo=4;
+
 	// esta es es el margen izquierdo de la zona de juego
 	// que en la intro (imagen de portada) si se escribe
-	sys->fillMode1Rect(0, 0, 32, 160, 0);
+	// tambien se escribe en el mapa
+	sys->fillMode1Rect(0, 0, 32, 160, fondo);
 	// esta es la parte de la zona de juego
 	sys->fillMode1Rect(32, 0, 256, 160, color);
 	// esta es es el margen derecho de la zona de juego
 	// que en la intro (imagen de portada) si se escribe
-	sys->fillMode1Rect(32 + 256, 0, 32, 160, 0);	
+	// tambien se escribe en el mapa
+	sys->fillMode1Rect(0, 0, 32, 160, fondo);
+	sys->fillMode1Rect(32 + 256, 0, 32, 160, fondo);	
 	// pero esto no borra la zona del marcador
 	// que se tendría que borrar con limpiaAreaMarcador
 }
