@@ -8,6 +8,27 @@ Module["preRun"].push(function () {
       removeRunDependency('syncfs')
       console.log("FS Synced")
     })
+
+    Module['print']("Waiting for gamepad...");
+    Module['addRunDependency']("gamepad");
+    window.addEventListener('gamepadconnected', function()
+    {
+        //OK, got one
+        Module['removeRunDependency']("gamepad");
+    }, false);
+
+    //chrome
+    if(!!navigator.webkitGetGamepads)
+    {
+        var timeout = function()
+        {
+            if(navigator.webkitGetGamepads()[0] !== undefined)
+                Module['removeRunDependency']("gamepad");
+            else
+                setTimeout(timeout, 100);
+        }
+        setTimeout(timeout, 100);
+    }
   });
 
 function syncPersist(callbackPtr) {
