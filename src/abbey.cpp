@@ -287,6 +287,15 @@ void Abbey::logic()
 	case STATES::HELP_MANEJO:
 	    _game->helpManejo();
 	    break;
+	case STATES::HELP_AYUDAS:
+	    _game->helpAyudas();
+	    break;
+	case STATES::HELP_CAMARAS:
+	    _game->helpCamaras();
+	    break;
+	case STATES::HELP_REFERENCIAS:
+	    _game->helpReferencias();
+	    break;
     }
 }
 
