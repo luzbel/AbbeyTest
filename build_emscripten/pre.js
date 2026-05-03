@@ -8,7 +8,7 @@ Module["preRun"].push(function () {
       removeRunDependency('syncfs')
       console.log("FS Synced")
     })
-
+/*
     Module['print']("Waiting for gamepad...");
     Module['addRunDependency']("gamepad");
     window.addEventListener('gamepadconnected', function()
@@ -29,6 +29,7 @@ Module["preRun"].push(function () {
         }
         setTimeout(timeout, 100);
     }
+    */
   });
 
 function syncPersist(callbackPtr) {
