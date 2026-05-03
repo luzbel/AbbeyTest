@@ -17,12 +17,14 @@ void System::init()
 	Uint32 windowFlags = SDL_WINDOW_SHOWN;
 	Uint32 initFlags   = SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER;
 
+
 	SDL_Init(SDL_INIT_VIDEO | initFlags | SDL_INIT_AUDIO);
 
 #ifdef ANDROID
 	windowFlags |= SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN | SDL_WINDOW_RESIZABLE;
 #endif
-
+	SDL_GameControllerAddMappingsFromFile("gamecontrollerdb.txt");
+/*
 	if (SDL_NumJoysticks() < 1) {
 		print("Warning: controller not found.\n");
 	} else {
@@ -31,6 +33,7 @@ void System::init()
 			print("Warning: Can't open SDL_GameControllerOpen(0)\n");
 		SDL_GameControllerAddMappingsFromFile("gamecontrollerdb.txt");
 	}
+	*/
 
 #ifndef __EMSCRIPTEN__
 	if (SDL_InitSubSystem(SDL_INIT_HAPTIC) < 0) {
@@ -338,13 +341,15 @@ void System::handleEvents()
 				if (!repeat) pad.cycleCamera = true;
 				break;
 
-			// Teclas numéricas 1-9: selección directa en menús y cambio de cámara
+			// Teclas numéricas 0-9: selección directa en menús y cambio de cámara
+			case SDLK_0:
 			case SDLK_1: case SDLK_2: case SDLK_3:
 			case SDLK_4: case SDLK_5: case SDLK_6:
 			case SDLK_7: case SDLK_8: case SDLK_9:
 				if (!repeat) {
 					//int n = event.key.keysym.sym - SDLK_1 + 1; // 1..9
-					int n = event.key.keysym.sym - SDLK_0 + 1; // 1..9
+					//int n = event.key.keysym.sym - SDLK_0 + 1; // 1..9
+					int n = event.key.keysym.sym - SDLK_0; // 1..9
 					pad.lastNumberPressed = n;
 					if (n >= 1 && n <= 7)
 						pad.cameraTarget = n - 1; // índice 0..6 de personajes
@@ -371,6 +376,24 @@ void System::handleEvents()
 			default: break;
 			}
 			break; // SDL_KEYUP
+
+		// hotplug para los mandos
+		case SDL_CONTROLLERDEVICEADDED:
+			if (!gamepad) { // Si no tenemos ya uno abierto
+				gamepad = SDL_GameControllerOpen(event.cdevice.which);
+				print("Gamepad conectado!\n");
+			}
+			break;
+
+		case SDL_CONTROLLERDEVICEREMOVED:
+			// event.cdevice.which es el ID de instancia del mando que se fue
+			if (gamepad && event.cdevice.which == 
+					SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(gamepad))) {
+				SDL_GameControllerClose(gamepad);
+				gamepad = NULL;
+				print("Gamepad desconectado.\n");
+			}
+			break;
 
 		// ----------------------------------------------------------------
 		case SDL_CONTROLLERBUTTONDOWN:

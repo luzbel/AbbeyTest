@@ -19,7 +19,7 @@ enum LANGUAGE
 
 // Usamos literales UTF-8 explícitos para máxima compatibilidad multiplataforma
 // (GCC, Clang, Emscripten, etc. los soportan bien)
-
+/*
 const std::string principalMenuText[TOTAL_LANGUAGES][10] =
 {
 	{	// Castellano
@@ -119,6 +119,173 @@ const std::string principalMenuText[TOTAL_LANGUAGES][10] =
 		u8"8 INITIAL SCROLL",
 		u8"9 SOUND"
 	}
+};
+*/
+
+// -----------------------------------------------------------------
+// Menú principal — 9 items, el número va en el texto
+// -----------------------------------------------------------------
+constexpr const char* principalMenuText[8][10] = {
+    { // 0 Castellano
+        "0 CONTINUAR",
+        "1 NUEVA PARTIDA",
+        "2 CARGAR",
+        "3 GUARDAR",
+        "4 CONFIGURACION",
+        "5 IDIOMA",
+        "6 SONIDO",
+        "7 AYUDA",
+	"8 ",
+        "9 SALIR"
+    },
+    { // 1 English
+        "0 CONTINUE",
+        "1 NEW GAME",
+        "2 LOAD",
+        "3 SAVE",
+        "4 SETTINGS",
+        "5 LANGUAGE",
+        "6 SOUND",
+        "7 HELP",
+	"8 ",
+        "9 EXIT"
+    },
+    { // 2 Portugues Brasil
+        "0 CONTINUAR",
+        "1 NOVO JOGO",
+        "2 CARREGAR",
+        "3 GUARDAR",
+        "4 CONFIGURACAO",
+        "5 IDIOMA",
+        "6 SOM",
+        "7 AJUDA",
+	"8 ",
+        "9 SAIR"
+    },
+    { // 3 Catalan
+        "0 CONTINUAR",
+        "1 NOVA PARTIDA",
+        "2 CARREGAR",
+        "3 GUARDAR",
+        "4 CONFIGURACIO",
+        "5 IDIOMA",
+        "6 SO",
+        "7 AJUDA",
+	"8 ",
+        "9 SORTIR"
+    },
+    { // 4 Gallego
+        "0 CONTINUAR",
+        "1 NOVA PARTIDA",
+        "2 CARGAR",
+        "3 GARDAR",
+        "4 CONFIGURACION",
+        "5 IDIOMA",
+        "6 SON",
+        "7 AXUDA",
+	"8 ",
+        "9 SAÍR"
+    },
+    { // 5 Italiano
+        "0 CONTINUA",
+        "1 NUOVA PARTITA",
+        "2 CARICA",
+        "3 SALVA",
+        "4 IMPOSTAZIONI",
+        "5 LINGUA",
+        "6 SUONO",
+        "7 AIUTO",
+	"8 ",
+        "9 ESCI"
+    },
+    { // 6 Fines
+        "0 JATKA",
+        "1 UUSI PELI",
+        "2 LATAA",
+        "3 TALLENNA",
+        "4 ASETUKSET",
+        "5 KIELI",
+        "6 AANI",
+        "7 OHJE",
+	"8 ",
+        "9 LOPETA"
+    },
+    { // 7 Portugues
+        "0 CONTINUAR",
+        "1 NOVO JOGO",
+        "2 CARREGAR",
+        "3 GUARDAR",
+        "4 CONFIGURACAO",
+        "5 IDIOMA",
+        "6 SOM",
+        "7 AJUDA",
+	"8 ",
+        "9 SAIR"
+    }
+};
+
+// -----------------------------------------------------------------
+// Menú configuración — 3 items visibles + volver
+// -----------------------------------------------------------------
+constexpr const char* configMenuText[8][3] = {
+    { "0 GRAFICOS", "1 SONIDO", "9 VOLVER" },
+    { "0 GRAPHICS", "1 SOUND",  "9 BACK"   },
+    { "0 GRAFICOS", "1 SOM",    "9 VOLTAR"  },
+    { "0 GRAFICS",  "1 SO",     "9 TORNAR"  },
+    { "0 GRAFICOS", "1 SON",    "9 VOLVER"  },
+    { "0 GRAFICA",  "1 SUONO",  "9 INDIETRO"},
+    { "0 GRAFIIKKA","1 AANI",   "9 TAKAISIN"},
+    { "0 GRAFICOS", "1 SOM",    "9 VOLTAR"  }
+};
+
+// -----------------------------------------------------------------
+// Menú gráficos — 4 items: VGA/CPC, filtro, paleta, volver
+// -----------------------------------------------------------------
+constexpr const char* configGfxMenuText[8][4] = {
+    { "0 MODO",   "1 FILTRO", "2 PALETA", "9 VOLVER"   },
+    { "0 MODE",   "1 FILTER", "2 PALETTE","9 BACK"     },
+    { "0 MODO",   "1 FILTRO", "2 PALETA", "9 VOLTAR"   },
+    { "0 MODE",   "1 FILTRE", "2 PALETA", "9 TORNAR"   },
+    { "0 MODO",   "1 FILTRO", "2 PALETA", "9 VOLVER"   },
+    { "0 MODO",   "1 FILTRO", "2 PALETTE","9 INDIETRO" },
+    { "0 TILA",   "1 FILTTERI","2 PALETTI","9 TAKAISIN" },
+    { "0 MODO",   "1 FILTRO", "2 PALETA", "9 VOLTAR"   }
+};
+
+// -----------------------------------------------------------------
+// Menú sonido — 4 items: mute, vol música, vol efectos, volver
+// -----------------------------------------------------------------
+constexpr const char* configSndMenuText[8][4] = {
+    { "0 SILENCIO", "1 MUSICA",  "2 EFECTOS", "9 VOLVER"   },
+    { "0 MUTE",     "1 MUSIC",   "2 EFFECTS", "9 BACK"     },
+    { "0 MUDO",     "1 MUSICA",  "2 EFEITOS", "9 VOLTAR"   },
+    { "0 MUT",      "1 MUSICA",  "2 EFECTES", "9 TORNAR"   },
+    { "0 MUDO",     "1 MUSICA",  "2 EFECTOS", "9 VOLVER"   },
+    { "0 MUTO",     "1 MUSICA",  "2 EFFETTI", "9 INDIETRO" },
+    { "0 MYKISTA",  "1 MUSIIKKI","2 TEHOSTEET","9 TAKAISIN" },
+    { "0 MUDO",     "1 MUSICA",  "2 EFEITOS", "9 VOLTAR"   }
+};
+
+// -----------------------------------------------------------------
+// Menú ayuda — 7 items: 6 secciones + volver
+// -----------------------------------------------------------------
+constexpr const char* helpMenuText[8][7] = {
+    { "0 CONTROLES", "1 TECLAS RAPIDAS", "2 CAMARAS",
+      "3 INTRODUCCION", "4 REFERENCIAS", "5 CREDITOS", "9 VOLVER" },
+    { "0 CONTROLS",  "1 SHORTCUT KEYS",  "2 CAMERAS",
+      "3 INTRODUCTION","4 REFERENCES",   "5 CREDITS",  "9 BACK"   },
+    { "0 CONTROLES", "1 TECLAS RAPIDAS", "2 CAMERAS",
+      "4 INTRODUCAO",  "4 REFERENCIAS",  "5 CREDITOS", "9 VOLTAR" },
+    { "0 CONTROLS",  "1 TECLES RAPIDES", "2 CAMERAS",
+      "3 INTRODUCCIO", "4 REFERENCIES",  "5 CREDITS",  "9 TORNAR" },
+    { "0 CONTROLES", "1 TECLAS RAPIDAS", "2 CAMARAS",
+      "3 INTRODUCION", "4 REFERENCIAS",  "5 CREDITOS", "9 VOLVER" },
+    { "0 CONTROLLI", "1 TASTI RAPIDI",   "2 CAMERE",
+      "3 INTRODUZIONE","4 RIFERIMENTI",  "5 CREDITI",  "9 INDIETRO"},
+    { "0 OHJAIMET",  "1 PIKANAPPAIMET",  "2 KAMERAT",
+      "3 JOHDANTO",   "4 VIITTEET",      "5 ANSIOLUETTELO","9 TAKAISIN"},
+    { "0 CONTROLES", "1 TECLAS RAPIDAS", "2 CAMERAS",
+      "3 INTRODUCAO",  "4 REFERENCIAS",  "5 CREDITOS", "9 VOLTAR" }
 };
 
 const std::string menuText[TOTAL_LANGUAGES][9] = 

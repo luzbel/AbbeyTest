@@ -266,6 +266,18 @@ void Abbey::logic()
         case STATES::ENDING:
             _game->muestraFinal();
             break;
+	case STATES::CONFIG:
+	    _game->menuConfig();
+	    break;
+	case STATES::CONFIG_GFX:
+	    _game->menuConfigGfx();
+	    break;
+	case STATES::CONFIG_SND:
+	    _game->menuConfigSnd();
+	    break;
+	case STATES::HELP:
+	    _game->menuAyuda();
+	    break;
     }
 }
 

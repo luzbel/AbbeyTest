@@ -455,7 +455,7 @@ bool Juego::menuIdioma()
     }
     return langMenu.tick(*marcador);
 }
-
+/*
 bool Juego::menu()
 {
     if (mainMenu.isEmpty()) {
@@ -541,7 +541,329 @@ mainMenu.add([this]() { return principalMenuText[idioma][9]+ (mute ? " ON " : " 
 
     return mainMenu.tick(*marcador);
 }
+*/
 
+bool Juego::menu()
+{
+    if (mainMenu.isEmpty()) {
+        mainMenu.clear();
+        mainMenu.setAlignment(MenuAlignment::LEFT);
+
+        // 0 Continuar
+        mainMenu.add(
+            [this]() { return principalMenuText[idioma][0]; },
+            [this]() {
+                changeState(STATES::PLAY);
+                activeGame = true;
+            },
+            [this]() { return activeGame; }
+        );
+
+        // 1 Nueva partida
+        mainMenu.add(
+            [this]() { return principalMenuText[idioma][1]; },
+            [this]() {
+                if (!activeGame) {
+                    changeState(STATES::SCROLL);
+                    marcador->limpiaAreaMarcador();
+                    ReiniciaPantalla();
+                    sys->minimumFrameTime = SCROLL_FRAME_TIME;
+                    sys->playSound(SONIDOS::Inicio);
+                } else {
+                    changeState(STATES::ASK_NEW_GAME);
+                }
+            }
+        );
+
+        // 2 Cargar
+        mainMenu.add(
+            [this]() { return principalMenuText[idioma][2]; },
+            [this]() {
+                checkForSaveFiles();
+                changeState(STATES::LOAD);
+            }
+        );
+
+        // 3 Guardar
+        mainMenu.add(
+            [this]() { return principalMenuText[idioma][3]; },
+            [this]() {
+                checkForSaveFiles();
+                changeState(STATES::SAVE);
+            },
+            [this]() { return activeGame; }
+        );
+
+        // 4 Configuración
+        mainMenu.add(
+            [this]() { return principalMenuText[idioma][4]; },
+            [this]() { changeState(STATES::CONFIG); }
+        );
+
+        // 5 Idioma
+        mainMenu.add(
+            [this]() { return principalMenuText[idioma][5]; },
+            [this]() {
+                seleccionado = idioma;
+                changeState(STATES::LANGUAGE);
+            }
+        );
+
+        // 6 Sonido ON/OFF — toggle rápido, estado visible en el texto
+        mainMenu.add(
+            [this]() {
+                return std::string(principalMenuText[idioma][6])
+                    + (mute ? " OFF" : " ON ");
+            },
+            [this]() {
+                mute = !mute;
+                sys->setMute(mute);
+                configReader->setValue("MUTESOUND", mute ? "1" : "0");
+                saveConfigFile();
+            }
+        );
+
+        // 7 Ayuda
+        mainMenu.add(
+            [this]() { return principalMenuText[idioma][7]; },
+            [this]() { changeState(STATES::HELP); }
+        );
+
+	mainMenu.fill();
+
+        // 9 Salir
+        mainMenu.add(
+            [this]() { return principalMenuText[idioma][9]; },
+            [this]() { changeState(STATES::ASK_EXIT); }
+        );
+    }
+
+    return mainMenu.tick(*marcador);
+}
+
+bool Juego::menuConfig()
+{
+    if (configMenu.isEmpty()) {
+        configMenu.clear();
+        configMenu.setAlignment(MenuAlignment::LEFT);
+
+        // 0 Gráficos
+        configMenu.add(
+            [this]() { return configMenuText[idioma][0]; },
+            [this]() { changeState(STATES::CONFIG_GFX); }
+        );
+
+        // 1 Sonido
+        configMenu.add(
+            [this]() { return configMenuText[idioma][1]; },
+            [this]() { changeState(STATES::CONFIG_SND); }
+        );
+
+	/*
+	// 3-8 desactivados, para que volver sea siempre 9
+        for (int i = 0; i < 6; i++)
+            configMenu.add([this]() { return ""; }, [this]() {}, [this]() { return false; });
+	    */
+
+	configMenu.fill();
+
+        // 9 Volver  // quizas cambiar configMenuText para que el "volver" sea el texto 9
+        configMenu.add(
+            [this]() { return configMenuText[idioma][2]; },
+            [this]() { changeState(STATES::MENU); }
+        );
+    }
+
+    return configMenu.tick(*marcador);
+}
+
+bool Juego::menuConfigGfx()
+{
+    if (configGfxMenu.isEmpty()) {
+        configGfxMenu.clear();
+        configGfxMenu.setAlignment(MenuAlignment::LEFT);
+
+        // 0 Modo VGA/CPC — toggle, estado visible en el texto
+        configGfxMenu.add(
+            [this]() {
+                return std::string(configGfxMenuText[idioma][0])
+                    + (GraficosCPC ? " CPC" : " VGA");
+            },
+            [this]() {
+                cambioCPC_VGA();
+                if (activeGame) changeState(STATES::PLAY);
+            },
+            [this]() {
+                return estadoContenido != STATES::INTRO
+                    && estadoContenido != STATES::SCROLL;
+            }
+        );
+
+        // 1 Filtro — no implementado
+        configGfxMenu.add(
+            [this]() {
+                return std::string(configGfxMenuText[idioma][1])
+                    + " NINGUNO";
+            },
+            [this]() {
+                SDL_Log("menuConfigGfx: filtro no implementado");
+            }
+        );
+
+        // 2 Paleta — no implementado
+        configGfxMenu.add(
+            [this]() {
+                return std::string(configGfxMenuText[idioma][2])
+                    + " ESTANDAR";
+            },
+            [this]() {
+                SDL_Log("menuConfigGfx: paleta no implementado");
+            }
+        );
+/*
+	// 4-8 desactivados para que volver sea siempre el 9
+	for (int i = 0; i < 5; i++)
+		configGfxMenu.add([this]() { return ""; }, [this]() {}, [this]() { return false; }); */
+
+	configGfxMenu.fill();
+
+        // 9 Volver
+        configGfxMenu.add(
+            [this]() { return configGfxMenuText[idioma][3]; },
+            [this]() { changeState(STATES::CONFIG); }
+        );
+    }
+
+    return configGfxMenu.tick(*marcador);
+}
+
+bool Juego::menuConfigSnd()
+{
+    if (configSndMenu.isEmpty()) {
+        configSndMenu.clear();
+        configSndMenu.setAlignment(MenuAlignment::LEFT);
+
+        // 0 Mute ON/OFF
+        configSndMenu.add(
+            [this]() {
+                return std::string(configSndMenuText[idioma][0])
+                    + (mute ? " OFF" : " ON ");
+            },
+            [this]() {
+                mute = !mute;
+                sys->setMute(mute);
+                configReader->setValue("MUTESOUND", mute ? "1" : "0");
+                saveConfigFile();
+            }
+        );
+
+        // 1 Volumen música — no implementado
+        configSndMenu.add(
+            [this]() {
+                return std::string(configSndMenuText[idioma][1])
+                    + " ";
+            },
+            [this]() {
+                SDL_Log("menuConfigSnd: volumen musica no implementado");
+            }
+        );
+
+        // 2 Volumen efectos — no implementado
+        configSndMenu.add(
+            [this]() {
+                return std::string(configSndMenuText[idioma][2])
+                    + " ";
+            },
+            [this]() {
+                SDL_Log("menuConfigSnd: volumen efectos no implementado");
+            }
+        );
+/*
+	// 4-8 desactivados para que volver sea siempre el 9
+        for (int i = 0; i < 5; i++)
+            configSndMenu.add([this]() { return ""; }, [this]() {}, [this]() { return false; }); */
+	configSndMenu.fill();
+
+        // 9 Volver
+        configSndMenu.add(
+            [this]() { return configSndMenuText[idioma][3]; },
+            [this]() { changeState(STATES::CONFIG); }
+        );
+    }
+
+    return configSndMenu.tick(*marcador);
+}
+
+bool Juego::menuAyuda()
+{
+    if (helpMenu.isEmpty()) {
+        helpMenu.clear();
+        helpMenu.setAlignment(MenuAlignment::LEFT);
+
+        // 0 Controles de movimiento
+        helpMenu.add(
+            [this]() { return helpMenuText[idioma][0]; },
+            [this]() {
+                SDL_Log("menuAyuda: controles no implementado");
+            }
+        );
+
+        // 1 Teclas rápidas
+        helpMenu.add(
+            [this]() { return helpMenuText[idioma][1]; },
+            [this]() {
+                SDL_Log("menuAyuda: teclas rapidas no implementado");
+            }
+        );
+
+        // 2 Cámaras
+        helpMenu.add(
+            [this]() { return helpMenuText[idioma][2]; },
+            [this]() {
+                SDL_Log("menuAyuda: camaras no implementado");
+            }
+        );
+
+        // 3 Introducción (pergamino de inicio)
+        helpMenu.add(
+            [this]() { return helpMenuText[idioma][3]; },
+            [this]() {
+                changeState(STATES::SCROLL);
+                sys->minimumFrameTime = SCROLL_FRAME_TIME;
+                sys->playSound(SONIDOS::Inicio);
+            }
+        );
+
+        // 4 Referencias
+        helpMenu.add(
+            [this]() { return helpMenuText[idioma][4]; },
+            [this]() {
+                SDL_Log("menuAyuda: referencias no implementado");
+            }
+        );
+
+        // 5 Créditos
+        helpMenu.add(
+            [this]() { return helpMenuText[idioma][5]; },
+            [this]() {
+                SDL_Log("menuAyuda: creditos no implementado");
+            }
+        );
+/*
+	// 7-8 desactivados para que volver sea siempre el 9
+        for (int i = 0; i < 2; i++)
+            helpMenu.add([this]() { return ""; }, [this]() {}, [this]() { return false; }); */
+	helpMenu.fill();
+
+        // 9 Volver
+        helpMenu.add(
+            [this]() { return helpMenuText[idioma][6]; },
+            [this]() { changeState(STATES::MENU); }
+        );
+    }
+
+    return helpMenu.tick(*marcador);
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // método principal del juego
@@ -591,7 +913,11 @@ void Juego::changeState(Abadia::STATES newState)
             pausaPorEstarEnMenus = true;
             sys->pauseSounds();
             break;
-        case STATES::LANGUAGE:
+	case STATES::HELP:
+	case STATES::CONFIG:
+	case STATES::CONFIG_GFX:
+	case STATES::CONFIG_SND:
+	case STATES::LANGUAGE:
         case STATES::MENU:
         case STATES::LOAD:
         case STATES::SAVE:

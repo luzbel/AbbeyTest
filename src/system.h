@@ -47,7 +47,7 @@ namespace Abadia {
 
 		Count
 	};
-
+/*
 	enum class STATES: UINT8 {
 		INTRO,
 		SCROLL,
@@ -59,6 +59,24 @@ namespace Abadia {
 		ASK_NEW_GAME,
 		ASK_CONTINUE,
 		ASK_EXIT,
+		ENDING
+	}; 
+	*/
+	enum class STATES: UINT8 {
+		INTRO,
+		SCROLL,
+		MENU,
+		LANGUAGE,
+		LOAD,
+		SAVE,
+		PLAY,
+		ASK_NEW_GAME,
+		ASK_CONTINUE,
+		ASK_EXIT,
+		HELP,           // submenú ayuda
+		CONFIG,         // submenú configuración
+		CONFIG_GFX,     // submenú gráficos
+		CONFIG_SND,     // submenú sonido
 		ENDING
 	};
 
@@ -100,7 +118,7 @@ namespace Abadia {
 // (true mientras se mantiene pulsado). Los campos de acción puntual
 // (confirm, cancel, menu, etc.) se activan en KEYDOWN/BUTTONDOWN y el
 // código del juego los pone a false tras consumirlos.
-// lastNumberPressed: 1-9 si se pulsó una tecla numérica este frame, -1 si no.
+// lastNumberPressed: 0-9 si se pulsó una tecla numérica este frame, -1 si no.
 // cameraTarget: 0-7 si se pulsó 1-7 para cambio de cámara durante el juego, -1 si no.
 // ----------------------------------------------------------------------------
 struct PlayerInput

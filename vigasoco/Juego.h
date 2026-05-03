@@ -59,6 +59,10 @@ private:
 	bool pausaPorEstarEnMenus;
 	SimpleMenu mainMenu, loadMenu, saveMenu, langMenu;
 	SimpleMenu askNewMenu, askContMenu, askExitMenu;
+	SimpleMenu helpMenu;
+	SimpleMenu configMenu;
+	SimpleMenu configGfxMenu;
+	SimpleMenu configSndMenu;
 	// bool _secuenciaEnCurso;
 	Abadia::STATES estadoContenido = Abadia::STATES::INTRO;
 
@@ -111,6 +115,10 @@ public:
 	bool menuCargar();
 	bool menuGrabar();
 	bool menuIdioma();
+	bool menuAyuda();
+	bool menuConfig();
+	bool menuConfigGfx();
+	bool menuConfigSnd();
 	void askForNewGame();
 	void askToContinue();
 	void askExit();

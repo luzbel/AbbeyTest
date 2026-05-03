@@ -42,6 +42,19 @@ public:
         entries.emplace_back(std::move(getText), std::move(action), std::move(enabled));
     }
 
+    void fill() {
+	    size_t pos = entries.size();
+	    while (pos <= 8) {
+		    const int n = pos; // captura por valor para el lambda
+		    add(
+			    [n]() { return std::to_string(n) + " "; },
+			    []()  {},
+			    []()  { return false; }
+		       );
+		    pos++;
+	    }
+    }
+
     // ÚNICO PUNTO DE EJECUCIÓN: Input + Wrap + Confirm + Draw. Devuelve true al seleccionar.
     bool tick(Abadia::Marcador& marcador) {
         if (entries.empty()) return false;
@@ -86,10 +99,12 @@ public:
                 }
             }
         } */
+	SDL_Log ("lastNumberPressed %d size %d\n",sys->pad.lastNumberPressed ,(int)entries.size());
 	// Acceso directo por número (1-9, posición absoluta)
-	if (sys->pad.lastNumberPressed >= 1 && 
-			sys->pad.lastNumberPressed <= (int)entries.size()) {
-		size_t idx = sys->pad.lastNumberPressed - 1;
+	if (sys->pad.lastNumberPressed >= 0 && 
+			sys->pad.lastNumberPressed <= (int)entries.size()-1) {
+		//size_t idx = sys->pad.lastNumberPressed - 1;
+		size_t idx = sys->pad.lastNumberPressed;
 		sys->pad.lastNumberPressed = -1;  // consumir
 		if (entries[idx].isEnabled()) {
 			selected = idx;
