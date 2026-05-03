@@ -281,6 +281,12 @@ void Abbey::logic()
 	case STATES::HELP_INTRODUCCION:
 	    _game->helpIntroduccion();
 	    break;
+	case STATES::HELP_MANEJO_PERGAMINO:
+	    _game->helpManejoPergamino();
+	    break;
+	case STATES::HELP_MANEJO:
+	    _game->helpManejo();
+	    break;
     }
 }
 

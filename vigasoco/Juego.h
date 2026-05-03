@@ -59,6 +59,7 @@ private:
 	bool pausaPorEstarEnMenus;
 	SimpleMenu mainMenu, loadMenu, saveMenu, langMenu;
 	SimpleMenu askNewMenu, askContMenu, askExitMenu;
+	//SimpleMenu helpMenu,helpMenuManejo;
 	SimpleMenu helpMenu;
 	SimpleMenu configMenu;
 	SimpleMenu configGfxMenu;
@@ -117,6 +118,8 @@ public:
 	bool menuIdioma();
 	bool menuAyuda();
 	bool helpIntroduccion();
+	bool helpManejoPergamino();
+	bool helpManejo();
 	bool menuConfig();
 	bool menuConfigGfx();
 	bool menuConfigSnd();

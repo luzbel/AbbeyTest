@@ -813,11 +813,10 @@ bool Juego::menuAyuda()
         helpMenu.clear();
         helpMenu.setAlignment(MenuAlignment::LEFT);
 
-        // 0 Controles de movimiento
+        // 0 Pergamino de introducción con texto del manual
         helpMenu.add(
             [this]() { return helpMenuText[idioma][0]; },
             [this]() {
-//                SDL_Log("menuAyuda: controles no implementado");
 		sys->setFastSpeed();
 		changeState(STATES::HELP_INTRODUCCION); 
 		pergamino->reset();
@@ -825,13 +824,16 @@ bool Juego::menuAyuda()
 	    [this]() { return true; }
         );
 
-        // 1 Teclas rápidas
+        // 1 Manejo del teclado
         helpMenu.add(
             [this]() { return helpMenuText[idioma][1]; },
             [this]() {
-                SDL_Log("menuAyuda: teclas rapidas no implementado");
+//                SDL_Log("menuAyuda: teclas rapidas no implementado");
+		sys->setFastSpeed();
+		changeState(STATES::HELP_MANEJO_PERGAMINO); 
+		pergamino->reset();
             },
-	    [this]() { return false; }
+	    [this]() { return true; }
         );
 
         // 2 Cámaras
@@ -900,6 +902,59 @@ bool Juego::helpIntroduccion() {
 	return true;
 }
 
+bool Juego::helpManejoPergamino() {
+	pergamino->muestraTexto(Pergamino::pergaminoManejo[idioma]);
+	
+	if (pergamino->finished)
+	{
+		//BUTTON_YES = false;
+		sys->setNormalSpeed();
+		changeState(Abadia::STATES::HELP_MANEJO);
+		// changeState ya gestiona paleta, marcador y sonidos.
+	}
+	return true;
+}
+/*
+ con el tamaño de los textos simpleMenu falla en un assert
+ y  ademas no es un menu, siempre se  cambia al mismo estado
+ mejor sin menu
+bool Juego::helpManejo() {
+    if (helpMenuManejo.isEmpty()) {
+        helpMenuManejo.clear();
+        helpMenuManejo.setAlignment(MenuAlignment::LEFT);
+
+        for (int i=0;i<9;i++) {
+        helpMenuManejo.add(
+            [this,i]() { return helpManejoText[idioma][i]; },
+            [this]() {
+		changeState(STATES::HELP); 
+            },
+	    [this]() { return true; }
+        );
+	}
+    }
+//	helpMenuManejo.fill();
+//
+        // 9 Volver
+ //      helpMenuManejo.add(
+ //          [this]() { return helpMenuText[idioma][6]; },
+//            [this]() { changeState(STATES::MENU); }
+//        );
+//
+	return helpMenuManejo.tick(*marcador);
+
+} */
+bool Juego::helpManejo() {
+	if (BUTTON_YES) {
+		changeState(STATES::MENU); 
+	} else {
+		for (int i=0;i<9;i++)
+		{
+			marcador->imprimeFrase(helpManejoText[idioma][i], 8, 16+(i*16),0, 4);
+		}
+	}
+	return true;
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // método principal del juego
@@ -951,6 +1006,8 @@ void Juego::changeState(Abadia::STATES newState)
             break;
 	case STATES::HELP:
 	case STATES::HELP_INTRODUCCION:
+	case STATES::HELP_MANEJO_PERGAMINO:
+	case STATES::HELP_MANEJO:
 	case STATES::CONFIG:
 	case STATES::CONFIG_GFX:
 	case STATES::CONFIG_SND:

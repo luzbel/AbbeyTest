@@ -183,7 +183,8 @@ public:
         if (orientation == MenuOrientation::VERTICAL) {
             for (size_t i = 0; i < entries.size(); ++i) {
                 std::string txt = entries[i].getLabel();
-                size_t x = (alignment == MenuAlignment::LEFT)
+                //size_t x = (alignment == MenuAlignment::LEFT)
+                int x = (alignment == MenuAlignment::LEFT)
                         ? leftMargin
                         : (320 - (int)txt.length() * 8) >> 1;
                 // size_t x = (320 - txt.length() * 8) >> 1;

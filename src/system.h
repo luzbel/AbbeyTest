@@ -75,6 +75,8 @@ namespace Abadia {
 		ASK_EXIT,
 		HELP,           // submenú ayuda
 		HELP_INTRODUCCION, // el texto de las instrucciones
+		HELP_MANEJO_PERGAMINO, //
+	 	HELP_MANEJO , //
 		CONFIG,         // submenú configuración
 		CONFIG_GFX,     // submenú gráficos
 		CONFIG_SND,     // submenú sonido
