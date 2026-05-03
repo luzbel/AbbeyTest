@@ -74,6 +74,7 @@ namespace Abadia {
 		ASK_CONTINUE,
 		ASK_EXIT,
 		HELP,           // submenú ayuda
+		HELP_INTRODUCCION, // el texto de las instrucciones
 		CONFIG,         // submenú configuración
 		CONFIG_GFX,     // submenú gráficos
 		CONFIG_SND,     // submenú sonido
@@ -168,7 +169,6 @@ struct System
 	bool haveHapticDevice = false;
 	int w = WINDOW_WIDTH;
 	int h = WINDOW_HEIGHT;
-	Uint32 minimumFrameTime = GAME_FRAME_TIME;
 
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
 	const Uint32 rmask = 0xff000000;
@@ -286,6 +286,7 @@ private:
 	UINT32  *_pixels       = nullptr;
 	UINT32   _pitch_pixels = 0;
 	Paleta  *_paleta       = nullptr;
+	Uint32 minimumFrameTime = GAME_FRAME_TIME;
 };
 
 extern System *const sys;

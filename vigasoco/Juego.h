@@ -116,6 +116,7 @@ public:
 	bool menuGrabar();
 	bool menuIdioma();
 	bool menuAyuda();
+	bool helpIntroduccion();
 	bool menuConfig();
 	bool menuConfigGfx();
 	bool menuConfigSnd();

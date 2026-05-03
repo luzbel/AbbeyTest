@@ -567,7 +567,8 @@ bool Juego::menu()
                     changeState(STATES::SCROLL);
                     marcador->limpiaAreaMarcador();
                     ReiniciaPantalla();
-                    sys->minimumFrameTime = SCROLL_FRAME_TIME;
+                    //sys->minimumFrameTime = SCROLL_FRAME_TIME;
+		    sys->setFastSpeed();
                     sys->playSound(SONIDOS::Inicio);
                 } else {
                     changeState(STATES::ASK_NEW_GAME);
@@ -816,9 +817,12 @@ bool Juego::menuAyuda()
         helpMenu.add(
             [this]() { return helpMenuText[idioma][0]; },
             [this]() {
-                SDL_Log("menuAyuda: controles no implementado");
+//                SDL_Log("menuAyuda: controles no implementado");
+		sys->setFastSpeed();
+		changeState(STATES::HELP_INTRODUCCION); 
+		pergamino->reset();
             },
-	    [this]() { return false; }
+	    [this]() { return true; }
         );
 
         // 1 Teclas rápidas
@@ -844,7 +848,8 @@ bool Juego::menuAyuda()
             [this]() { return helpMenuText[idioma][3]; },
             [this]() {
                 changeState(STATES::SCROLL);
-                sys->minimumFrameTime = SCROLL_FRAME_TIME;
+                //sys->minimumFrameTime = SCROLL_FRAME_TIME;
+		sys->setFastSpeed();
                 sys->playSound(SONIDOS::Inicio);
             }
         );
@@ -881,6 +886,20 @@ bool Juego::menuAyuda()
 
     return helpMenu.tick(*marcador);
 }
+
+bool Juego::helpIntroduccion() {
+	pergamino->muestraTexto(Pergamino::pergaminoIntroduccion[idioma]);
+	
+	if (pergamino->finished)
+	{
+		//BUTTON_YES = false;
+		sys->setNormalSpeed();
+		changeState(Abadia::STATES::HELP);
+		// changeState ya gestiona paleta, marcador y sonidos.
+	}
+	return true;
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // método principal del juego
@@ -931,6 +950,7 @@ void Juego::changeState(Abadia::STATES newState)
             sys->pauseSounds();
             break;
 	case STATES::HELP:
+	case STATES::HELP_INTRODUCCION:
 	case STATES::CONFIG:
 	case STATES::CONFIG_GFX:
 	case STATES::CONFIG_SND:

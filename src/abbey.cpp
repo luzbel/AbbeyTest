@@ -278,6 +278,9 @@ void Abbey::logic()
 	case STATES::HELP:
 	    _game->menuAyuda();
 	    break;
+	case STATES::HELP_INTRODUCCION:
+	    _game->helpIntroduccion();
+	    break;
     }
 }
 
