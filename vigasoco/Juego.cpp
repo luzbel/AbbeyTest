@@ -1,15 +1,12 @@
 ///Juego.cpp
 //
 /////////////////////////////////////////////////////////////////////////////
-
 #include <string>
-
 #include "Abad.h"
 #include "Adso.h"
 #include "Berengario.h"
 #include "Bernardo.h"
 #include "BuscadorRutas.h"
-
 #include "GestorFrases.h"
 #include "Guillermo.h"
 #include "InfoJuego.h"
@@ -30,42 +27,25 @@
 #include "Sprite.h"
 #include "SpriteLuz.h"
 #include "SpriteMonje.h"
-
 #include "Serializar.h"
-
 #include <iostream>
 #include <string.h>
-
 #include "system.h"
 #include "texts.h"
 
-#define VITA_SAVE_DIR "ux0:data/Abbey/"
-
 using namespace Abadia;
-
-const char *Juego::savefile[7] = {	
-	 "abadia0.save",
-	 "abadia1.save",
-	 "abadia2.save",
-	 "abadia3.save",
-	 "abadia4.save",
-	 "abadia5.save",
-	 "abadia6.save"
-};
-
 
 /////////////////////////////////////////////////////////////////////////////
 // inicialización y limpieza
 /////////////////////////////////////////////////////////////////////////////
-
 Juego::Juego(UINT8 *romData)
 {		
-	idioma=1;
-	mute=false; 
-	slot=0;
-	GraficosCPC=false;
+	//sys->idioma = 1; // se leen desde el config
+	//sys->mute = false; // se leen desde el config
+	slot = 0;
+	// sys->GraficosCPC = false;  // se leen desde el config
 	roms = romData + 0x4000;
-
+	
 	for (int i = 0; i < numSprites; i++){
 		sprites[i] = 0;
 	}
@@ -88,36 +68,24 @@ Juego::Juego(UINT8 *romData)
 	marcador = new Marcador();
 	logica = new Logica(roms, buffer, 8192); 	
 	infoJuego = new InfoJuego();
-	
-	pausaPorEstarEnMenus=false;
+
+	pausaPorEstarEnMenus = false;
 	modoInformacion = false;
 	seleccionado = 0;
-	
+
 	currentState = Abadia::STATES::INTRO; 
-	//previousState = Abadia::STATES::INTRO; 
 	showingMenu = false;
 	activeGame = false;
-	
-	#ifdef RG350	
-	configReader = new ConfigReader("/usr/local/home/Abbey/config.txt");
-	#else
-#ifdef __EMSCRIPTEN__
-	configReader = new ConfigReader("/save/config.txt");
-#else
-	configReader = new ConfigReader("config.txt");
-#endif
-	#endif
-
 	selectedSlot = -1;
 
 	// Leer configuración. Si hay preferencia de CPC la aplicamos ahora
 	// (antes de que creaEntidadesJuego/generaGraficosFlipeados usen los datos).
-SDL_Log("mute debería ser falso 0 y es %d\n", mute);
-	checkConfigFile();
-SDL_Log("mute deberia ser el del fichero %d\n", mute);
+	SDL_Log("mute debería ser falso 0 y es %d\n", (int)(bool)sys->mute);
+	SDL_Log("mute deberia ser el del fichero %d\n", (int)(bool)sys->mute);
+	
 	// aplicaGraficos copia los datos correctos al buffer activo según GraficosCPC.
 	// Los gráficos flipeados se generan después en preRun().
-	aplicaGraficos(GraficosCPC);
+	aplicaGraficos(sys->GraficosCPC);
 }
 
 Juego::~Juego()
@@ -125,7 +93,6 @@ Juego::~Juego()
 	for (int i = 0; i < numSprites; i++){
 		delete sprites[i];
 	}
-
 	for (int i = 0; i < numPersonajes; i++){
 		delete personajes[i];
 	}
@@ -143,15 +110,12 @@ Juego::~Juego()
 	delete marcador;
 	delete motor;
 	delete pergamino;
-    	delete configReader;
 }
 
 void Juego::ReiniciaPantalla(bool mostrarDiaYMomentoDia)
 {
-//orig	limpiaAreaJuego(12);
 	limpiaAreaJuego(0);
 	marcador->limpiaAreaMarcador();
-
 	marcador->dibujaMarcador();
 
 	motor->posXPantalla = motor->posYPantalla = -1;
@@ -163,11 +127,9 @@ void Juego::ReiniciaPantalla(bool mostrarDiaYMomentoDia)
 	marcador->limpiaAreaFrases();
 }
 
-
 /////////////////////////////////////////////////////////////////////////////
 // helpers gráficos
 /////////////////////////////////////////////////////////////////////////////
-
 // Copia al buffer activo los datos VGA (slot índice 1 del bloque de roms)
 // o los datos CPC (slot índice 2). Actualiza GraficosCPC.
 // NO regenera flipeados ni toca paleta: el llamador decide cuándo hacerlo.
@@ -175,7 +137,6 @@ void Juego::aplicaGraficos(bool usarCPC)
 {
 	const int vgaSize   = 174065;
 	const int flipExtra = 21600;
-
 	// El layout en memoria (establecido en Abbey::filesLoaded) es:
 	//   base                          -> VGA original (slot 0, usado en juego)
 	//   base + vgaSize + flipExtra    -> copia VGA   (slot 1, fuente inmutable)
@@ -185,7 +146,7 @@ void Juego::aplicaGraficos(bool usarCPC)
 	UINT8 *srcCPC  = base + (vgaSize + flipExtra) * 2;
 
 	memcpy(base, usarCPC ? srcCPC : srcVGA, vgaSize);
-	GraficosCPC = usarCPC;
+	sys->GraficosCPC = usarCPC;
 }
 
 // Pinta la imagen de portada en pantalla y establece la paleta intro.
@@ -207,754 +168,523 @@ void Juego::repintaEstadoActual()
 {
 	switch (currentState)
 	{
-		case STATES::INTRO:
-			pintaPortada();
-			break;
-
-		case STATES::SCROLL:
-			// El pergamino se redibuja completamente en el siguiente tick;
-			// solo necesitamos establecer la paleta correcta.
-			sys->setGamePalette(1);
-			break;
-
-		case STATES::PLAY:
-			sys->resetPalette();
-			ReiniciaPantalla();
-			motor->compruebaCambioPantalla(true);
-			break;
-
-		case STATES::ENDING:
-			sys->setGamePalette(1);
-			// El pergamino final se redibuja en el siguiente tick.
-			break;
-
-		default:
-			// Menús y diálogos: paleta 2, área de juego limpia.
-			sys->setGamePalette(2);
-			ReiniciaPantalla();
-			break;
+	case STATES::INTRO:
+		pintaPortada();
+		break;
+	case STATES::SCROLL:
+		// El pergamino se redibuja completamente en el siguiente tick;
+		// solo necesitamos establecer la paleta correcta.
+		sys->setGamePalette(1);
+		break;
+	case STATES::PLAY:
+		sys->resetPalette();
+		ReiniciaPantalla();
+		motor->compruebaCambioPantalla(true);
+		break;
+	case STATES::ENDING:
+		sys->setGamePalette(1);
+		// El pergamino final se redibuja en el siguiente tick.
+		break;
+	default:
+		// Menús y diálogos: paleta 2, área de juego limpia.
+		sys->setGamePalette(2);
+		ReiniciaPantalla();
+		break;
 	}
 }
 
 // Alterna entre gráficos VGA y CPC, guarda la preferencia y repinta.
 void Juego::cambioCPC_VGA()
 {
-	aplicaGraficos(!GraficosCPC);   // alterna y copia datos al buffer activo
+	aplicaGraficos(!sys->GraficosCPC);   // alterna y copia datos al buffer activo
 	generaGraficosFlipeados();      // recalcula todos los sprites flipeados
-
-	// Persistir preferencia
-	configReader->setValue("GRAPHICSCPC", GraficosCPC ? "1" : "0");
-	saveConfigFile();
+	// La persistencia la gestiona automáticamente ConfigVar al asignar sys->GraficosCPC
 
 	repintaEstadoActual();
 }
 
-
 /////////////////////////////////////////////////////////////////////////////
 // menús
 /////////////////////////////////////////////////////////////////////////////
-
 bool Juego::menuCargar()
 {
-    if (loadMenu.isEmpty()) {
-        loadMenu.clear();
-        for (int i = 0; i < 7; ++i)
-            loadMenu.add([this, i]() { return saveFile[i]; }, [this, i]() {
-                selectedSlot = i;
-                if (activeGame) changeState(STATES::ASK_CONTINUE);
-                else { logica->inicia(); cargar(i); changeState(STATES::PLAY); }
-            });
-        loadMenu.add([this]() { return textSave[idioma]; }, [this]() { changeState(STATES::MENU); });
-    }
-    return loadMenu.tick(*marcador);
+	if (loadMenu.isEmpty()) {
+		loadMenu.clear();
+		for (int i = 0; i < 7; ++i)
+			loadMenu.add([this, i]() { return sys->slotDates[i]; }, [this, i]() {
+				selectedSlot = i;
+				if (activeGame) changeState(STATES::ASK_CONTINUE);
+				else { logica->inicia(); cargar(i); changeState(STATES::PLAY); }
+			});
+		loadMenu.add([this]() { return textSave[sys->idioma]; }, [this]() { changeState(STATES::MENU); });
+	}
+	return loadMenu.tick(*marcador);
 }
 
 bool Juego::cargar(int slot)
 {	
-	std::string path = "";
-
-#ifdef __EMSCRIPTEN__
-	path="/save/";
-#endif
-
-	#ifdef RG350
-	path = "/usr/local/home/Abbey/";
-	#endif
-
-	#ifdef ANDROID
-	if (SDL_AndroidGetExternalStorageState() != 0){
-		path = SDL_AndroidGetExternalStoragePath();
-		path += "/";
-	}
-	#endif
-	
-	#ifdef VITA
-	path = VITA_SAVE_DIR;
-	#endif
-
-	std::ifstream in((path + savefile[slot]).c_str());
-	in >> logica;
-	if (in.fail())
-	{
-		elMarcador->imprimeFrase("                  ", 100, 164, 4, 0);
-		elMarcador->imprimeFrase("ERROR: PRESS SPACE", 100, 164, 4, 0);
-		elMarcador->imprimeFrase("                  ", 100, 164, 4, 0);
-		logica->inicia();
-		return true;
-	}
-	else {return true;}
+	return sys->loadSlot(slot, [&](std::ifstream& f){ f >> logica; });
 }
 
 string Juego::getDateAndTime()
 {
 	time_t t = time(NULL);
-  	struct tm tm = *localtime(&t);
-  	char buff[100];
-  
-  	snprintf(buff, sizeof(buff), "%d.%02d.%02d-%02d:%02d\n", 
+	struct tm tm = *localtime(&t);
+	char buff[100];
+	snprintf(buff, sizeof(buff), "%d.%02d.%02d-%02d:%02d\n", 
 	  tm.tm_mon + 1, tm.tm_mday, tm.tm_year + 1900, tm.tm_hour, tm.tm_min);
 	std::string buffAsStdStr = buff;
-  	return buffAsStdStr;
+	return buffAsStdStr;
 }
 
 void Juego::askExit()
 {
-    if (askExitMenu.isEmpty()) {
-        askExitMenu.clear();
-        askExitMenu.setOrientation(MenuOrientation::HORIZONTAL);
-	askExitMenu.setMode(MenuMode::YESNO);
-        askExitMenu.setPrompt([this]() { return continueQuestionText[idioma]; });
-        askExitMenu.add([this]() { return yesText[idioma]; }, [this]() { sys->exitGame(); });
-	askExitMenu.add([this]() { return noText[idioma]; }, [this]() {
-		if (activeGame) { 
-			changeState(STATES::PLAY);
-			ReiniciaPantalla();
-			activeGame = true;
-			sys->setNormalSpeed();
-		} else {
-			changeState(STATES::SCROLL);
-			ReiniciaPantalla();
-		}
-	});
-    }
-    askExitMenu.tick(*marcador);
+	if (askExitMenu.isEmpty()) {
+		askExitMenu.clear();
+		askExitMenu.setOrientation(MenuOrientation::HORIZONTAL);
+		askExitMenu.setMode(MenuMode::YESNO);
+		askExitMenu.setPrompt([this]() { return continueQuestionText[sys->idioma]; });
+		askExitMenu.add([this]() { return yesText[sys->idioma]; }, [this]() { sys->exitGame(); });
+		askExitMenu.add([this]() { return noText[sys->idioma]; }, [this]() {
+			if (activeGame) {
+				changeState(STATES::PLAY);
+				ReiniciaPantalla();
+				activeGame = true;
+				sys->setNormalSpeed();
+			} else {
+				changeState(STATES::SCROLL);
+				ReiniciaPantalla();
+			}
+		});
+	}
+	askExitMenu.tick(*marcador);
 }
 
 void Juego::askForNewGame()
 {
-    if (askNewMenu.isEmpty()) {
-        askNewMenu.clear();
-        askNewMenu.setOrientation(MenuOrientation::HORIZONTAL);
-	askNewMenu.setMode(MenuMode::YESNO);
-        askNewMenu.setPrompt([this]() { return newGameQuestionText[idioma]; });
-        askNewMenu.add([this]() { return yesText[idioma]; }, [this]() {
-            logica->inicia();
-            changeState(STATES::PLAY);
-            ReiniciaPantalla();
-        });
-        askNewMenu.add([this]() { return noText[idioma]; }, [this]() {
-            changeState(STATES::PLAY);
-            ReiniciaPantalla();
-        });
-    }
-    askNewMenu.tick(*marcador);
+	if (askNewMenu.isEmpty()) {
+		askNewMenu.clear();
+		askNewMenu.setOrientation(MenuOrientation::HORIZONTAL);
+		askNewMenu.setMode(MenuMode::YESNO);
+		askNewMenu.setPrompt([this]() { return newGameQuestionText[sys->idioma]; });
+		askNewMenu.add([this]() { return yesText[sys->idioma]; }, [this]() {
+			logica->inicia();
+			changeState(STATES::PLAY);
+			ReiniciaPantalla();
+		});
+		askNewMenu.add([this]() { return noText[sys->idioma]; }, [this]() {
+			changeState(STATES::PLAY);
+			ReiniciaPantalla();
+		});
+	}
+	askNewMenu.tick(*marcador);
 }
 
 void Juego::askToContinue()
 {
-    if (askContMenu.isEmpty()) {
-        askContMenu.clear();
-        askContMenu.setOrientation(MenuOrientation::HORIZONTAL);
-	askContMenu.setMode(MenuMode::YESNO);
-        askContMenu.setPrompt([this]() { return continueQuestionText[idioma]; });
-        askContMenu.add([this]() { return yesText[idioma]; }, [this]() {
-            logica->inicia();
-            cargar(selectedSlot);
-            changeState(STATES::PLAY);
-            ReiniciaPantalla();
-        });
-        askContMenu.add([this]() { return noText[idioma]; }, [this]() {
-            changeState(STATES::PLAY);
-            ReiniciaPantalla();
-        });
-    }
-    askContMenu.tick(*marcador);
+	if (askContMenu.isEmpty()) {
+		askContMenu.clear();
+		askContMenu.setOrientation(MenuOrientation::HORIZONTAL);
+		askContMenu.setMode(MenuMode::YESNO);
+		askContMenu.setPrompt([this]() { return continueQuestionText[sys->idioma]; });
+		askContMenu.add([this]() { return yesText[sys->idioma]; }, [this]() {
+			logica->inicia();
+			cargar(selectedSlot);
+			changeState(STATES::PLAY);
+			ReiniciaPantalla();
+		});
+		askContMenu.add([this]() { return noText[sys->idioma]; }, [this]() {
+			changeState(STATES::PLAY);
+			ReiniciaPantalla();
+		});
+	}
+	askContMenu.tick(*marcador);
 }
 
 void Juego::save(int slot)
 {
-	string d = getDateAndTime();
-	string token = "SAVEX";
-	token[4] = '0' + slot;		
-	configReader->setValue(token, d);
-	saveConfigFile();
-
-	std::string path = "";
-#ifdef __EMSCRIPTEN__
-	path="/save/";
-#endif
-
-	#ifdef RG350
-	path = "/usr/local/home/Abbey/";
-	#endif
-
-	#ifdef ANDROID
-	if (SDL_AndroidGetExternalStorageState() != 0){
-		path = SDL_AndroidGetExternalStoragePath();
-		path += "/";
-	}
-	#endif
-	
-	#ifdef VITA
-	path = VITA_SAVE_DIR;
-	#endif
-
-	std::ofstream out((path + savefile[slot]).c_str(),
-			std::ofstream::out|std::ofstream::trunc);
-	
-	out << logica; 
-
-	if (out.fail())
-	{
-		elMarcador->imprimeFrase("                  ", 100, 164, 4, 0);
-		elMarcador->imprimeFrase("ERROR: PRESS SPACE", 100, 164, 4, 0);		
-	}
+	sys->saveSlot(slot, [&](std::ofstream& f){ f << logica; });
 }
 
 bool Juego::menuGrabar()
 {
-    if (saveMenu.isEmpty()) {
-        saveMenu.clear();
-        for (int i = 0; i < 7; ++i)
-            saveMenu.add([this, i]() { return saveFile[i]; }, [this, i]() {
-                save(i);
-                changeState(STATES::PLAY);
-                ReiniciaPantalla();
-            });
-        saveMenu.add([this]() { return textSave[idioma]; }, [this]() { changeState(STATES::MENU); });
-    }
-    return saveMenu.tick(*marcador);
+	if (saveMenu.isEmpty()) {
+		saveMenu.clear();
+		for (int i = 0; i < 7; ++i)
+			saveMenu.add([this, i]() { return sys->slotDates[i]; }, [this, i]() {
+				save(i);
+				changeState(STATES::PLAY);
+				ReiniciaPantalla();
+			});
+		saveMenu.add([this]() { return textSave[sys->idioma]; }, [this]() { changeState(STATES::MENU); });
+	}
+	return saveMenu.tick(*marcador);
 }
 
 bool Juego::menuIdioma()
 {
-    if (langMenu.isEmpty()) {
-        langMenu.clear();
-        for (int i = 0; i < 8; ++i) {
-            langMenu.add([this, i]() { return textLanguage[i]; }, [this, i]() {
-                idioma = i;
-                std::string d = getDateAndTime();
-                std::string token = "LANGUAGE";
-                token[4] = '0' + idioma;
-                configReader->setValue(token, d);
-                saveConfigFile();
-                seleccionado = 4;
-                changeState(STATES::MENU);
-            });
-        }
-    }
-    return langMenu.tick(*marcador);
+	if (langMenu.isEmpty()) {
+		langMenu.clear();
+		for (int i = 0; i < 8; ++i) {
+			langMenu.add([this, i]() { return textLanguage[i]; }, [this, i]() {
+				sys->idioma = i;
+				seleccionado = 4;
+				changeState(STATES::MENU);
+			});
+		}
+	}
+	return langMenu.tick(*marcador);
 }
-/*
-bool Juego::menu()
-{
-    if (mainMenu.isEmpty()) {
-        mainMenu.clear();
-	mainMenu.setAlignment(MenuAlignment::LEFT);
-        
-        // Item 0: Nueva Partida
-        mainMenu.add(
-            [this]() { return principalMenuText[idioma][0]; },
-            [this]() {
-                if (!activeGame) {
-                    changeState(Abadia::STATES::SCROLL);
-                    marcador->limpiaAreaMarcador();
-                    ReiniciaPantalla();
-                    sys->minimumFrameTime = SCROLL_FRAME_TIME;
-                    sys->playSound(Abadia::SONIDOS::Inicio);
-                } else {
-                    changeState(Abadia::STATES::ASK_NEW_GAME);
-                }
-            }
-        );
-
-        // Item 1: Cargar
-        mainMenu.add([this]() { return principalMenuText[idioma][1]; }, [this]() {
-            checkForSaveFiles();
-            changeState(Abadia::STATES::LOAD);
-        });
-
-        // Item 2: Guardar (deshabilitado si no hay partida activa)
-        mainMenu.add([this]() { return principalMenuText[idioma][2]; }, [this]() {
-            checkForSaveFiles();
-            changeState(Abadia::STATES::SAVE);
-        }, [this]() { return activeGame; });
-
-        // Item 3: Idioma
-        mainMenu.add([this]() { return principalMenuText[idioma][3]; }, [this]() {
-            seleccionado = idioma;
-            changeState(Abadia::STATES::LANGUAGE);
-        });
-
-        // Item 4: Continuar (deshabilitado si no hay partida activa)
-        mainMenu.add([this]() { return principalMenuText[idioma][4]; }, [this]() {
-            changeState(Abadia::STATES::PLAY);
-            activeGame = true;
-        }, [this]() { return activeGame; });
-
-        // Item 5: Alternar entre gráficos VGA y CPC 666
-mainMenu.add([this]() { return principalMenuText[idioma][5]+(GraficosCPC?" VGA":" CPC"); }, [this]() {
-            cambioCPC_VGA();
-            if (activeGame) changeState(Abadia::STATES::PLAY);
-        }, [this]() { return estadoContenido != STATES::INTRO && estadoContenido != STATES::SCROLL; });
-        //}, [this]() { return !_secuenciaEnCurso; });
-        //}, [this]() { return previousState != STATES::INTRO && previousState != STATES::SCROLL; });
-	
-
-       // Item 6: Salir
-        mainMenu.add([this]() { return principalMenuText[idioma][6]; }, [this]() {
-            changeState(Abadia::STATES::ASK_EXIT);
-        });
-
-// Ver portada - solo si ya salimos de ella
-mainMenu.add([this]() { return principalMenuText[idioma][7]; }, [this]() {
-		changeState(STATES::INTRO);
-		}, [this]() { return estadoContenido != STATES::INTRO; });
-
-// Ver pergamino - solo si ya se ha visto una vez
-mainMenu.add([this]() { return principalMenuText[idioma][8]; }, [this]() {
-		changeState(STATES::SCROLL);
-		sys->minimumFrameTime = SCROLL_FRAME_TIME;
-		sys->playSound(Abadia::SONIDOS::Inicio);
-		}, [this]() { return estadoContenido != STATES::INTRO; });
-// Sonido
-mainMenu.add([this]() { return principalMenuText[idioma][9]+ (mute ? " ON " : " OFF"); }, [this]() {
-		 mute=!mute;
-		 sys->setMute(mute);
-		 configReader->setValue("MUTESOUND", mute?"1":"0"); // TODO: considerar llevar a sys
-		 saveConfigFile();
-			
-		}, [this]() { return true; });
-
-    }
-
-
-    return mainMenu.tick(*marcador);
-}
-*/
 
 bool Juego::menu()
 {
-    if (mainMenu.isEmpty()) {
-        mainMenu.clear();
-        mainMenu.setAlignment(MenuAlignment::LEFT);
+	if (mainMenu.isEmpty()) {
+		mainMenu.clear();
+		mainMenu.setAlignment(MenuAlignment::LEFT);
+		// 0 Continuar
+		mainMenu.add(
+			[this]() { return principalMenuText[sys->idioma][0]; },
+			[this]() {
+				changeState(STATES::PLAY);
+				activeGame = true;
+			},
+			[this]() { return activeGame; }
+		);
 
-        // 0 Continuar
-        mainMenu.add(
-            [this]() { return principalMenuText[idioma][0]; },
-            [this]() {
-                changeState(STATES::PLAY);
-                activeGame = true;
-            },
-            [this]() { return activeGame; }
-        );
+		// 1 Nueva partida
+		mainMenu.add(
+			[this]() { return principalMenuText[sys->idioma][1]; },
+			[this]() {
+				if (!activeGame) {
+					changeState(STATES::SCROLL);
+					marcador->limpiaAreaMarcador();
+					ReiniciaPantalla();
+					sys->setFastSpeed();
+					sys->playSound(SONIDOS::Inicio);
+				} else {
+					changeState(STATES::ASK_NEW_GAME);
+				}
+			}
+		);
 
-        // 1 Nueva partida
-        mainMenu.add(
-            [this]() { return principalMenuText[idioma][1]; },
-            [this]() {
-                if (!activeGame) {
-                    changeState(STATES::SCROLL);
-                    marcador->limpiaAreaMarcador();
-                    ReiniciaPantalla();
-                    //sys->minimumFrameTime = SCROLL_FRAME_TIME;
-		    sys->setFastSpeed();
-                    sys->playSound(SONIDOS::Inicio);
-                } else {
-                    changeState(STATES::ASK_NEW_GAME);
-                }
-            }
-        );
+		// 2 Cargar
+		mainMenu.add(
+			[this]() { return principalMenuText[sys->idioma][2]; },
+			[this]() {
+				checkForSaveFiles();
+				changeState(STATES::LOAD);
+			}
+		);
 
-        // 2 Cargar
-        mainMenu.add(
-            [this]() { return principalMenuText[idioma][2]; },
-            [this]() {
-                checkForSaveFiles();
-                changeState(STATES::LOAD);
-            }
-        );
+		// 3 Guardar
+		mainMenu.add(
+			[this]() { return principalMenuText[sys->idioma][3]; },
+			[this]() {
+				checkForSaveFiles();
+				changeState(STATES::SAVE);
+			},
+			[this]() { return activeGame; }
+		);
 
-        // 3 Guardar
-        mainMenu.add(
-            [this]() { return principalMenuText[idioma][3]; },
-            [this]() {
-                checkForSaveFiles();
-                changeState(STATES::SAVE);
-            },
-            [this]() { return activeGame; }
-        );
+		// 4 Configuración
+		mainMenu.add(
+			[this]() { return principalMenuText[sys->idioma][4]; },
+			[this]() { changeState(STATES::CONFIG); }
+		);
 
-        // 4 Configuración
-        mainMenu.add(
-            [this]() { return principalMenuText[idioma][4]; },
-            [this]() { changeState(STATES::CONFIG); }
-        );
+		// 5 Idioma
+		mainMenu.add(
+			[this]() { return principalMenuText[sys->idioma][5]; },
+			[this]() {
+				seleccionado = sys->idioma;
+				changeState(STATES::LANGUAGE);
+			}
+		);
 
-        // 5 Idioma
-        mainMenu.add(
-            [this]() { return principalMenuText[idioma][5]; },
-            [this]() {
-                seleccionado = idioma;
-                changeState(STATES::LANGUAGE);
-            }
-        );
+		// 6 Sonido ON/OFF — toggle rápido, estado visible en el texto
+		mainMenu.add(
+			[this]() {
+				return std::string(principalMenuText[sys->idioma][6])
+					+ (sys->mute ? " OFF " : " ON  ");
+			},
+			[this]() {
+				sys->mute = !sys->mute; // ConfigVar persiste automáticamente
+			}
+		);
 
-        // 6 Sonido ON/OFF — toggle rápido, estado visible en el texto
-        mainMenu.add(
-            [this]() {
-                return std::string(principalMenuText[idioma][6])
-                    + (mute ? " OFF" : " ON ");
-            },
-            [this]() {
-                mute = !mute;
-                sys->setMute(mute);
-                configReader->setValue("MUTESOUND", mute ? "1" : "0");
-                saveConfigFile();
-            }
-        );
+		// 7 Ayuda
+		mainMenu.add(
+			[this]() { return principalMenuText[sys->idioma][7]; },
+			[this]() { changeState(STATES::HELP); }
+		);
 
-        // 7 Ayuda
-        mainMenu.add(
-            [this]() { return principalMenuText[idioma][7]; },
-            [this]() { changeState(STATES::HELP); }
-        );
+		// 8 MAPA
+		mainMenu.add(
+			[this]() { return std::string(principalMenuText[sys->idioma][8]) + (modoInformacion ? " ON  " : " OFF "); },
+			[this]() { modoInformacion=!modoInformacion; },
+			[this]() { return estadoContenido == STATES::PLAY; }
+		);
 
-        // 8 MAPA
-        mainMenu.add(
-            [this]() { return std::string(principalMenuText[idioma][8]) + (modoInformacion ? " ON " : " OFF"); },
-            [this]() { modoInformacion=!modoInformacion; },
-	    [this]() { return estadoContenido == STATES::PLAY; }
-        );
+		mainMenu.fill();
 
+		// 9 Salir
+		mainMenu.add(
+			[this]() { return principalMenuText[sys->idioma][9]; },
+			[this]() { changeState(STATES::ASK_EXIT); }
+		);
+	}
 
-	mainMenu.fill();
-
-        // 9 Salir
-        mainMenu.add(
-            [this]() { return principalMenuText[idioma][9]; },
-            [this]() { changeState(STATES::ASK_EXIT); }
-        );
-    }
-
-    return mainMenu.tick(*marcador);
+	return mainMenu.tick(*marcador);
 }
 
 bool Juego::menuConfig()
 {
-    if (configMenu.isEmpty()) {
-        configMenu.clear();
-        configMenu.setAlignment(MenuAlignment::LEFT);
+	if (configMenu.isEmpty()) {
+		configMenu.clear();
+		configMenu.setAlignment(MenuAlignment::LEFT);
+		// 0 Gráficos
+		configMenu.add(
+			[this]() { return configMenuText[sys->idioma][0]; },
+			[this]() { changeState(STATES::CONFIG_GFX); }
+		);
 
-        // 0 Gráficos
-        configMenu.add(
-            [this]() { return configMenuText[idioma][0]; },
-            [this]() { changeState(STATES::CONFIG_GFX); }
-        );
+		// 1 Sonido
+		configMenu.add(
+			[this]() { return configMenuText[sys->idioma][1]; },
+			[this]() { changeState(STATES::CONFIG_SND); }
+		);
 
-        // 1 Sonido
-        configMenu.add(
-            [this]() { return configMenuText[idioma][1]; },
-            [this]() { changeState(STATES::CONFIG_SND); }
-        );
+		configMenu.fill();
 
-	/*
-	// 3-8 desactivados, para que volver sea siempre 9
-        for (int i = 0; i < 6; i++)
-            configMenu.add([this]() { return ""; }, [this]() {}, [this]() { return false; });
-	    */
+		// 9 Volver
+		configMenu.add(
+			[this]() { return configMenuText[sys->idioma][2]; },
+			[this]() { changeState(STATES::MENU); }
+		);
+	}
 
-	configMenu.fill();
-
-        // 9 Volver  // quizas cambiar configMenuText para que el "volver" sea el texto 9
-        configMenu.add(
-            [this]() { return configMenuText[idioma][2]; },
-            [this]() { changeState(STATES::MENU); }
-        );
-    }
-
-    return configMenu.tick(*marcador);
+	return configMenu.tick(*marcador);
 }
 
 bool Juego::menuConfigGfx()
 {
-    if (configGfxMenu.isEmpty()) {
-        configGfxMenu.clear();
-        configGfxMenu.setAlignment(MenuAlignment::LEFT);
+	if (configGfxMenu.isEmpty()) {
+		configGfxMenu.clear();
+		configGfxMenu.setAlignment(MenuAlignment::LEFT);
+		// 0 Modo VGA/CPC — toggle, estado visible en el texto
+		configGfxMenu.add(
+			[this]() {
+				return std::string(configGfxMenuText[sys->idioma][0])
+					+ (sys->GraficosCPC ? " CPC " : " VGA ");
+			},
+			[this]() {
+				cambioCPC_VGA();
+				if (activeGame) changeState(STATES::PLAY);
+			},
+			[this]() {
+				return estadoContenido != STATES::INTRO && estadoContenido != STATES::SCROLL;
+			}
+		);
 
-        // 0 Modo VGA/CPC — toggle, estado visible en el texto
-        configGfxMenu.add(
-            [this]() {
-                return std::string(configGfxMenuText[idioma][0])
-                    + (GraficosCPC ? " CPC" : " VGA");
-            },
-            [this]() {
-                cambioCPC_VGA();
-                if (activeGame) changeState(STATES::PLAY);
-            },
-            [this]() {
-                return estadoContenido != STATES::INTRO
-                    && estadoContenido != STATES::SCROLL;
-            }
-        );
+		// 1 Filtro — no implementado
+		configGfxMenu.add(
+			[this]() {
+				return std::string(configGfxMenuText[sys->idioma][1]) + " NINGUNO ";
+			},
+			[this]() {
+				SDL_Log("menuConfigGfx: filtro no implementado");
+			},
+			[this]() { return false; }
+		);
 
-        // 1 Filtro — no implementado
-        configGfxMenu.add(
-            [this]() {
-                return std::string(configGfxMenuText[idioma][1])
-                    + " NINGUNO";
-            },
-            [this]() {
-                SDL_Log("menuConfigGfx: filtro no implementado");
-            },
-	    [this]() { return false; }
-        );
+		// 2 Paleta — no implementado
+		configGfxMenu.add(
+			[this]() {
+				//return std::string(configGfxMenuText[sys->idioma][2]) + " ESTANDAR ";
+				// TODO: faltan traducciones por idioma
+				switch (sys->paletaEfecto) {
+				 case 0: return std::string(configGfxMenuText[sys->idioma][2]) + " ESTANDAR     "; break;
+				 case 1: return std::string(configGfxMenuText[sys->idioma][2]) + " GRIS         "; break;
+				 case 2: return std::string(configGfxMenuText[sys->idioma][2]) + " FÓSFORO VERDE"; break;
+				 case 3: return std::string(configGfxMenuText[sys->idioma][2]) + " FÓSFORO ÁMBAR"; break;
+				}
+				return std::string("VALOR DE PALETA CONFIGUDADO INVALIDO");
+			},
+			[this]() {
+				SDL_Log("menuConfigGfx: pruebas paleta ");
+				sys->paletaEfecto = (sys->paletaEfecto + 1) % 4; // ciclar 0-3
+				sys->resetPalette(); // regenera con nuevo efecto
 
-        // 2 Paleta — no implementado
-        configGfxMenu.add(
-            [this]() {
-                return std::string(configGfxMenuText[idioma][2])
-                    + " ESTANDAR";
-            },
-            [this]() {
-                SDL_Log("menuConfigGfx: paleta no implementado");
-            },
-	    [this]() { return false; }
-        );
-/*
-	// 4-8 desactivados para que volver sea siempre el 9
-	for (int i = 0; i < 5; i++)
-		configGfxMenu.add([this]() { return ""; }, [this]() {}, [this]() { return false; }); */
+			},
+			[this]() { return true; }
+		);
 
-	configGfxMenu.fill();
+		configGfxMenu.fill();
 
-        // 9 Volver
-        configGfxMenu.add(
-            [this]() { return configGfxMenuText[idioma][3]; },
-            [this]() { changeState(STATES::CONFIG); }
-        );
-    }
+		// 9 Volver
+		configGfxMenu.add(
+			[this]() { return configGfxMenuText[sys->idioma][3]; },
+			[this]() { changeState(STATES::CONFIG); }
+		);
+	}
 
-    return configGfxMenu.tick(*marcador);
+	return configGfxMenu.tick(*marcador);
 }
 
 bool Juego::menuConfigSnd()
 {
-    if (configSndMenu.isEmpty()) {
-        configSndMenu.clear();
-        configSndMenu.setAlignment(MenuAlignment::LEFT);
+	if (configSndMenu.isEmpty()) {
+		configSndMenu.clear();
+		configSndMenu.setAlignment(MenuAlignment::LEFT);
+		// 0 Mute ON/OFF
+		configSndMenu.add(
+			[this]() {
+				return std::string(configSndMenuText[sys->idioma][0])
+					+ (sys->mute ? " OFF " : " ON  ");
+			},
+			[this]() {
+				sys->mute = !sys->mute; // ConfigVar persiste automáticamente
+			}
+		);
 
-        // 0 Mute ON/OFF
-        configSndMenu.add(
-            [this]() {
-                return std::string(configSndMenuText[idioma][0])
-                    + (mute ? " OFF" : " ON ");
-            },
-            [this]() {
-                mute = !mute;
-                sys->setMute(mute);
-                configReader->setValue("MUTESOUND", mute ? "1" : "0");
-                saveConfigFile();
-            }
-        );
+		// 1 Volumen música — no implementado
+		configSndMenu.add(
+			[this]() {
+				return std::string(configSndMenuText[sys->idioma][1]) + "  ";
+			},
+			[this]() {
+				SDL_Log("menuConfigSnd: volumen musica no implementado");
+			},
+			[this]() { return false; }
+		);
 
-        // 1 Volumen música — no implementado
-        configSndMenu.add(
-            [this]() {
-                return std::string(configSndMenuText[idioma][1])
-                    + " ";
-            },
-            [this]() {
-                SDL_Log("menuConfigSnd: volumen musica no implementado");
-            },
-	    [this]() { return false; }
-        );
+		// 2 Volumen efectos — no implementado
+		configSndMenu.add(
+			[this]() {
+				return std::string(configSndMenuText[sys->idioma][2]) + "  ";
+			},
+			[this]() {
+				SDL_Log("menuConfigSnd: volumen efectos no implementado");
+			},
+			[this]() { return false; }
+		);
 
-        // 2 Volumen efectos — no implementado
-        configSndMenu.add(
-            [this]() {
-                return std::string(configSndMenuText[idioma][2])
-                    + " ";
-            },
-            [this]() {
-                SDL_Log("menuConfigSnd: volumen efectos no implementado");
-            },
-	    [this]() { return false; }
-	);
-/*
-	// 4-8 desactivados para que volver sea siempre el 9
-        for (int i = 0; i < 5; i++)
-            configSndMenu.add([this]() { return ""; }, [this]() {}, [this]() { return false; }); */
-	configSndMenu.fill();
+		configSndMenu.fill();
+		// 9 Volver
+		configSndMenu.add(
+			[this]() { return configSndMenuText[sys->idioma][3]; },
+			[this]() { changeState(STATES::CONFIG); }
+		);
+	}
 
-        // 9 Volver
-        configSndMenu.add(
-            [this]() { return configSndMenuText[idioma][3]; },
-            [this]() { changeState(STATES::CONFIG); }
-        );
-    }
-
-    return configSndMenu.tick(*marcador);
+	return configSndMenu.tick(*marcador);
 }
 
 bool Juego::menuAyuda()
 {
-    if (helpMenu.isEmpty()) {
-        helpMenu.clear();
-        helpMenu.setAlignment(MenuAlignment::LEFT);
+	if (helpMenu.isEmpty()) {
+		helpMenu.clear();
+		helpMenu.setAlignment(MenuAlignment::LEFT);
+		// 0 Pergamino de introducción con texto del manual
+		helpMenu.add(
+			[this]() { return helpMenuText[sys->idioma][0]; },
+			[this]() {
+				sys->setFastSpeed();
+				changeState(STATES::HELP_INTRODUCCION); 
+				pergamino->reset();
+			},
+			[this]() { return true; }
+		);
 
-        // 0 Pergamino de introducción con texto del manual
-        helpMenu.add(
-            [this]() { return helpMenuText[idioma][0]; },
-            [this]() {
-		sys->setFastSpeed();
-		changeState(STATES::HELP_INTRODUCCION); 
-		pergamino->reset();
-            },
-	    [this]() { return true; }
-        );
+		// 1 Manejo del teclado
+		helpMenu.add(
+			[this]() { return helpMenuText[sys->idioma][1]; },
+			[this]() {
+				sys->setFastSpeed();
+				changeState(STATES::HELP_MANEJO_PERGAMINO);
+				pergamino->reset();
+			},
+			[this]() { return true; }
+		);
+		// 2 Ayudas y mejoras
+		helpMenu.add(
+			[this]() { return helpMenuText[sys->idioma][2]; },
+			[this]() {
+				changeState(STATES::HELP_AYUDAS);
+			},
+			[this]() { return true; }
+		);
 
-        // 1 Manejo del teclado
-        helpMenu.add(
-            [this]() { return helpMenuText[idioma][1]; },
-            [this]() {
-//                SDL_Log("menuAyuda: teclas rapidas no implementado");
-		sys->setFastSpeed();
-		changeState(STATES::HELP_MANEJO_PERGAMINO); 
-		pergamino->reset();
-            },
-	    [this]() { return true; }
-        );
+		// 3 ayuda cámaras
+		helpMenu.add(
+			[this]() { return helpMenuText[sys->idioma][3]; },
+			[this]() {
+				changeState(STATES::HELP_CAMARAS);
+			},
+			[this]() { return true; }
+		);
 
-        // 2 Ayudas y mejoras
-        helpMenu.add(
-            [this]() { return helpMenuText[idioma][2]; },
-            [this]() {
-		changeState(STATES::HELP_AYUDAS);
-            },
-	    [this]() { return true; }
-        );
+		// 4 Referencias
+		helpMenu.add(
+			[this]() { return helpMenuText[sys->idioma][4]; },
+			[this]() {
+				changeState(STATES::HELP_REFERENCIAS);
+				sys->setFastSpeed();
+				pergamino->reset();
+			},
+			[this]() { return true; }
+		);
 
-	// 3 ayuda cámaras
-        helpMenu.add(
-            [this]() { return helpMenuText[idioma][3]; },
-            [this]() {
-	    	changeState(STATES::HELP_CAMARAS);
-            },
-	    [this]() { return true; }
-        );
+		// 5 Introducción (pergamino de inicio)
+		helpMenu.add(
+			[this]() { return helpMenuText[sys->idioma][5]; },
+			[this]() {
+				changeState(STATES::SCROLL);
+				sys->setFastSpeed();
+				sys->playSound(SONIDOS::Inicio);
+			}
+		);
 
-                // 4 Referencias
-        helpMenu.add(
-            [this]() { return helpMenuText[idioma][4]; },
-            [this]() {
-	    	changeState(STATES::HELP_REFERENCIAS);
-		sys->setFastSpeed();
-		pergamino->reset();
-            },
-	    [this]() { return true; }
-        );
+		helpMenu.fill();
 
-	// 5 Introducción (pergamino de inicio)
-        helpMenu.add(
-            [this]() { return helpMenuText[idioma][5]; },
-            [this]() {
-                changeState(STATES::SCROLL);
-                //sys->minimumFrameTime = SCROLL_FRAME_TIME;
-		sys->setFastSpeed();
-                sys->playSound(SONIDOS::Inicio);
-            }
-        );
+		// 9 Volver
+		helpMenu.add(
+			[this]() { return helpMenuText[sys->idioma][6]; },
+			[this]() { changeState(STATES::MENU); }
+		);
+	}
 
-        /*
-	// 7-8 desactivados para que volver sea siempre el 9
-        for (int i = 0; i < 2; i++)
-            helpMenu.add([this]() { return ""; }, [this]() {}, [this]() { return false; }); */
-	helpMenu.fill();
-
-        // 9 Volver
-        helpMenu.add(
-            [this]() { return helpMenuText[idioma][6]; },
-            [this]() { changeState(STATES::MENU); }
-        );
-    }
-
-    return helpMenu.tick(*marcador);
+	return helpMenu.tick(*marcador);
 }
 
 bool Juego::helpIntroduccion() {
-	pergamino->muestraTexto(Pergamino::pergaminoIntroduccion[idioma]);
-	
+	pergamino->muestraTexto(Pergamino::pergaminoIntroduccion[sys->idioma]);
 	if (pergamino->finished)
 	{
-		//BUTTON_YES = false;
 		sys->setNormalSpeed();
 		changeState(Abadia::STATES::HELP);
-		// changeState ya gestiona paleta, marcador y sonidos.
 	}
 	return true;
 }
 
 bool Juego::helpManejoPergamino() {
-	pergamino->muestraTexto(Pergamino::pergaminoManejo[idioma]);
-	
+	pergamino->muestraTexto(Pergamino::pergaminoManejo[sys->idioma]);
 	if (pergamino->finished)
 	{
-		//BUTTON_YES = false;
 		sys->setNormalSpeed();
 		changeState(Abadia::STATES::HELP_MANEJO);
-		// changeState ya gestiona paleta, marcador y sonidos.
 	}
 	return true;
 }
-/*
- con el tamaño de los textos simpleMenu falla en un assert
- y  ademas no es un menu, siempre se  cambia al mismo estado
- mejor sin menu
-bool Juego::helpManejo() {
-    if (helpMenuManejo.isEmpty()) {
-        helpMenuManejo.clear();
-        helpMenuManejo.setAlignment(MenuAlignment::LEFT);
 
-        for (int i=0;i<9;i++) {
-        helpMenuManejo.add(
-            [this,i]() { return helpManejoText[idioma][i]; },
-            [this]() {
-		changeState(STATES::HELP); 
-            },
-	    [this]() { return true; }
-        );
-	}
-    }
-//	helpMenuManejo.fill();
-//
-        // 9 Volver
- //      helpMenuManejo.add(
- //          [this]() { return helpMenuText[idioma][6]; },
-//            [this]() { changeState(STATES::MENU); }
-//        );
-//
-	return helpMenuManejo.tick(*marcador);
-
-} */
 bool Juego::helpManejo() {
 	if (BUTTON_YES) {
-		changeState(STATES::MENU); 
+		changeState(STATES::MENU);
 	} else {
-		marcador->imprimeFrase(helpManejoText[idioma][0], 8, 16+(0*16),4, 0);
+		marcador->imprimeFrase(helpManejoText[sys->idioma][0], 8, 16+(0*16),4, 0);
 		for (int i=1;i<9;i++)
 		{
-			marcador->imprimeFrase(helpManejoText[idioma][i], 8, 16+(i*16),0, 4);
+			marcador->imprimeFrase(helpManejoText[sys->idioma][i], 8, 16+(i*16),0, 4);
 		}
 	}
 	return true;
@@ -962,12 +692,12 @@ bool Juego::helpManejo() {
 
 bool Juego::helpAyudas() {
 	if (BUTTON_YES) {
-		changeState(STATES::HELP); 
+		changeState(STATES::HELP);
 	} else {
-		marcador->imprimeFrase(helpAyudasText[idioma][0], 8, 16+(0*16),4, 0);
+		marcador->imprimeFrase(helpAyudasText[sys->idioma][0], 8, 16+(0*16),4, 0);
 		for (int i=1;i<9;i++)
 		{
-			marcador->imprimeFrase(helpAyudasText[idioma][i], 8, 16+(i*16),0, 4);
+			marcador->imprimeFrase(helpAyudasText[sys->idioma][i], 8, 16+(i*16),0, 4);
 		}
 	}
 	return true;
@@ -975,37 +705,33 @@ bool Juego::helpAyudas() {
 
 bool Juego::helpCamaras() {
 	if (BUTTON_YES) {
-		changeState(STATES::HELP); 
+		changeState(STATES::HELP);
 	} else {
-		marcador->imprimeFrase(helpCamarasText[idioma][0], 0, 16+(0*16),4, 0);
+		marcador->imprimeFrase(helpCamarasText[sys->idioma][0], 0, 16+(0*16),4, 0);
 		for (int i=1;i<9;i++)
 		{
-			marcador->imprimeFrase(helpCamarasText[idioma][i], 0, 16+(i*16),0, 4);
+			marcador->imprimeFrase(helpCamarasText[sys->idioma][i], 0, 16+(i*16),0, 4);
 		}
 	}
 	return true;
 }
 
 bool Juego::helpReferencias() {
-	pergamino->muestraTexto(Pergamino::pergaminoReferencias[idioma]);
-	
+	pergamino->muestraTexto(Pergamino::pergaminoReferencias[sys->idioma]);
 	if (pergamino->finished)
 	{
-		//BUTTON_YES = false;
 		sys->setNormalSpeed();
 		changeState(Abadia::STATES::HELP);
-		// changeState ya gestiona paleta, marcador y sonidos.
 	}
 	return true;
 }
+
 /////////////////////////////////////////////////////////////////////////////
 // método principal del juego
 /////////////////////////////////////////////////////////////////////////////
-
 void Juego::preRun()
 {	
 	marcador->limpiaAreaMarcador();
-
 	creaEntidadesJuego();
 
 	// Los gráficos correctos (VGA o CPC) ya fueron copiados al buffer activo
@@ -1024,86 +750,84 @@ void Juego::preRun()
 
 void Juego::changeState(Abadia::STATES newState)
 {
-    if (newState == currentState) return;
+	if (newState == currentState) return;
+	marcador->limpiaAreaMarcador();  // solo el marcador, no ReiniciaPantalla completo
 
-    marcador->limpiaAreaMarcador();  // solo el marcador, no ReiniciaPantalla completo
+	switch (currentState) {
+		case STATES::SCROLL:  sys->stopSound(Abadia::SONIDOS::Inicio); break;
+		case STATES::ENDING:  sys->stopSound(Abadia::SONIDOS::Final);  break;
+		default: break;
+	}
 
-    switch (currentState) {
-        case STATES::SCROLL:  sys->stopSound(Abadia::SONIDOS::Inicio); break;
-        case STATES::ENDING:  sys->stopSound(Abadia::SONIDOS::Final);  break;
-        default: break;
-    }
+	switch (newState) {
+		case STATES::PLAY:
+			if (!activeGame) activeGame = true;
+			pausaPorEstarEnMenus = false;
+			if (currentState != STATES::SCROLL && currentState != STATES::ENDING)
+				sys->resumeSounds();
+			ReiniciaPantalla();  
+			break;
+		case STATES::INTRO:
+			pausaPorEstarEnMenus = true;
+			sys->pauseSounds();
+			break;
+		case STATES::HELP:
+		case STATES::HELP_INTRODUCCION:
+		case STATES::HELP_MANEJO_PERGAMINO:
+		case STATES::HELP_MANEJO:
+		case STATES::HELP_AYUDAS:
+		case STATES::HELP_CAMARAS:
+		case STATES::HELP_REFERENCIAS:
+		case STATES::CONFIG:
+		case STATES::CONFIG_GFX:
+		case STATES::CONFIG_SND:
+		case STATES::LANGUAGE:
+		case STATES::MENU:
+		case STATES::LOAD:
+		case STATES::SAVE:
+		case STATES::ASK_NEW_GAME:
+		case STATES::ASK_CONTINUE:
+		case STATES::ASK_EXIT:
+			pausaPorEstarEnMenus = true;
+			sys->pauseSounds();
+			sys->setGamePalette(2);
+			limpiaAreaJuego(4);
+			marcador->limpiaAreaMarcador();  // solo el marcador, no ReiniciaPantalla completo
+			break;
+		case STATES::SCROLL:
+		case STATES::ENDING:
+			pausaPorEstarEnMenus = true;
+			sys->setGamePalette(1);
+			pergamino->reset();   //  <- fuerza redibujado limpio desde muestraTexto()
+			break;
+	}
 
-    switch (newState) {
-        case STATES::PLAY:
-            if (!activeGame) activeGame = true;
-            pausaPorEstarEnMenus = false;
-            if (currentState != STATES::SCROLL && currentState != STATES::ENDING)
-                sys->resumeSounds();
-            ReiniciaPantalla();  
-            break;
-        case STATES::INTRO:
-            pausaPorEstarEnMenus = true;
-            sys->pauseSounds();
-            break;
-	case STATES::HELP:
-	case STATES::HELP_INTRODUCCION:
-	case STATES::HELP_MANEJO_PERGAMINO:
-	case STATES::HELP_MANEJO:
-	case STATES::HELP_AYUDAS:
-	case STATES::HELP_CAMARAS:
-	case STATES::HELP_REFERENCIAS:
-	case STATES::CONFIG:
-	case STATES::CONFIG_GFX:
-	case STATES::CONFIG_SND:
-	case STATES::LANGUAGE:
-        case STATES::MENU:
-        case STATES::LOAD:
-        case STATES::SAVE:
-        case STATES::ASK_NEW_GAME:
-        case STATES::ASK_CONTINUE:
-        case STATES::ASK_EXIT:
-            pausaPorEstarEnMenus = true;
-            sys->pauseSounds();
-            sys->setGamePalette(2);
-            limpiaAreaJuego(4);
-	    marcador->limpiaAreaMarcador();  // solo el marcador, no ReiniciaPantalla completo
-            break;
-        case STATES::SCROLL:
-        case STATES::ENDING:
-            pausaPorEstarEnMenus = true;
-            sys->setGamePalette(1);
-            pergamino->reset();   // <- fuerza redibujado limpio desde muestraTexto()
-            break;
-    }
+	switch (newState) {
+		case STATES::INTRO:
+		case STATES::SCROLL:
+		case STATES::PLAY:
+		case STATES::ENDING:
+			estadoContenido = newState;
+			break;
+		default: break;
+	}
 
-    switch (newState) {
-	    case STATES::INTRO:
-	    case STATES::SCROLL:
-	    case STATES::PLAY:
-	    case STATES::ENDING:
-		    estadoContenido = newState;
-		    break;
-	    default: break;
-    }
-
-    currentState = newState;
+	currentState = newState;
 }
 
 void Juego::run()
 {
-	if (sys->pad.map) { 
-		modoInformacion=!modoInformacion; 
+	if (sys->pad.map) {
+		modoInformacion=!modoInformacion;
 		limpiaAreaJuego(12);
-                motor->compruebaCambioPantalla(true);
-        }
+		motor->compruebaCambioPantalla(true);
+	}
 	elBuscadorDeRutas->contadorAnimGuillermo = laLogica->guillermo->contadorAnimacion;
-	
 	logica->compruebaAbreEspejo();
 	logica->actualizaVariablesDeTiempo();
 
 	if (muestraPantallaFinInvestigacion()) return;		
-	
+
 	logica->compruebaLecturaLibro();	
 	marcador->realizaScrollMomentoDia();		
 	logica->ejecutaAccionesMomentoDia();
@@ -1111,17 +835,17 @@ void Juego::run()
 	motor->compruebaCambioPantalla();
 	logica->compruebaCogerDejarObjetos();
 	logica->compruebaAbrirCerrarPuertas();
-			
+		
 	for (int i = 0; i < numPersonajes; i++){
 		personajes[i]->run();
 	}
-	
+
 	logica->buscRutas->generadoCamino = false;	
-	
+
 	actualizaLuz();
 
 	laLogica->realizaReflejoEspejo();
-	
+
 	if (cambioModoInformacion && modoInformacion)
 	{
 		cambioModoInformacion=false;
@@ -1149,7 +873,7 @@ void Juego::run()
 
 void Juego::limpiaAreaJuego(int color)
 {
-// colores compatibles con el modo en que 
+// colores compatibles con el modo en que
 // el mapa se superpone al juego
 // y el fondo no se mezcla con el mapa
 // tanto en VGA como en CPC
@@ -1158,27 +882,25 @@ void Juego::limpiaAreaJuego(int color)
 // 19 regulero
 // 20 feo
 // 21 feo
-int fondo=4;
-
-	// esta es es el margen izquierdo de la zona de juego
-	// que en la intro (imagen de portada) si se escribe
-	// tambien se escribe en el mapa
+	int fondo=4;
+// esta es es el margen izquierdo de la zona de juego
+// que en la intro (imagen de portada) si se escribe
+// tambien se escribe en el mapa
 	sys->fillMode1Rect(0, 0, 32, 160, fondo);
-	// esta es la parte de la zona de juego
+// esta es la parte de la zona de juego
 	sys->fillMode1Rect(32, 0, 256, 160, color);
-	// esta es es el margen derecho de la zona de juego
-	// que en la intro (imagen de portada) si se escribe
-	// tambien se escribe en el mapa
+// esta es es el margen derecho de la zona de juego
+// que en la intro (imagen de portada) si se escribe
+// tambien se escribe en el mapa
 	sys->fillMode1Rect(0, 0, 32, 160, fondo);
 	sys->fillMode1Rect(32 + 256, 0, 32, 160, fondo);	
-	// pero esto no borra la zona del marcador
-	// que se tendría que borrar con limpiaAreaMarcador
+// pero esto no borra la zona del marcador
+// que se tendría que borrar con limpiaAreaMarcador
 }
 
 void Juego::generaGraficosFlipeados()
 {
 	generaGraficosFlipeadosVGA();
-
 	UINT8 tablaFlipX[256];
 
 	for (int i = 0; i < 256; i++)
@@ -1188,7 +910,7 @@ void Juego::generaGraficosFlipeados()
 		int pixel2 = unpackPixelMode1(i, 2);
 		int pixel3 = unpackPixelMode1(i, 3);
 
-		int data = 0;
+		int data = 0 ;
 
 		data = packPixelMode1(data, 0, pixel3);
 		data = packPixelMode1(data, 1, pixel2);
@@ -1213,7 +935,6 @@ void Juego::generaGraficosFlipeadosVGA()
 	UINT8 *romsVGAFlip = &roms[0x24000 + 174065 -1 - 0x4000];
 	int dest = 0;
 	int size = 57240-53760;
-
 	flipeaGraficosVGA(&romsVGA[53760], &romsVGAFlip[dest], 5*4, size);
 	dest += size;
 	size = 57768-57240;
@@ -1243,7 +964,6 @@ void Juego::generaGraficosFlipeadosVGA()
 void Juego::flipeaGraficos(UINT8 *tablaFlip, UINT8 *src, UINT8 *dest, int ancho, int bytes)
 {
 	memcpy(dest, src, bytes);
-
 	int numLineas = bytes/ancho;
 	int numIntercambios = (ancho + 1)/2;
 
@@ -1269,7 +989,6 @@ void Juego::flipeaGraficos(UINT8 *tablaFlip, UINT8 *src, UINT8 *dest, int ancho,
 void Juego::flipeaGraficosVGA(UINT8 *src, UINT8 *dest, int ancho, int bytes)
 {
 	memcpy(dest, src, bytes);
-
 	int numLineas = bytes/ancho;
 	int numIntercambios = (ancho + 1)/2;
 
@@ -1295,7 +1014,6 @@ void Juego::flipeaGraficosVGA(UINT8 *src, UINT8 *dest, int ancho, int bytes)
 void Juego::actualizaLuz()
 {
 	sprites[spriteLuz]->esVisible = false;
-
 	if (motor->pantallaIluminada) return;
 
 	if (!(personajes[1]->sprite->esVisible))
@@ -1313,31 +1031,25 @@ void Juego::actualizaLuz()
 	sprLuz->ajustaAPersonaje(personajes[1]);
 }
 
-
 /////////////////////////////////////////////////////////////////////////////
 // métodos para mostrar distintas pantallas
 /////////////////////////////////////////////////////////////////////////////
-
 void Juego::muestraPresentacion()
 {
-	// Pintamos la portada cada frame (la paleta intro puede haberse
-	// sobreescrito si se vuelve aquí desde otro estado).
+// Pintamos la portada cada frame (la paleta intro puede haberse
+// sobreescrito si se vuelve aquí desde otro estado).
 	pintaPortada();
-
 	if (BUTTON_YES)
 	{
-		//BUTTON_YES = false;
 		changeState(Abadia::STATES::MENU);
 	}
 }
 
 void Juego::muestraIntroduccion()
 {
-	pergamino->muestraTexto(Pergamino::pergaminoInicio[idioma]);
-	
+	pergamino->muestraTexto(Pergamino::pergaminoInicio[sys->idioma]);
 	if (pergamino->finished)
 	{
-		//BUTTON_YES = false;
 		sys->setNormalSpeed();
 		changeState(Abadia::STATES::PLAY);
 		// changeState ya gestiona paleta, marcador y sonidos.
@@ -1347,22 +1059,21 @@ void Juego::muestraIntroduccion()
 void Juego::muestraFinal()
 {
 	sys->playSound(Abadia::SONIDOS::Final,true);
-	pergamino->muestraTexto(Pergamino::pergaminoFinal[idioma]);
+	pergamino->muestraTexto(Pergamino::pergaminoFinal[sys->idioma]);
 }
 
 bool Juego::muestraPantallaFinInvestigacion()
 {
 	std::string porcentaje[8] = {
-	"XX POR CIENTO DE",
-	"XX  PER  CENT",
-	"XX POR CENTO DA",
-	"XX PER CENT DE",
-	"XX POR CENTO DA",
-	"XX PER CENTO",
-	"XX  PER  CENT",
-	"XX POR CENTO DA"
+		"XX POR CIENTO DE ",
+		"XX  PER  CENT ",
+		"XX POR CENTO DA ",
+		"XX PER CENT DE ",
+		"XX POR CENTO DA ",
+		"XX PER CENTO ",
+		"XX  PER  CENT ",
+		"XX POR CENTO DA "
 	};
-
 	if (!logica->haFracasado) {return false;}
 
 	laLogica->numPersonajeCamara = 0x80;
@@ -1373,20 +1084,20 @@ bool Juego::muestraPantallaFinInvestigacion()
 
 	int porc = logica->calculaPorcentajeMision();
 
-	porcentaje[idioma][0] = ((porc/10) % 10) + 0x30;
-	porcentaje[idioma][1] = (porc % 10) + 0x30;
-	
-	int x = 0;
-	x = (320 - frase1[idioma].length()*8)>>1;
-	marcador->imprimeFrase(frase1[idioma], x, 32, 4, 0);
-	x = (320 - porcentaje[idioma].length()*8)>>1;
-	marcador->imprimeFrase(porcentaje[idioma], x, 48, 4, 0);
-	x = (320 - frase3[idioma].length()*8)>>1;
-	marcador->imprimeFrase(frase3[idioma], x, 64, 4, 0);
-	x = (320 - frase4[idioma].length()*8)>>1;
-	marcador->imprimeFrase(frase4[idioma], x, 128, 4, 0);
+	porc = (porc < 0) ? 0 : (porc > 100 ? 100 : porc);
+	porcentaje[sys->idioma][0] = ((porc/10) % 10) + 0x30;
+	porcentaje[sys->idioma][1] = (porc % 10) + 0x30;
 
-	//if (sys->pad.button1 ||sys->pad.button2 ||sys->pad.button3 ||sys->pad.button4)
+	int x = 0;
+	x = (320 - (int)frase1[sys->idioma].length()*8) >> 1;
+	marcador->imprimeFrase(frase1[sys->idioma], x, 32, 4, 0);
+	x = (320 - (int)porcentaje[sys->idioma].length()*8) >> 1;
+	marcador->imprimeFrase(porcentaje[sys->idioma], x, 48, 4, 0);
+	x = (320 - (int)frase3[sys->idioma].length()*8) >> 1;
+	marcador->imprimeFrase(frase3[sys->idioma], x, 64, 4, 0);
+	x = (320 - (int)frase4[sys->idioma].length()*8) >> 1;
+	marcador->imprimeFrase(frase4[sys->idioma], x, 128, 4, 0);
+
 	if (sys->pad.action || sys->pad.confirm || sys->pad.cancel)
 	{
 		changeState(Abadia::STATES::INTRO);
@@ -1397,16 +1108,13 @@ bool Juego::muestraPantallaFinInvestigacion()
 	return true;
 }
 
-
 /////////////////////////////////////////////////////////////////////////////
 // creación de las entidades del juego
 /////////////////////////////////////////////////////////////////////////////
-
 void Juego::creaEntidadesJuego()
 {
 	sprites[0] = new Sprite();
 	sprites[1] = new Sprite();
-
 	for (int i = 2; i < 8; i++){
 		sprites[i] = new SpriteMonje();
 	}
@@ -1456,7 +1164,7 @@ void Juego::creaEntidadesJuego()
 		personajes[i]->despY = -34;
 	}
 	personajes[1]->despY = -32;
-	
+
 	for (int i = 0; i < numPuertas; i++){
 		puertas[i] = new Puerta(sprites[primerSpritePuertas + i]);
 	}
@@ -1466,121 +1174,11 @@ void Juego::creaEntidadesJuego()
 	}
 }
 
+// ----------------------------------------------------------------------------
+// checkForSaveFiles en Juego.cpp queda así (solo sincroniza con sys si es necesario)
+// ----------------------------------------------------------------------------
 void Juego::checkForSaveFiles()
 {
-	checkConfigFile();
-	for (int i=0;i<7;i++)
-	{
-		string token = "SAVEX";
-		token[4] = '0' + i;		
-		saveFile[i] = configReader->getValue(token); 
-	}
-}
-
-void Juego::checkConfigFile()
-{
-	if (!readConfigFile())
-	{
-		if (saveConfigFile()){
-		}
-	}
-}
-
-bool Juego::readConfigFile()
-{
-	bool r = false;
-
-	if (!configReader->isEmpty()){
-		delete configReader;
-	}
-
-	std::string path = "";
-
-	#ifdef RG350
-	path = "/usr/local/home/Abbey/";
-	#endif
-
-#ifdef __EMSCRIPTEN__
-	path="/save/";
-#endif
-
-	#ifdef ANDROID
-	if (SDL_AndroidGetExternalStorageState() != 0){
-		path = SDL_AndroidGetExternalStoragePath();
-		path += "/";
-	}
-	#endif
-	
-	#ifdef VITA
-	path = VITA_SAVE_DIR;
-	#endif
-
-	configReader = new ConfigReader((path + "config.txt").c_str());
-
-	if (configReader->parse())
-	{
-		string s = configReader->getValue("LANGUAGE");
-		idioma = atoi(s.c_str());
-		r = true;
-
-		s = configReader->getValue("GRAPHICSCPC");
-		GraficosCPC = atoi(s.c_str());
-
-		s = configReader->getValue("MUTESOUND");
-		SDL_Log("leo mutesound y es %s\n",s.c_str());
-		SDL_Log("mute antes de aplicar conf es %d\n",mute);
-		mute = atoi(s.c_str());
-		sys->setMute(mute); // TODO, esto debería ser más limpio
-		SDL_Log("mute despues  de aplicar conf es %d\n",mute);
-	}
-
-	return r;
-}
-
-bool Juego::saveConfigFile()
-{
-	bool r = false;
-	ofstream f;
-
-	std::string path = "";
-
-	#ifdef RG350
-	path = "/usr/local/home/Abbey/";
-	#endif
-#ifdef __EMSCRIPTEN__
-	path="/save/";
-#endif
-
-	#ifdef ANDROID
-	if (SDL_AndroidGetExternalStorageState() != 0){
-		path = SDL_AndroidGetExternalStoragePath();
-		path += "/";	
-	}
-	#endif
-	
-	#ifdef VITA
-	path = VITA_SAVE_DIR;
-	#endif
-	
-	f.open((path + "config.txt").c_str());
-
-	f << "LANGUAGE="<< idioma <<"\n";
-	f << "GRAPHICSCPC="<< GraficosCPC << "\n";
-	f << "MUTESOUND="<< mute << "\n";
-
-	for (int i=0;i<7;i++)
-	{
-		string token = "SAVEX";
-		token[4] = '0' + i;
-
-		if (!configReader->isEmpty()){			
-			f << "SAVE" << i << "=" << configReader->getValue(token) <<"\n";
-		}
-		else{
-			f << "SAVE" << i << "=" <<"--" <<"\n";
-		}
-	}
-
-	f.close();
-	return r;
+	// sys ya gestiona las fechas de los slots automáticamente mediante ConfigVar y saveSlot/loadSlot.
+	// Los menús leen directamente sys->slotDates[i]. Esta función se mantiene por compatibilidad de llamadas.
 }

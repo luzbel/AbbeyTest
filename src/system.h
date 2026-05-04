@@ -3,8 +3,11 @@
 
 #include <string>
 #include <iostream>
+#include <fstream>
 #include <cassert>
 #include <vector>
+#include <functional>
+#include <ctime>
 
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
@@ -15,12 +18,13 @@
 #endif
 
 #include "SDLPaleta.h"
+#include "configreader.h"
 
 #ifdef __EMSCRIPTEN__
 #define WINDOW_WIDTH 640
-#define WINDOW_HEIGHT 400 
+#define WINDOW_HEIGHT 400
 #else
-#define WINDOW_WIDTH 1280  
+#define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 800
 #endif
 
@@ -44,25 +48,10 @@ namespace Abadia {
 		Inicio = 9,
 		Pasos = 10,
 		Tintineo = 11,
-
 		Count
 	};
-/*
-	enum class STATES: UINT8 {
-		INTRO,
-		SCROLL,
-		MENU,
-		LANGUAGE,
-		LOAD,
-		SAVE,	
-		PLAY,
-		ASK_NEW_GAME,
-		ASK_CONTINUE,
-		ASK_EXIT,
-		ENDING
-	}; 
-	*/
-	enum class STATES: UINT8 {
+
+	enum class STATES : UINT8 {
 		INTRO,
 		SCROLL,
 		MENU,
@@ -73,107 +62,164 @@ namespace Abadia {
 		ASK_NEW_GAME,
 		ASK_CONTINUE,
 		ASK_EXIT,
-		HELP,           // submenú ayuda
-		HELP_INTRODUCCION, // el texto de las instrucciones
-		HELP_MANEJO_PERGAMINO, //
-	 	HELP_MANEJO , //
-	 	HELP_AYUDAS, //
+		HELP,
+		HELP_INTRODUCCION,
+		HELP_MANEJO_PERGAMINO,
+		HELP_MANEJO,
+		HELP_AYUDAS,
 		HELP_CAMARAS,
 		HELP_REFERENCIAS,
-		CONFIG,         // submenú configuración
-		CONFIG_GFX,     // submenú gráficos
-		CONFIG_SND,     // submenú sonido
+		CONFIG,
+		CONFIG_GFX,
+		CONFIG_SND,
 		ENDING
 	};
 
 	constexpr const char* SOUND_FILE_NAMES[] = {
 #ifdef ANDROID
-	"roms/abadia/abrir.wav",
-	"roms/abadia/aporrear.wav",
-	"roms/abadia/campanas.wav",
-	"roms/abadia/cerrar.wav",
-	"roms/abadia/coger.wav",
-	"roms/abadia/dejar.wav",
-	"roms/abadia/espejo.wav",		
-	"roms/abadia/final.wav",		
-	"roms/abadia/fondo.wav",		
-	"roms/abadia/inicio.wav",		
-	"roms/abadia/pasos.wav",
-	"roms/abadia/tintineo.wav"
+		"roms/abadia/abrir.wav",
+		"roms/abadia/aporrear.wav",
+		"roms/abadia/campanas.wav",
+		"roms/abadia/cerrar.wav",
+		"roms/abadia/coger.wav",
+		"roms/abadia/dejar.wav",
+		"roms/abadia/espejo.wav",
+		"roms/abadia/final.wav",
+		"roms/abadia/fondo.wav",
+		"roms/abadia/inicio.wav",
+		"roms/abadia/pasos.wav",
+		"roms/abadia/tintineo.wav"
 #else
-	"./roms/abadia/abrir.wav",
-	"./roms/abadia/aporrear.wav",
-	"./roms/abadia/campanas.wav",
-	"./roms/abadia/cerrar.wav",
-	"./roms/abadia/coger.wav",
-	"./roms/abadia/dejar.wav",
-	"./roms/abadia/espejo.wav",		
-	"./roms/abadia/final.wav",		
-	"./roms/abadia/fondo.wav",		
-	"./roms/abadia/inicio.wav",		
-	"./roms/abadia/pasos.wav",
-	"./roms/abadia/tintineo.wav"
+		"./roms/abadia/abrir.wav",
+		"./roms/abadia/aporrear.wav",
+		"./roms/abadia/campanas.wav",
+		"./roms/abadia/cerrar.wav",
+		"./roms/abadia/coger.wav",
+		"./roms/abadia/dejar.wav",
+		"./roms/abadia/espejo.wav",
+		"./roms/abadia/final.wav",
+		"./roms/abadia/fondo.wav",
+		"./roms/abadia/inicio.wav",
+		"./roms/abadia/pasos.wav",
+		"./roms/abadia/tintineo.wav"
 #endif
 	};
 } // namespace Abadia
 
 // ----------------------------------------------------------------------------
-// PlayerInput: acciones semánticas del juego, independientes del dispositivo.
-// handleEvents() mapea teclado y mando a estos campos.
-// Los campos booleanos de movimiento/acción siguen siendo "nivel sostenido"
-// (true mientras se mantiene pulsado). Los campos de acción puntual
-// (confirm, cancel, menu, etc.) se activan en KEYDOWN/BUTTONDOWN y el
-// código del juego los pone a false tras consumirlos.
-// lastNumberPressed: 0-9 si se pulsó una tecla numérica este frame, -1 si no.
-// cameraTarget: 0-7 si se pulsó 1-7 para cambio de cámara durante el juego, -1 si no.
+// ConfigVar<T>
+// Variable persistida automáticamente en config al asignar.
+//   sys->mute = true;   → actualiza valor y persiste en ConfigReader
+//   if (sys->mute) ...  → lectura transparente
+// Nota: el volcado a disco se hace llamando a sys->saveConfig().
+// ----------------------------------------------------------------------------
+template<typename T>
+class ConfigVar {
+public:
+	ConfigVar(const std::string& key, T defaultValue)
+		: _key(key), _value(defaultValue), _configReader(nullptr) {}
+
+	void bind(ConfigReader* cr) { _configReader = cr; }
+
+	void setCallback(std::function<void(const T&)> cb) { _onSet = std::move(cb); }
+
+	void load() {
+		if (!_configReader) return;
+		const std::string s = _configReader->getValue(_key);
+		if (!s.empty()) _value = fromString(s);
+		if (_onSet) _onSet(_value); // Disparar al cargar desde disco
+	}
+
+	ConfigVar& operator=(const T& v) {
+		_value = v;
+		persist();
+		if (_onSet) _onSet(_value); // Disparar al asignar en runtime
+		return *this;
+	}
+
+	operator T()  const { return _value; }
+	T get()       const { return _value; }
+	const std::string& key() const { return _key; }
+
+private:
+	std::string   _key;
+	T             _value;
+	ConfigReader* _configReader;
+
+	void persist() {
+		if (_configReader) _configReader->setValue(_key, toString(_value));
+	}
+
+	static std::string toString(const T& v);
+	static T fromString(const std::string& s);
+
+	std::function<void(const T&)> _onSet;
+};
+
+template<> inline std::string ConfigVar<bool>::toString(const bool& v)         { return v ? "1" : "0"; }
+template<> inline bool        ConfigVar<bool>::fromString(const std::string& s) { return s == "1"; }
+template<> inline std::string ConfigVar<int>::toString(const int& v)            { return std::to_string(v); }
+template<> inline int         ConfigVar<int>::fromString(const std::string& s)  { return std::atoi(s.c_str()); }
+
+// ----------------------------------------------------------------------------
+// PlayerInput
 // ----------------------------------------------------------------------------
 struct PlayerInput
 {
-	// --- movimiento (nivel sostenido) ---
 	bool up    = false;
 	bool down  = false;
 	bool left  = false;
 	bool right = false;
 
-	// --- acciones en juego (nivel sostenido) ---
-	bool action  = false;   // Espacio / Cruz:      coger/dejar objetos, avanzar cinemáticas
-	bool actionQ = false;   // Q / L2:              acción espejo izquierda
-	bool actionR = false;   // R / R2:              acción espejo derecha
+	bool action  = false;
+	bool actionQ = false;
+	bool actionR = false;
 
-	// --- acciones puntales (consumir tras usar) ---
-	bool confirm = false;   // S,Y / Círculo:       sí / confirmar en menú
-	bool cancel  = false;   // N   / Cuadrado:      no  / cancelar en menú
-	bool menu    = false;   // Escape / Start:      abrir menú
-	bool map     = false;   // F5 / Select:         mostrar mapa
-	bool save    = false;   // G,W / R1:            grabar partida
-	bool load    = false;   // C,L / L1:            cargar partida
-	bool toggleGfx = false; // F2 / Triángulo:      cambiar VGA/CPC
-	bool toggleFullscreen = false; // F3:           pantalla completa
-	bool toggleMute = false;       // M:             silencio
-	bool advanceTime = false;      // Enter:         avanzar tiempo (modo info/debug)
-	bool cycleCamera = false;      // Tab / L3:      ciclar personaje cámara
+	bool confirm          = false;
+	bool cancel           = false;
+	bool menu             = false;
+	bool map              = false;
+	bool save             = false;
+	bool load             = false;
+	bool toggleGfx        = false;
+	bool toggleFullscreen = false;
+	bool toggleMute       = false;
+	bool advanceTime      = false;
+	bool cycleCamera      = false;
 
-	// --- selección directa en menús (1-9), -1 si no se pulsó ---
 	int lastNumberPressed = -1;
-
-	// --- cámara directa durante el juego (1-7 → personajes), -1 si no ---
-	int cameraTarget = -1;
+	int cameraTarget      = -1;
 };
 
-// Compatibilidad con código antiguo que usa BUTTON_YES / BUTTON_NO
 #define BUTTON_YES sys->isConfirm()
 #define BUTTON_NO  sys->isCancel()
 
+// ----------------------------------------------------------------------------
+// System
+// ----------------------------------------------------------------------------
 struct System
-{	
+{
 	PlayerInput pad;
-	bool exit = false;
-	bool informationMode = false;	
-	bool enableJoystick = true;
-	bool fullscreen = false;
+	bool exit             = false;
+	bool informationMode  = false;
+	bool enableJoystick   = true;
+	bool fullscreen       = false;
 	bool haveHapticDevice = false;
-	int w = WINDOW_WIDTH;
-	int h = WINDOW_HEIGHT;
+	int  w = WINDOW_WIDTH;
+	int  h = WINDOW_HEIGHT;
+
+	// --- Variables de configuración persistentes ---
+	ConfigVar<bool> mute        {"MUTESOUND",   false};
+	ConfigVar<bool> GraficosCPC {"GRAPHICSCPC", false};
+	ConfigVar<int>  idioma      {"LANGUAGE",    1};
+	ConfigVar<int>  filtro      {"FILTER",      0};     // 0=off 1=xbr 2=hqx
+	ConfigVar<bool> scanlines   {"SCANLINES",   false};
+	ConfigVar<bool> useWebGL    {"USEWEBGL",    true};
+	ConfigVar<int>  paletaEfecto{"PALETA",      0};     // 0=normal 1=grises 2=verde 3=ambar
+
+	// --- Slots de guardado ---
+	static const int NUM_SLOTS = 7;
+	std::string slotDates[NUM_SLOTS];   // fechas para mostrar en menú
 
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
 	const Uint32 rmask = 0xff000000;
@@ -187,11 +233,11 @@ struct System
 	const Uint32 amask = 0;
 #endif
 
-	SDL_Surface  *surface     = nullptr;
-	SDL_Rect      dstrect     = {};
-	SDL_Renderer *renderer    = nullptr;
-	SDL_Texture  *texture     = nullptr;
-	SDL_Window   *window      = nullptr;
+	SDL_Surface        *surface      = nullptr;
+	SDL_Rect            dstrect      = {};
+	SDL_Renderer       *renderer     = nullptr;
+	SDL_Texture        *texture      = nullptr;
+	SDL_Window         *window       = nullptr;
 	SDL_GameController *gamepad      = nullptr;
 	SDL_Haptic         *hapticDevice = nullptr;
 
@@ -205,60 +251,69 @@ struct System
 #endif
 	int currentPalette = 0;
 
+	// --- Ciclo de vida ---
+	void init();
+	void quit();
 	void initFrame();
 	void endFrame();
 
-	void init();
-	void quit();
+	// --- Config ---
+	void             loadConfig();
+	void             saveConfig();
+	static const char* configPath();
+
+	// --- Slots de guardado ---
+	void loadSlotDates();
+	bool saveSlot(int slot, std::function<void(std::ofstream&)> writer);
+	bool loadSlot(int slot, std::function<void(std::ifstream&)> reader);
+
+	// --- Utilidades ---
+	std::string getDateAndTime();
+
+	// --- Audio ---
 	void stopSound(Abadia::SONIDOS i);
 	void playSound(Abadia::SONIDOS i, bool loop = false);
 	void pauseSounds();
 	void resumeSounds();
-	void setMute(bool mute);
+	void setMute(bool m);
 
-	void updateScreen();
-	void handleEvents();
-	void hapticFeedback();
+	// --- Pantalla ---
+	void   updateScreen();
+	void   updateTexture();
+	void   toggleFullscreenMode();
+	void   handleEvents();
+	void   hapticFeedback();
+	Uint32 RGBA(Uint8 r, Uint8 g, Uint8 b, Uint8 a);
+	void   exitGame();
+	void   print(const std::string message);
+	void   setFastSpeed();
+	void   setNormalSpeed();
+
 	bool isConfirm() {
-		// pad.confirm es la tecla 's'
-		// pero no confirma, es solo para cuando se pide 
-		// explicitamente un S o N
-		// confirmar es enter o espacio para confirmar 
-		// la opción de menu seleccionado o avanzar
-		// en la pantalla de intro o en el pergamino
-		/*
-		if (pad.confirm || pad.advanceTime || pad.action ) {
-			pad.confirm = pad.advanceTime = pad.action = false;
-			return true;
-		} */
-		if (pad.advanceTime || pad.action ) {
+		if (pad.advanceTime || pad.action) {
 			pad.advanceTime = pad.action = false;
 			return true;
 		}
 		return false;
 	}
-
 	bool isCancel() {
-		if (pad.cancel) {
-			pad.cancel = false;
-			return true;
-		}
+		if (pad.cancel) { pad.cancel = false; return true; }
 		return false;
 	}
 
-	void setFastSpeed();
-	void setNormalSpeed();
-	Uint32 RGBA(Uint8 r, Uint8 g, Uint8 b, Uint8 a);
-	void updateTexture();
-	void exitGame();
-	void print(const std::string message);
-	void toggleFullscreenMode();
-
+	// --- Paleta ---
 	void initPaleta(UINT8 *dirPaleta) { _paleta = new Paleta(dirPaleta); }
-	void setGamePalette(UINT8 pal)    { currentPalette = pal; _paleta->setGamePalette(pal, surface->format); }
-	void setIntroPalette()            { _paleta->setGamePalette(5, surface->format); }
-	void resetPalette()               { _paleta->setGamePalette(currentPalette, surface->format); }
+	void setGamePalette(UINT8 pal)    { 
+		currentPalette = pal; 
+		_paleta->setGamePalette(pal, surface->format,paletaEfecto); 
+	}
+	void setIntroPalette()            { _paleta->setGamePalette(5, surface->format, paletaEfecto); }
+	void resetPalette()               { 
+		if (_paleta) 
+			_paleta->setGamePalette(currentPalette, surface->format, paletaEfecto); 
+	}
 
+	// --- Pixels ---
 	void setRGBPixel(UINT32 x, UINT32 y, UINT32 color) {
 		assert(x < 320); assert(y < 200);
 		_pixels[y * _pitch_pixels + x] = color;
@@ -288,12 +343,15 @@ private:
 		}
 	}
 
-	UINT32  *_pixels       = nullptr;
-	UINT32   _pitch_pixels = 0;
-	Paleta  *_paleta       = nullptr;
-	Uint32 minimumFrameTime = GAME_FRAME_TIME;
+	std::string slotPath(int slot);
+
+	UINT32       *_pixels         = nullptr;
+	UINT32        _pitch_pixels   = 0;
+	Paleta       *_paleta         = nullptr;
+	Uint32        minimumFrameTime = GAME_FRAME_TIME;
+	ConfigReader *_configReader   = nullptr;
 };
 
 extern System *const sys;
 
-#endif
+#endif // SYSTEM_H

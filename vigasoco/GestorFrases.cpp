@@ -570,7 +570,8 @@ void GestorFrases::dibujaFrase(int numFrase)
 	reproduciendoFrase = mostrandoFrase = true;
 
 	// guarda un puntero a la frase que se va a mostrar
-	frase = frases[elJuego->idioma][numFrase]; // 1 ingles ... 7 portugues
+	//frase = frases[elJuego->idioma][numFrase]; // 1 ingles ... 7 portugues
+	frase = frases[sys->idioma][numFrase]; // 1 ingles ... 7 portugues
 
 	// si se va a mostrar la frase del pergamino, cambia el puntero ya que en C++ no se puede modificar un static char *
 	if (numFrase == 0){

@@ -340,7 +340,8 @@ void MotorGrafico::dibujaPantalla()
 		// rellena el buffer de tiles interpretando los bloques que forman la pantalla
 		genPant->genera(data);
 		
-		if (elJuego->GraficosCPC==false)
+		//if (elJuego->GraficosCPC==false)
+		if (sys->GraficosCPC==false)
 		{
 			// Si usamos el mapa CPC con los tiles VGA
 			// hay algunos errores graficos

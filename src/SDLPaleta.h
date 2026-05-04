@@ -8,7 +8,7 @@ public:
 	Paleta(UINT8* gfxVGA) { _paletas=gfxVGA; };
 	~Paleta();
 
-	void setGamePalette(int pal, const SDL_PixelFormat * format ) {
+	void setGamePalette(int pal, const SDL_PixelFormat * format, int efectoPaleta=0 ) {
 		assert((pal >= 0) && (pal < 6)); // TODO, quitar valor a fuego
 		if (pal==0) {
 			for (int i = 0; i < 256; i++){
@@ -23,6 +23,30 @@ public:
 				UINT8 g=*p++;
 				UINT8 b=*p++;
 				[[maybe_unused]]UINT8 a=*p++;
+
+				switch(efectoPaleta) {
+					case 0: // no hacer nada
+						break;
+					case 1: // grises
+						r = g = b = (UINT8)(0.299f*r + 0.587f*g + 0.114f*b);
+						break;
+					case 2: // Verde fósforo
+						{
+							float grey = 0.299f*r + 0.587f*g + 0.114f*b;
+							r = (UINT8)(grey * 0.2f);
+							g = (UINT8)(grey * 0.9f);
+							b = (UINT8)(grey * 0.1f);
+						}
+						break;
+					case 3: // Ámbar
+						{
+							float grey = 0.299f*r + 0.587f*g + 0.114f*b;
+							r = (UINT8)(grey * 0.9f);
+							g = (UINT8)(grey * 0.5f);
+							b = 0;
+						}
+						break;
+				}
 				setColor(i,r,g,b,format);
 			}
 		}
