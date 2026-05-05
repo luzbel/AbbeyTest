@@ -18,6 +18,7 @@ bool ConfigReader::parse()
             {
                 // Remove spaces
                 line.erase(remove(line.begin(), line.end(), ' '), line.end());                    
+//		line.erase(remove(line.begin(), line.end(), '\r'), line.end()); 
                 
                 // find the delimiter
                 auto delimiterPosition = line.find('=');

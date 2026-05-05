@@ -3,12 +3,14 @@
 
 #include "Types.h"
 
+#include "system.h"
+
 class Paleta {
 public:
 	Paleta(UINT8* gfxVGA) { _paletas=gfxVGA; };
 	~Paleta();
 
-	void setGamePalette(int pal, const SDL_PixelFormat * format, int efectoPaleta=0 ) {
+	void setGamePalette(int pal, const SDL_PixelFormat * format, bool useShader=0, int efectoPaleta=0 ) {
 		assert((pal >= 0) && (pal < 6)); // TODO, quitar valor a fuego
 		if (pal==0) {
 			for (int i = 0; i < 256; i++){
@@ -24,7 +26,9 @@ public:
 				UINT8 b=*p++;
 				[[maybe_unused]]UINT8 a=*p++;
 
-				switch(efectoPaleta) {
+				if (!useShader) {
+SDL_Log("efecto SW\n");
+				   switch(efectoPaleta) {
 					case 0: // no hacer nada
 						break;
 					case 1: // grises
@@ -46,6 +50,7 @@ public:
 							b = 0;
 						}
 						break;
+				}
 				}
 				setColor(i,r,g,b,format);
 			}

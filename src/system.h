@@ -8,6 +8,7 @@
 #include <vector>
 #include <functional>
 #include <ctime>
+#include <cmath>        // fminf
 
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
@@ -17,22 +18,29 @@
 #include <android/log.h>
 #endif
 
+// --- OpenGL ---
+#ifdef __EMSCRIPTEN__
+#include <GLES2/gl2.h>
+#else
+#include <SDL2/SDL_opengl.h>
+#endif
+
 #include "SDLPaleta.h"
 #include "configreader.h"
 
 #ifdef __EMSCRIPTEN__
-#define WINDOW_WIDTH 640
+#define WINDOW_WIDTH  640
 #define WINDOW_HEIGHT 400
 #else
-#define WINDOW_WIDTH 1280
+#define WINDOW_WIDTH  1280
 #define WINDOW_HEIGHT 800
 #endif
 
-#define TEXTURE_WIDTH 320
+#define TEXTURE_WIDTH  320
 #define TEXTURE_HEIGHT 200
-#define WINDOW_TITLE "Abbey SDL2 v2.0 build " __DATE__ " " __TIME__
-#define GAME_FRAME_TIME 130
-#define SCROLL_FRAME_TIME 60
+#define WINDOW_TITLE   "Abbey SDL2 v2.0 build " __DATE__ " " __TIME__
+#define GAME_FRAME_TIME   130
+#define SCROLL_FRAME_TIME  60
 
 namespace Abadia {
 	enum class SONIDOS : UINT8 {
@@ -108,10 +116,6 @@ namespace Abadia {
 
 // ----------------------------------------------------------------------------
 // ConfigVar<T>
-// Variable persistida automáticamente en config al asignar.
-//   sys->mute = true;   → actualiza valor y persiste en ConfigReader
-//   if (sys->mute) ...  → lectura transparente
-// Nota: el volcado a disco se hace llamando a sys->saveConfig().
 // ----------------------------------------------------------------------------
 template<typename T>
 class ConfigVar {
@@ -127,13 +131,13 @@ public:
 		if (!_configReader) return;
 		const std::string s = _configReader->getValue(_key);
 		if (!s.empty()) _value = fromString(s);
-		if (_onSet) _onSet(_value); // Disparar al cargar desde disco
+		if (_onSet) _onSet(_value);
 	}
 
 	ConfigVar& operator=(const T& v) {
 		_value = v;
 		persist();
-		if (_onSet) _onSet(_value); // Disparar al asignar en runtime
+		if (_onSet) _onSet(_value);
 		return *this;
 	}
 
@@ -219,18 +223,19 @@ struct System
 
 	// --- Slots de guardado ---
 	static const int NUM_SLOTS = 7;
-	std::string slotDates[NUM_SLOTS];   // fechas para mostrar en menú
+	std::string slotDates[NUM_SLOTS];
 
+	// --- Máscaras RGBA correctas para SDL_CreateRGBSurface ---
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
 	const Uint32 rmask = 0xff000000;
 	const Uint32 gmask = 0x00ff0000;
 	const Uint32 bmask = 0x0000ff00;
 	const Uint32 amask = 0x000000ff;
 #else
-	const Uint32 rmask = 0;
-	const Uint32 gmask = 0;
-	const Uint32 bmask = 0;
-	const Uint32 amask = 0;
+	const Uint32 rmask = 0x000000ff;
+	const Uint32 gmask = 0x0000ff00;
+	const Uint32 bmask = 0x00ff0000;
+	const Uint32 amask = 0xff000000;
 #endif
 
 	SDL_Surface        *surface      = nullptr;
@@ -258,8 +263,8 @@ struct System
 	void endFrame();
 
 	// --- Config ---
-	void             loadConfig();
-	void             saveConfig();
+	void               loadConfig();
+	void               saveConfig();
 	static const char* configPath();
 
 	// --- Slots de guardado ---
@@ -302,15 +307,30 @@ struct System
 	}
 
 	// --- Paleta ---
+	// En modo GL el efecto de paleta lo hace el shader; en SW lo hace Paleta.
+	// setGamePalette siempre actualiza la paleta SW (se usa para indexar pixels).
+	// El shader recoge paletaEfecto en cada frame via uniform.
 	void initPaleta(UINT8 *dirPaleta) { _paleta = new Paleta(dirPaleta); }
-	void setGamePalette(UINT8 pal)    { 
-		currentPalette = pal; 
-		_paleta->setGamePalette(pal, surface->format,paletaEfecto); 
+
+	void setGamePalette(UINT8 pal) {
+		currentPalette = pal;
+		// En modo GL no aplicamos efecto SW (lo hace el shader)
+//		bool aplicarEfectoSW = !(bool)useWebGL;
+		bool useShader=(bool)useWebGL;
+		_paleta->setGamePalette(pal, surface->format, useShader, paletaEfecto);
 	}
-	void setIntroPalette()            { _paleta->setGamePalette(5, surface->format, paletaEfecto); }
-	void resetPalette()               { 
-		if (_paleta) 
-			_paleta->setGamePalette(currentPalette, surface->format, paletaEfecto); 
+
+	void setIntroPalette() {
+		//bool aplicarEfectoSW = !(bool)useWebGL;
+		bool useShader=(bool)useWebGL;
+		_paleta->setGamePalette(5, surface->format, useShader, paletaEfecto);
+	}
+
+	void resetPalette() {
+		if (!_paleta) return;
+		//bool aplicarEfectoSW = !(bool)useWebGL;
+		bool useShader=(bool)useWebGL;
+		_paleta->setGamePalette(currentPalette, surface->format, useShader, paletaEfecto);
 	}
 
 	// --- Pixels ---
@@ -343,13 +363,15 @@ private:
 		}
 	}
 
+	void initShader(int efectoPaleta);
+
 	std::string slotPath(int slot);
 
-	UINT32       *_pixels         = nullptr;
-	UINT32        _pitch_pixels   = 0;
-	Paleta       *_paleta         = nullptr;
+	UINT32       *_pixels          = nullptr;
+	UINT32        _pitch_pixels    = 0;
+	Paleta       *_paleta          = nullptr;
 	Uint32        minimumFrameTime = GAME_FRAME_TIME;
-	ConfigReader *_configReader   = nullptr;
+	ConfigReader *_configReader    = nullptr;
 };
 
 extern System *const sys;
