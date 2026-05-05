@@ -128,10 +128,15 @@ public:
 	void setCallback(std::function<void(const T&)> cb) { _onSet = std::move(cb); }
 
 	void load() {
+		SDL_Log("ConfigVar load\n");
 		if (!_configReader) return;
+		SDL_Log("ConfigVar load hay _configReader\n");
 		const std::string s = _configReader->getValue(_key);
+		SDL_Log("ConfigVar load %s = *%s*\n",_key.c_str(),s.c_str());
 		if (!s.empty()) _value = fromString(s);
+		SDL_Log("ConfigVar\n");
 		if (_onSet) _onSet(_value);
+		SDL_Log("ConfigVar despues de _onSet\n");
 	}
 
 	ConfigVar& operator=(const T& v) {

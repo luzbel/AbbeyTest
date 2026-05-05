@@ -27,6 +27,14 @@ System *const sys = &tmpSys;
 #define _gl_UseProgram        glUseProgram
 #define _gl_GetUniformLocation glGetUniformLocation
 #define _gl_Uniform1i         glUniform1i
+#define _gl_GetAttribLocation glGetAttribLocation
+#define _gl_GenBuffers               glGenBuffers
+#define _gl_BindBuffer               glBindBuffer
+#define _gl_BufferData               glBufferData
+#define _gl_EnableVertexAttribArray  glEnableVertexAttribArray
+#define _gl_VertexAttribPointer      glVertexAttribPointer
+#define _gl_DisableVertexAttribArray glDisableVertexAttribArray
+#define _gl_DeleteBuffers            glDeleteBuffers
 #else
 #include <SDL2/SDL_opengl.h>
 // Punteros solo para las funciones GL 2.0 (shaders)
@@ -39,6 +47,14 @@ static PFNGLLINKPROGRAMPROC        _gl_LinkProgram;
 static PFNGLUSEPROGRAMPROC         _gl_UseProgram;
 static PFNGLGETUNIFORMLOCATIONPROC _gl_GetUniformLocation;
 static PFNGLUNIFORM1IPROC          _gl_Uniform1i;
+static PFNGLGETATTRIBLOCATIONPROC _gl_GetAttribLocation;
+static PFNGLGENBUFFERSPROC             _gl_GenBuffers;
+static PFNGLBINDBUFFERPROC             _gl_BindBuffer;
+static PFNGLBUFFERDATAPROC             _gl_BufferData;
+static PFNGLENABLEVERTEXATTRIBARRAYPROC _gl_EnableVertexAttribArray;
+static PFNGLVERTEXATTRIBPOINTERPROC    _gl_VertexAttribPointer;
+static PFNGLDISABLEVERTEXATTRIBARRAYPROC _gl_DisableVertexAttribArray;
+static PFNGLDELETEBUFFERSPROC          _gl_DeleteBuffers;
 #endif
 
 // Estado GL — el contexto lo gestiona SDL_Renderer internamente
@@ -61,6 +77,14 @@ static bool initGLPointers()
     _gl_UseProgram         = (PFNGLUSEPROGRAMPROC)         SDL_GL_GetProcAddress("glUseProgram");
     _gl_GetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC) SDL_GL_GetProcAddress("glGetUniformLocation");
     _gl_Uniform1i          = (PFNGLUNIFORM1IPROC)          SDL_GL_GetProcAddress("glUniform1i");
+    _gl_GetAttribLocation = (PFNGLGETATTRIBLOCATIONPROC) SDL_GL_GetProcAddress("glGetAttribLocation");
+    _gl_GenBuffers              = (PFNGLGENBUFFERSPROC)              SDL_GL_GetProcAddress("glGenBuffers");
+_gl_BindBuffer              = (PFNGLBINDBUFFERPROC)              SDL_GL_GetProcAddress("glBindBuffer");
+_gl_BufferData              = (PFNGLBUFFERDATAPROC)              SDL_GL_GetProcAddress("glBufferData");
+_gl_EnableVertexAttribArray = (PFNGLENABLEVERTEXATTRIBARRAYPROC) SDL_GL_GetProcAddress("glEnableVertexAttribArray");
+_gl_VertexAttribPointer     = (PFNGLVERTEXATTRIBPOINTERPROC)     SDL_GL_GetProcAddress("glVertexAttribPointer");
+_gl_DisableVertexAttribArray= (PFNGLDISABLEVERTEXATTRIBARRAYPROC)SDL_GL_GetProcAddress("glDisableVertexAttribArray");
+_gl_DeleteBuffers           = (PFNGLDELETEBUFFERSPROC)           SDL_GL_GetProcAddress("glDeleteBuffers");
 
     if (!_gl_CreateShader || !_gl_CreateProgram || !_gl_UseProgram) {
         return false;
@@ -74,7 +98,7 @@ static bool initGLPointers()
 // Compila el fragment shader y crea la textura GL que recibirá los pixels.
 // Llámalo después de loadConfig() y de que exista el contexto GL.
 // ----------------------------------------------------------------------------
-
+/*
 void System::initShader(int efectoPaleta)
 {
     if (!useWebGL) return;
@@ -118,6 +142,56 @@ void System::initShader(int efectoPaleta)
 
     efectoLocation = _gl_GetUniformLocation(shaderProgram, "uEfecto");
 
+    SDL_Log("initShader OK — shaderProgram=%u efectoLocation=%d", shaderProgram, efectoLocation);
+} */
+
+void System::initShader(int efectoPaleta)
+{
+    if (!useWebGL) return;
+
+    const char* vertexSource = R"(
+        attribute vec2 aPosition;
+        attribute vec2 aTexCoord;
+        varying vec2 vTexCoord;
+        void main() {
+            vTexCoord   = aTexCoord;
+            gl_Position = vec4(aPosition, 0.0, 1.0);
+        }
+    )";
+
+    const char* fragmentSource = R"(
+        #ifdef GL_ES
+        precision mediump float;
+        #endif
+        varying vec2 vTexCoord;
+        uniform sampler2D uTexture;
+        uniform int uEfecto;
+        void main() {
+            vec4 color = texture2D(uTexture, vTexCoord);
+            float grey = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+            if      (uEfecto == 1) gl_FragColor = vec4(grey, grey, grey, color.a);
+            else if (uEfecto == 2) gl_FragColor = vec4(grey*0.2, grey*0.9, grey*0.1, color.a);
+            else if (uEfecto == 3) gl_FragColor = vec4(grey*0.9, grey*0.5, 0.0, color.a);
+            else                   gl_FragColor = color;
+        }
+    )";
+
+    auto compileShader = [&](GLenum type, const char* src) -> GLuint {
+        GLuint s = _gl_CreateShader(type);
+        _gl_ShaderSource(s, 1, &src, nullptr);
+        _gl_CompileShader(s);
+        return s;
+    };
+
+    GLuint vert = compileShader(GL_VERTEX_SHADER,   vertexSource);
+    GLuint frag = compileShader(GL_FRAGMENT_SHADER, fragmentSource);
+
+    shaderProgram = _gl_CreateProgram();
+    _gl_AttachShader(shaderProgram, vert);
+    _gl_AttachShader(shaderProgram, frag);
+    _gl_LinkProgram(shaderProgram);
+
+    efectoLocation = _gl_GetUniformLocation(shaderProgram, "uEfecto");
     SDL_Log("initShader OK — shaderProgram=%u efectoLocation=%d", shaderProgram, efectoLocation);
 }
 
@@ -194,15 +268,34 @@ void System::init()
     _pixels       = static_cast<Uint32*>(surface->pixels);
     _pitch_pixels = surface->pitch / sizeof(UINT32);
 
+    // tiene que inicializarse antes del setcallback de setmute
+    // porque en escritorio se controla pero en emscripten falla
+    // -------------------------------------------------------------------
+    // Audio
+    // -------------------------------------------------------------------
+    if (Mix_OpenAudio(22050, MIX_DEFAULT_FORMAT, 2, 4096) == -1) {
+        print("ERROR: Mix_OpenAudio\n");
+        fprintf(stderr, "ERROR: Mix_OpenAudio %s.\n", SDL_GetError());
+    }
+    int nc = Mix_AllocateChannels(static_cast<int>(Abadia::SONIDOS::Count));
+    if (nc != static_cast<int>(Abadia::SONIDOS::Count))
+        fprintf(stderr, "solo %d canales\n", nc);
+    for (int i = 0; i < static_cast<int>(Abadia::SONIDOS::Count); i++) {
+        fprintf(stderr, "loadwav %s\n", Abadia::SOUND_FILE_NAMES[i]);
+        sounds.push_back(Mix_LoadWAV(Abadia::SOUND_FILE_NAMES[i]));
+        if (!sounds[i]) print("Error: can't read sound file\n");
+    }
+
     // -------------------------------------------------------------------
     // Callbacks antes de loadConfig para que se disparen al cargar
     // -------------------------------------------------------------------
     mute.setCallback([this](bool v) { setMute(v); });
-
+SDL_Log("antes de  loadConfig\n");
     // -------------------------------------------------------------------
     // loadConfig — aquí se lee useWebGL real del fichero
     // -------------------------------------------------------------------
     loadConfig();
+SDL_Log("despues de  loadConfig\n");
 
     // -------------------------------------------------------------------
     // Renderer y recursos de pantalla — DESPUÉS de loadConfig
@@ -242,21 +335,6 @@ void System::init()
         if (useWebGL) initShader(paletaEfecto);
     }
 
-    // -------------------------------------------------------------------
-    // Audio
-    // -------------------------------------------------------------------
-    if (Mix_OpenAudio(22050, MIX_DEFAULT_FORMAT, 2, 4096) == -1) {
-        print("ERROR: Mix_OpenAudio\n");
-        fprintf(stderr, "ERROR: Mix_OpenAudio %s.\n", SDL_GetError());
-    }
-    int nc = Mix_AllocateChannels(static_cast<int>(Abadia::SONIDOS::Count));
-    if (nc != static_cast<int>(Abadia::SONIDOS::Count))
-        fprintf(stderr, "solo %d canales\n", nc);
-    for (int i = 0; i < static_cast<int>(Abadia::SONIDOS::Count); i++) {
-        fprintf(stderr, "loadwav %s\n", Abadia::SOUND_FILE_NAMES[i]);
-        sounds.push_back(Mix_LoadWAV(Abadia::SOUND_FILE_NAMES[i]));
-        if (!sounds[i]) print("Error: can't read sound file\n");
-    }
 
 #ifdef __EMSCRIPTEN__
     interruptCounter = 0;
@@ -309,8 +387,11 @@ const char* System::configPath()
 
 void System::loadConfig()
 {
+	SDL_Log("10\n");
     delete _configReader;
+	SDL_Log("20\n");
     _configReader = new ConfigReader(configPath());
+	SDL_Log("30\n");
 
     mute        .bind(_configReader);
     GraficosCPC .bind(_configReader);
@@ -319,18 +400,24 @@ void System::loadConfig()
     scanlines   .bind(_configReader);
     useWebGL    .bind(_configReader);
     paletaEfecto.bind(_configReader);
+	SDL_Log("40\n");
 
     if (_configReader->parse()) {
+	SDL_Log("50\n");
         mute        .load();
+	SDL_Log("51\n");
         GraficosCPC .load();
+	SDL_Log("52\n");
         idioma      .load();
         filtro      .load();
         scanlines   .load();
         useWebGL    .load();
         paletaEfecto.load();
     }
+	SDL_Log("60\n");
 
     loadSlotDates();
+	SDL_Log("70\n");
 }
 
 void System::saveConfig()
@@ -369,11 +456,15 @@ std::string System::slotPath(int slot)
 
 void System::loadSlotDates()
 {
+	SDL_Log("loadSlotDates\n");
     if (!_configReader) return;
+	SDL_Log("loadSlotDates hay _configReader y NUM_SLOTS es %d\n",NUM_SLOTS);
     for (int i = 0; i < NUM_SLOTS; i++) {
         std::string token = "SAVEX";
         token[4] = static_cast<char>('0' + i);
+	SDL_Log("loadSlotDates antes de getValue\n");
         slotDates[i] = _configReader->getValue(token);
+	SDL_Log("loadSlotDates despues de getValue\n");
         if (slotDates[i].empty()) slotDates[i] = "--";
     }
 }
@@ -477,7 +568,7 @@ void System::toggleFullscreenMode()
     fullscreen = !fullscreen;
     SDL_SetWindowFullscreen(window, fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
 }
-
+/*
 void System::updateScreen()
 {
 #ifdef __EMSCRIPTEN__
@@ -491,37 +582,6 @@ void System::updateScreen()
     SDL_RenderClear(renderer);
 
     if (useWebGL && shaderProgram) {
-/*
-    	    // Modo GL: bind de la texture, activar shader, quad manual, SwapWindow
-        GLint oldProgram = 0;
-        glGetIntegerv(GL_CURRENT_PROGRAM, &oldProgram);
-
-        SDL_GL_BindTexture(texture, nullptr, nullptr);
-        _gl_UseProgram(shaderProgram);
-        _gl_Uniform1i(efectoLocation, (int)paletaEfecto);
-
-        GLfloat minx = (GLfloat)dstrect.x;
-        GLfloat miny = (GLfloat)dstrect.y;
-        GLfloat maxx = (GLfloat)(dstrect.x + dstrect.w);
-        GLfloat maxy = (GLfloat)(dstrect.y + dstrect.h);
-
-	SDL_Log("dstrect: x=%d y=%d w=%d h=%d", dstrect.x, dstrect.y, dstrect.w, dstrect.h);
-	SDL_Log("quad: minx=%.1f miny=%.1f maxx=%.1f maxy=%.1f", minx, miny, maxx, maxy);
-	int ww, wh;
-SDL_GetWindowSize(window, &ww, &wh);
-SDL_Log("window: %dx%d", ww, wh);
-
-        glBegin(GL_TRIANGLE_STRIP);
-            glTexCoord2f(0.f, 0.f); glVertex2f(minx, miny);
-            glTexCoord2f(1.f, 0.f); glVertex2f(maxx, miny);
-            glTexCoord2f(0.f, 1.f); glVertex2f(minx, maxy);
-            glTexCoord2f(1.f, 1.f); glVertex2f(maxx, maxy);
-        glEnd();
-
-        SDL_GL_UnbindTexture(texture);
-        SDL_GL_SwapWindow(window);
-        _gl_UseProgram(oldProgram);
-	*/
 	    GLfloat texW, texH;
 	    //SDL_GL_BindTexture(texture, nullptr, nullptr);
 	    SDL_GL_BindTexture(texture, &texW, &texH);
@@ -546,13 +606,6 @@ _gl_Uniform1i(efectoLocation, (int)paletaEfecto);
         GLfloat maxx = (GLfloat)(dstrect.x + dstrect.w);
         GLfloat maxy = (GLfloat)(dstrect.y + dstrect.h);
 
-/*
-glBegin(GL_TRIANGLE_STRIP);
-    glTexCoord2f(0.f, 0.f); glVertex2f(minx, miny);
-    glTexCoord2f(1.f, 0.f); glVertex2f(maxx, miny);
-    glTexCoord2f(0.f, 1.f); glVertex2f(minx, maxy);
-    glTexCoord2f(1.f, 1.f); glVertex2f(maxx, maxy);
-glEnd(); */
 	glBegin(GL_TRIANGLE_STRIP);
     glTexCoord2f(0.f,  0.f);  glVertex2f(minx, miny);
     glTexCoord2f(texW, 0.f);  glVertex2f(maxx, miny);
@@ -566,6 +619,76 @@ SDL_GL_SwapWindow(window);
 	    
     } else {
         // Modo SW: pipeline SDL_Renderer clásico
+#ifdef ANDROID
+        SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+#else
+        SDL_RenderCopy(renderer, texture, nullptr, &dstrect);
+#endif
+        SDL_RenderPresent(renderer);
+    }
+
+#ifdef __EMSCRIPTEN__
+    }
+#endif
+}
+*/
+
+void System::updateScreen()
+{
+#ifdef __EMSCRIPTEN__
+    if (interruptCounter % 6 == 0) {
+#endif
+
+    SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
+    SDL_SetRenderTarget(renderer, nullptr);
+    SDL_RenderClear(renderer);
+
+    if (useWebGL && shaderProgram) {
+        GLfloat texW, texH;
+        SDL_GL_BindTexture(texture, &texW, &texH);
+
+        // Convertir dstrect a NDC [-1, 1]
+        int ww, wh;
+        SDL_GetWindowSize(window, &ww, &wh);
+        float x0 = (2.f * dstrect.x                      / ww) - 1.f;
+        float x1 = (2.f * (dstrect.x + dstrect.w)        / ww) - 1.f;
+        float y0 = 1.f - (2.f * dstrect.y                / wh);
+        float y1 = 1.f - (2.f * (dstrect.y + dstrect.h)  / wh);
+
+        GLfloat verts[] = { x0,y0,  x1,y0,  x0,y1,  x1,y1 };
+        GLfloat uvs[]   = { 0.f,0.f, texW,0.f, 0.f,texH, texW,texH };
+
+        GLint oldProgram = 0;
+        glGetIntegerv(GL_CURRENT_PROGRAM, &oldProgram);
+        _gl_UseProgram(shaderProgram);
+        _gl_Uniform1i(efectoLocation, (int)paletaEfecto);
+
+        GLint posLoc = _gl_GetAttribLocation(shaderProgram, "aPosition");
+        GLint uvLoc  = _gl_GetAttribLocation(shaderProgram, "aTexCoord");
+
+        GLuint vbo[2];
+        _gl_GenBuffers(2, vbo);
+
+        _gl_BindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+        _gl_BufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STREAM_DRAW);
+        _gl_EnableVertexAttribArray(posLoc);
+        _gl_VertexAttribPointer(posLoc, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+        _gl_BindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+        _gl_BufferData(GL_ARRAY_BUFFER, sizeof(uvs), uvs, GL_STREAM_DRAW);
+        _gl_EnableVertexAttribArray(uvLoc);
+        _gl_VertexAttribPointer(uvLoc, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+        _gl_DisableVertexAttribArray(posLoc);
+        _gl_DisableVertexAttribArray(uvLoc);
+        _gl_DeleteBuffers(2, vbo);
+
+        SDL_GL_UnbindTexture(texture);
+        SDL_GL_SwapWindow(window);
+        _gl_UseProgram(oldProgram);
+    } else {
 #ifdef ANDROID
         SDL_RenderCopy(renderer, texture, nullptr, nullptr);
 #else
