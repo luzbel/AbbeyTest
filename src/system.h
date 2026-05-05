@@ -223,7 +223,7 @@ struct System
 	ConfigVar<int>  idioma      {"LANGUAGE",    1};
 	ConfigVar<int>  filtro      {"FILTER",      0};     // 0=off 1=xbr 2=hqx
 	ConfigVar<bool> scanlines   {"SCANLINES",   false};
-	ConfigVar<bool> useWebGL    {"USEWEBGL",    false};
+	ConfigVar<bool> useWebGL    {"USEWEBGL",    true};
 	ConfigVar<int>  paletaEfecto{"PALETA",      0};     // 0=normal 1=grises 2=verde 3=ambar
 
 	// --- Slots de guardado ---

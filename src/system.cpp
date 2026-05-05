@@ -125,8 +125,8 @@ void System::initShader(int efectoPaleta)
 #endif
 
     const char* fragmentSource = 
-//#include "shader.glsl"
-#include "../build/filtro.glsl"
+#include "shader.glsl"
+//#include "../build/filtro.glsl"
 
 //    std::cout << "DEBUG SHADER CONTENT:\n" << fragmentSource << "\n---END---" << std::endl;
 
@@ -151,6 +151,7 @@ void System::initShader(int efectoPaleta)
     _gl_GetProgramiv(shaderProgram, GL_LINK_STATUS, &status);
     SDL_Log("status1 %d\n",status);
     if (status == GL_FALSE) {
+    SDL_Log("**********\n************\nCAGADA\n**********\n********\nstatus1 %d\n",status);
      //   char log[512]; _gl_GetProgramInfoLog(shaderProgram, sizeof(log), nullptr, log);
 //        SDL_Log("ERROR ENLACE SHADER: %s", log);
         useWebGL = false; return;
@@ -316,7 +317,175 @@ glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 #endif
 }
 
+void System::updateScreen()
+{
+#ifdef __EMSCRIPTEN__
+    if (interruptCounter % 6 == 0) {
+#endif
+
+    SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
+    SDL_SetRenderTarget(renderer, nullptr);
+    SDL_RenderClear(renderer);
+#define EBUGSHADER
+
+#ifdef DEBUGSHADER
+    { // solo para depurar
+    Uint32* p = (Uint32*)surface->pixels;
+    int w = TEXTURE_WIDTH, h = TEXTURE_HEIGHT;
+    for (int y = 0; y < h; ++y) {
+        for (int x = 0; x < w; ++x) {
+            // Mitad superior: AMARILLO puro
+            // Mitad inferior: AZUL puro
+            // Línea central vertical: BLANCA (para detectar desplazamiento) 
+	    /*
+            if (x == w/2) p[y * _pitch_pixels + x] = 0xFFFFFFFF;
+            else if (y < h/2) p[y * _pitch_pixels + x] = 0x00FF0000; // Azul
+            else p[y * _pitch_pixels + x] = 0x0000FFFF;              // Amarillo 
+ */
+p[y * _pitch_pixels + x] = 0x000000FF; 	
+        }
+    }
+    // Actualiza textura antes de dibujar
+    SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
+    }
+#endif
+
+    if (useWebGL && shaderProgram) {
+    glClearColor(0.f, 0.f, 0.f, 1.f);
+    glClear(GL_COLOR_BUFFER_BIT); // ✅ Limpia framebuffer raw correctamente
+
+    float tw, th;
+    glActiveTexture(GL_TEXTURE0); // ✅ Asegura unidad 0
+    SDL_GL_BindTexture(texture, &tw, &th);
+//    SDL_Log("****SDL_GL_BindTexture: tw=%.4f th=%.4f****", tw, th);
+
+    int ww, wh;
+    SDL_GetWindowSize(window, &ww, &wh);
+    float x0 = (2.f * dstrect.x                      / ww) - 1.f;
+    float x1 = (2.f * (dstrect.x + dstrect.w)        / ww) - 1.f;
+    float y0 = 1.f - (2.f * dstrect.y                / wh);
+    float y1 = 1.f - (2.f * (dstrect.y + dstrect.h)  / wh);
+
+    GLfloat verts[] = { x0,y0,  x1,y0,  x0,y1,  x1,y1 };
+    GLfloat uvs[]   = { 0.f,0.f, 1.f,0.f, 0.f,1.f, 1.f,1.f }; // ✅ [0,1] estricto
+
+    GLint oldProgram = 0;
+    glGetIntegerv(GL_CURRENT_PROGRAM, &oldProgram);
+    _gl_UseProgram(shaderProgram);
+
+    _gl_Uniform1i(textureLocation, 0); // ✅ Vincula textura al sampler
+    _gl_Uniform1i(efectoLocation, (int)paletaEfecto);
+    _gl_Uniform1i(filtroLocation, (int)filtro);
+    _gl_Uniform2f(texSizeLocation, (float)TEXTURE_WIDTH, (float)TEXTURE_HEIGHT);
+
+    GLint posLoc = _gl_GetAttribLocation(shaderProgram, "aPosition");
+    GLint uvLoc  = _gl_GetAttribLocation(shaderProgram, "aTexCoord");
+//    SDL_Log("posLoc=%d uvLoc=%d filtroLoc=%d texSizeLoc=%d",
+//            posLoc, uvLoc, filtroLocation, texSizeLocation);
+
+    GLuint vbo[2];
+    _gl_GenBuffers(2, vbo);
+
+    _gl_BindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+    _gl_BufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STREAM_DRAW);
+    _gl_EnableVertexAttribArray(posLoc);
+    _gl_VertexAttribPointer(posLoc, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+    _gl_BindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+    _gl_BufferData(GL_ARRAY_BUFFER, sizeof(uvs), uvs, GL_STREAM_DRAW);
+    _gl_EnableVertexAttribArray(uvLoc);
+    _gl_VertexAttribPointer(uvLoc, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    _gl_DisableVertexAttribArray(posLoc);
+    _gl_DisableVertexAttribArray(uvLoc);
+    _gl_DeleteBuffers(2, vbo);
+
+    SDL_GL_UnbindTexture(texture);
+    SDL_GL_SwapWindow(window);
+    _gl_UseProgram(oldProgram);
+} else {
+//     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+     // Modo SW: pipeline SDL_Renderer clásico
+#ifdef ANDROID
+     SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+#else
+     SDL_RenderCopy(renderer, texture, nullptr, &dstrect); 
+#endif
+     SDL_RenderPresent(renderer);
+}
+
+
+#ifdef __EMSCRIPTEN__
+    }
+#endif
+}
+
+void System::updateTexture()
+{
+    SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
+}
 // ----------------------------------------------------------------------------
+// Utilidades
+// ----------------------------------------------------------------------------
+
+Uint32 System::RGBA(Uint8 r, Uint8 g, Uint8 b, Uint8 a)
+{
+    return SDL_MapRGBA(surface->format, r, g, b, a);
+}
+
+
+// ----------------------------------------------------------------------------
+// Frame timing
+// ----------------------------------------------------------------------------
+
+void System::initFrame()
+{
+    frameTime = SDL_GetTicks64();
+#ifdef __EMSCRIPTEN__
+    interruptCounter++;
+    if (frameTime >= targetFrameTime) logicInterrupt = true;
+#endif
+}
+
+void System::endFrame()
+{
+#ifndef __EMSCRIPTEN__
+    uint64_t elapsed = SDL_GetTicks64() - frameTime;
+    if (elapsed < minimumFrameTime)
+        SDL_Delay(minimumFrameTime - elapsed);
+#else
+    if (logicInterrupt) {
+        targetFrameTime += 0x24 * (1000. / 300.);
+        if (targetFrameTime <= frameTime)
+            targetFrameTime = SDL_GetTicks64() + 5;
+        logicInterrupt = false;
+
+        static auto lastLogic   = SDL_GetTicks64();
+        static int  framesLogic = 0;
+        framesLogic++;
+        if (SDL_GetTicks64() - lastLogic > 1000) {
+            framesLogic = 0;
+            lastLogic   = SDL_GetTicks64();
+        }
+    }
+#endif
+
+    static auto last   = SDL_GetTicks64();
+    static int  frames = 0;
+    frames++;
+    if (SDL_GetTicks64() - last > 1000) {
+        frames = 0;
+        last   = SDL_GetTicks64();
+    }
+}
+
+//#include "system.fragment"
+// cortar por aquí para pasar a LLM
+// solo las partes gráficas y consumir menos tokens
+
+
 // quit
 // ----------------------------------------------------------------------------
 
@@ -542,107 +711,6 @@ void System::toggleFullscreenMode()
     SDL_SetWindowFullscreen(window, fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
 }
 
-void System::updateScreen()
-{
-#ifdef __EMSCRIPTEN__
-    if (interruptCounter % 6 == 0) {
-#endif
-
-    SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
-    SDL_SetRenderTarget(renderer, nullptr);
-    SDL_RenderClear(renderer);
-
-    if (1==3) { // desactivado, solo para depurar
-    Uint32* p = (Uint32*)surface->pixels;
-    int w = TEXTURE_WIDTH, h = TEXTURE_HEIGHT;
-    for (int y = 0; y < h; ++y) {
-        for (int x = 0; x < w; ++x) {
-            // Mitad superior: AMARILLO puro
-            // Mitad inferior: AZUL puro
-            // Línea central vertical: BLANCA (para detectar desplazamiento)
-            if (x == w/2) p[y * _pitch_pixels + x] = 0xFFFFFFFF;
-            else if (y < h/2) p[y * _pitch_pixels + x] = 0xFFFF00FF; // Amarillo
-            else p[y * _pitch_pixels + x] = 0xFF0000FF;              // Azul
-        }
-    }
-    // Actualiza textura antes de dibujar
-    SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
-    }
-
-    if (useWebGL && shaderProgram) {
-    glClearColor(0.f, 0.f, 0.f, 1.f);
-    glClear(GL_COLOR_BUFFER_BIT); // ✅ Limpia framebuffer raw correctamente
-
-    float tw, th;
-    glActiveTexture(GL_TEXTURE0); // ✅ Asegura unidad 0
-    SDL_GL_BindTexture(texture, &tw, &th);
-
-    int ww, wh;
-    SDL_GetWindowSize(window, &ww, &wh);
-    float x0 = (2.f * dstrect.x                      / ww) - 1.f;
-    float x1 = (2.f * (dstrect.x + dstrect.w)        / ww) - 1.f;
-    float y0 = 1.f - (2.f * dstrect.y                / wh);
-    float y1 = 1.f - (2.f * (dstrect.y + dstrect.h)  / wh);
-
-    GLfloat verts[] = { x0,y0,  x1,y0,  x0,y1,  x1,y1 };
-    GLfloat uvs[]   = { 0.f,0.f, 1.f,0.f, 0.f,1.f, 1.f,1.f }; // ✅ [0,1] estricto
-
-    GLint oldProgram = 0;
-    glGetIntegerv(GL_CURRENT_PROGRAM, &oldProgram);
-    _gl_UseProgram(shaderProgram);
-
-    _gl_Uniform1i(textureLocation, 0); // ✅ Vincula textura al sampler
-    _gl_Uniform1i(efectoLocation, (int)paletaEfecto);
-    _gl_Uniform1i(filtroLocation, (int)filtro);
-    _gl_Uniform2f(texSizeLocation, (float)TEXTURE_WIDTH, (float)TEXTURE_HEIGHT);
-
-    GLint posLoc = _gl_GetAttribLocation(shaderProgram, "aPosition");
-    GLint uvLoc  = _gl_GetAttribLocation(shaderProgram, "aTexCoord");
-
-    GLuint vbo[2];
-    _gl_GenBuffers(2, vbo);
-
-    _gl_BindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-    _gl_BufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STREAM_DRAW);
-    _gl_EnableVertexAttribArray(posLoc);
-    _gl_VertexAttribPointer(posLoc, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-    _gl_BindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-    _gl_BufferData(GL_ARRAY_BUFFER, sizeof(uvs), uvs, GL_STREAM_DRAW);
-    _gl_EnableVertexAttribArray(uvLoc);
-    _gl_VertexAttribPointer(uvLoc, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-    _gl_DisableVertexAttribArray(posLoc);
-    _gl_DisableVertexAttribArray(uvLoc);
-    _gl_DeleteBuffers(2, vbo);
-
-    SDL_GL_UnbindTexture(texture);
-    SDL_GL_SwapWindow(window);
-    _gl_UseProgram(oldProgram);
-} else {
-//     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-     // Modo SW: pipeline SDL_Renderer clásico
-#ifdef ANDROID
-     SDL_RenderCopy(renderer, texture, nullptr, nullptr);
-#else
-     SDL_RenderCopy(renderer, texture, nullptr, &dstrect); 
-#endif
-     SDL_RenderPresent(renderer);
-}
-
-
-#ifdef __EMSCRIPTEN__
-    }
-#endif
-}
-
-void System::updateTexture()
-{
-    SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
-}
-
 // ----------------------------------------------------------------------------
 // handleEvents
 // ----------------------------------------------------------------------------
@@ -855,11 +923,6 @@ void System::setNormalSpeed() { minimumFrameTime = GAME_FRAME_TIME;   }
 // Utilidades
 // ----------------------------------------------------------------------------
 
-Uint32 System::RGBA(Uint8 r, Uint8 g, Uint8 b, Uint8 a)
-{
-    return SDL_MapRGBA(surface->format, r, g, b, a);
-}
-
 void System::exitGame() { exit = true; }
 
 void System::print(const std::string message)
@@ -871,47 +934,4 @@ void System::print(const std::string message)
 #endif
 }
 
-// ----------------------------------------------------------------------------
-// Frame timing
-// ----------------------------------------------------------------------------
 
-void System::initFrame()
-{
-    frameTime = SDL_GetTicks64();
-#ifdef __EMSCRIPTEN__
-    interruptCounter++;
-    if (frameTime >= targetFrameTime) logicInterrupt = true;
-#endif
-}
-
-void System::endFrame()
-{
-#ifndef __EMSCRIPTEN__
-    uint64_t elapsed = SDL_GetTicks64() - frameTime;
-    if (elapsed < minimumFrameTime)
-        SDL_Delay(minimumFrameTime - elapsed);
-#else
-    if (logicInterrupt) {
-        targetFrameTime += 0x24 * (1000. / 300.);
-        if (targetFrameTime <= frameTime)
-            targetFrameTime = SDL_GetTicks64() + 5;
-        logicInterrupt = false;
-
-        static auto lastLogic   = SDL_GetTicks64();
-        static int  framesLogic = 0;
-        framesLogic++;
-        if (SDL_GetTicks64() - lastLogic > 1000) {
-            framesLogic = 0;
-            lastLogic   = SDL_GetTicks64();
-        }
-    }
-#endif
-
-    static auto last   = SDL_GetTicks64();
-    static int  frames = 0;
-    frames++;
-    if (SDL_GetTicks64() - last > 1000) {
-        frames = 0;
-        last   = SDL_GetTicks64();
-    }
-}
