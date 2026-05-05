@@ -41,12 +41,9 @@ static PFNGLGETUNIFORMLOCATIONPROC _gl_GetUniformLocation;
 static PFNGLUNIFORM1IPROC          _gl_Uniform1i;
 #endif
 
-// Estado GL
-static SDL_GLContext _glContext    = nullptr;
-static GLuint        _glTexture    = 0;
-static GLuint        shaderProgram = 0;
-static GLint         efectoLocation = -1;
-static SDL_Window* _glWindow = nullptr;
+// Estado GL — el contexto lo gestiona SDL_Renderer internamente
+static GLuint shaderProgram  = 0;
+static GLint  efectoLocation = -1;
 
 // ----------------------------------------------------------------------------
 // initGLPointers — solo en desktop, solo funciones GL 2.0
@@ -82,115 +79,15 @@ void System::initShader(int efectoPaleta)
 {
     if (!useWebGL) return;
 
-    // Vertex shader mínimo: quad NDC fullscreen
-    /*
-    const char* vertexSource = R"(
-        attribute vec2 aPosition;
-        attribute vec2 aTexCoord;
-        varying vec2 vTexCoord;
-        void main() {
-            vTexCoord   = aTexCoord;
-            gl_Position = vec4(aPosition, 0.0, 1.0);
-        }
-    )"; 
-    */
-
-
-
-
-
-    // Fragment shader: paleta + efectos futuros (xbr, hqx, pageflip…) 
-    /*
-    const char* fragmentSource = R"(
-        varying vec2 vTexCoord;
-        uniform sampler2D uTexture;
-        uniform int uEfecto;
-        void main() {
-            vec4 color = texture2D(uTexture, vTexCoord);
-            float grey = dot(color.rgb, vec3(0.299, 0.587, 0.114));
-            if      (uEfecto == 1) gl_FragColor = vec4(grey, grey, grey, color.a);
-            else if (uEfecto == 2) gl_FragColor = vec4(grey * 0.2, grey * 0.9, grey * 0.1, color.a);
-            else if (uEfecto == 3) gl_FragColor = vec4(grey * 0.9, grey * 0.5, 0.0, color.a);
-            else                   gl_FragColor = color;
-        }
-    )"; */
-/*
-    const char* fragmentSource = R"(
-    varying vec2 vTexCoord;
-    uniform sampler2D uTexture;
-    uniform int uEfecto;
-    void main() {
-        gl_FragColor = texture2D(uTexture, vTexCoord);
-    }
-)"; */
-/*
-    const char* vertexSource = R"(
-    void main() {
-        gl_TexCoord[0] = gl_MultiTexCoord0;
-        gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
-    }
-)";
-
-    
-const char* fragmentSource = R"(
-    uniform sampler2D uTexture;
-    void main() {
-        gl_FragColor = texture2D(uTexture, gl_TexCoord[0].xy);
-    }
-)"; */ 
-
-    /* este solo va en desktop
-    const char* vertexSource = R"(
-    void main() {
-        gl_TexCoord[0] = gl_MultiTexCoord0;
-        gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
-    }
-)";
-
-    const char* fragmentSource = R"(
-    uniform sampler2D uTexture;
-    uniform int uEfecto;
-    void main() {
-        vec4 color = texture2D(uTexture, gl_TexCoord[0].xy);
-        float grey = dot(color.rgb, vec3(0.299, 0.587, 0.114));
-        if      (uEfecto == 1) gl_FragColor = vec4(grey, grey, grey, color.a);
-        else if (uEfecto == 2) gl_FragColor = vec4(grey * 0.2, grey * 0.9, grey * 0.1, color.a);
-        else if (uEfecto == 3) gl_FragColor = vec4(grey * 0.9, grey * 0.5, 0.0, color.a);
-        else                   gl_FragColor = color;
-    }
-)";  */
-
-#ifdef __EMSCRIPTEN__
-    const char* vertexSource = R"(
-        attribute vec2 aPosition;
-        attribute vec2 aTexCoord;
-        varying vec2 vTexCoord;
-        void main() {
-            vTexCoord   = aTexCoord;
-            gl_Position = vec4(aPosition, 0.0, 1.0);
-        }
-    )";
-    const char* fragmentSource = R"(
-        precision mediump float;
-        varying vec2 vTexCoord;
-        uniform sampler2D uTexture;
-        uniform int uEfecto;
-        void main() {
-            vec4 color = texture2D(uTexture, vTexCoord);
-            float grey = dot(color.rgb, vec3(0.299, 0.587, 0.114));
-            if      (uEfecto == 1) gl_FragColor = vec4(grey, grey, grey, color.a);
-            else if (uEfecto == 2) gl_FragColor = vec4(grey * 0.2, grey * 0.9, grey * 0.1, color.a);
-            else if (uEfecto == 3) gl_FragColor = vec4(grey * 0.9, grey * 0.5, 0.0, color.a);
-            else                   gl_FragColor = color;
-        }
-    )";
-#else
+    // Vertex shader: fixed function pipeline — compatible con glBegin/glEnd
     const char* vertexSource = R"(
         void main() {
             gl_TexCoord[0] = gl_MultiTexCoord0;
             gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
         }
     )";
+
+    // Fragment shader: efectos de paleta
     const char* fragmentSource = R"(
         uniform sampler2D uTexture;
         uniform int uEfecto;
@@ -203,7 +100,6 @@ const char* fragmentSource = R"(
             else                   gl_FragColor = color;
         }
     )";
-#endif
 
     auto compileShader = [&](GLenum type, const char* src) -> GLuint {
         GLuint s = _gl_CreateShader(type);
@@ -219,27 +115,10 @@ const char* fragmentSource = R"(
     _gl_AttachShader(shaderProgram, vert);
     _gl_AttachShader(shaderProgram, frag);
     _gl_LinkProgram(shaderProgram);
-    _gl_UseProgram(shaderProgram);
 
     efectoLocation = _gl_GetUniformLocation(shaderProgram, "uEfecto");
-    _gl_Uniform1i(efectoLocation, efectoPaleta);
 
-    // Textura GL que recibirá los pixels de surface en cada frame
-    glGenTextures(1, &_glTexture);
-    glBindTexture(GL_TEXTURE_2D, _glTexture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    // Reservar espacio inicial
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-                 TEXTURE_WIDTH, TEXTURE_HEIGHT, 0,
-                 GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-//    glTexImage2D(GL_TEXTURE_2D, 0, 0, 0, 
- //                TEXTURE_WIDTH, TEXTURE_HEIGHT, GL_BGRA,
-  //               , GL_UNSIGNED_BYTE, surface->pixels);
-SDL_Log("initShader: _glTexture=%u efectoLocation=%d", _glTexture, efectoLocation);
-    SDL_Log("initShader OK — shaderProgram=%u glTexture=%u", shaderProgram, _glTexture);
+    SDL_Log("initShader OK — shaderProgram=%u efectoLocation=%d", shaderProgram, efectoLocation);
 }
 
 // ----------------------------------------------------------------------------
@@ -307,22 +186,6 @@ void System::init()
     if (!window) print("ERROR: Could not create window.\n");
 
     // -------------------------------------------------------------------
-    // Contexto GL — siempre intentamos crearlo; si falla caemos a SW
-    // -------------------------------------------------------------------
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-    _glContext = SDL_GL_CreateContext(window);
-#ifndef __EMSCRIPTEN__
-    if (_glContext && !initGLPointers()) {
-        print("WARNING: No se pudieron cargar punteros GL.\n");
-        SDL_GL_DeleteContext(_glContext);
-        _glContext = nullptr;
-    }
-#endif
-
-	_glWindow = window;
-
-    // -------------------------------------------------------------------
     // Surface — antes de loadConfig, los callbacks de paleta la necesitan
     // -------------------------------------------------------------------
     surface = SDL_CreateRGBSurface(0, TEXTURE_WIDTH, TEXTURE_HEIGHT, 32,
@@ -341,23 +204,43 @@ void System::init()
     // -------------------------------------------------------------------
     loadConfig();
 
-    // Si el contexto GL falló, forzamos SW independientemente del config
-    if (!_glContext) useWebGL = false;
-
     // -------------------------------------------------------------------
     // Renderer y recursos de pantalla — DESPUÉS de loadConfig
     // -------------------------------------------------------------------
-    if (useWebGL) {
-        // Modo GL: renderer software mínimo por si algún subsistema lo usa
-        //renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
-	renderer=nullptr;
-        initShader(paletaEfecto);
-    } else {
-        renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    	if (!renderer) print("ERROR: Could not create renderer.\n");
-        texture  = SDL_CreateTextureFromSurface(renderer, surface);
-    }
+    // Renderer siempre OpenGL+TargetTexture — el hint fuerza el backend GL
+    SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl");
+    renderer = SDL_CreateRenderer(window, -1,
+                  SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE);
+    if (!renderer) print("ERROR: Could not create renderer.\n");
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+
+    // Texture target: el juego renderiza aquí, luego la presentamos
+    // SDL_TEXTUREACCESS_TARGET permite SDL_SetRenderTarget
+    // SDL_TEXTUREACCESS_STREAMING permitiría UpdateTexture directo
+    // Usamos STREAMING para poder hacer UpdateTexture desde surface->pixels
+    //texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888,
+    texture = SDL_CreateTexture(renderer, surface->format->format,
+//                  SDL_TEXTUREACCESS_TARGET, TEXTURE_WIDTH, TEXTURE_HEIGHT);
+                  SDL_TEXTUREACCESS_STREAMING, TEXTURE_WIDTH, TEXTURE_HEIGHT);
+    if (!texture) print("ERROR: Could not create texture.\n");
+
+    // Punteros GL e initShader — después del renderer, que ya creó el contexto GL
+    if (useWebGL) {
+#ifndef __EMSCRIPTEN__
+        SDL_RendererInfo info;
+        SDL_GetRendererInfo(renderer, &info);
+        if (strncmp(info.name, "opengl", 6) == 0) {
+            if (!initGLPointers()) {
+                print("WARNING: No se pudieron cargar punteros GL. Forzando SW.\n");
+                useWebGL = false;
+            }
+        } else {
+            print("WARNING: Renderer no es OpenGL. Forzando SW.\n");
+            useWebGL = false;
+        }
+#endif
+        if (useWebGL) initShader(paletaEfecto);
+    }
 
     // -------------------------------------------------------------------
     // Audio
@@ -393,9 +276,8 @@ void System::quit()
     SDL_GameControllerClose(gamepad);
     SDL_HapticClose(hapticDevice);
 
-    if (renderer)    SDL_DestroyRenderer(renderer);
-    if (texture)     SDL_DestroyTexture(texture);
-    if (_glContext)  SDL_GL_DeleteContext(_glContext);
+    if (texture)  SDL_DestroyTexture(texture);
+    if (renderer) SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
 
     for (int i = 0; i < static_cast<int>(Abadia::SONIDOS::Count); i++)
@@ -596,112 +478,94 @@ void System::toggleFullscreenMode()
     SDL_SetWindowFullscreen(window, fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
 }
 
-// Modo GL: sube los pixels a la textura GL y dibuja un quad fullscreen.
-// No usa SDL_Renderer para el blit principal, así el pipeline GL es nuestro.
-static void renderGL(SDL_Surface* surface, GLuint glTexture,
-                     GLuint program, GLint efectoLoc, int efecto,
-                     SDL_Rect dstrect, int winW, int winH)
-{
-	SDL_GL_MakeCurrent(_glWindow, _glContext);
-	SDL_Log("renderGL: surface=%p pixels=%p glTexture=%u program=%u efecto=%d",
-        (void*)surface, surface ? surface->pixels : nullptr,
-        glTexture, program, efecto);
-    glBindTexture(GL_TEXTURE_2D, glTexture);
-    /* 666
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
-                    TEXTURE_WIDTH, TEXTURE_HEIGHT,
-                    GL_BGRA, GL_UNSIGNED_BYTE,
-                    surface->pixels); */
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
-                    TEXTURE_WIDTH, TEXTURE_HEIGHT,
-                    GL_RGBA, GL_UNSIGNED_BYTE,
-                    surface->pixels);
-
-    _gl_UseProgram(program);
-    _gl_Uniform1i(efectoLoc, efecto);
-
-    glViewport(0, 0, winW, winH);
-    glClearColor(1.f, 0.f, 0.f, 1.f);
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    // Convertir dstrect (pixels) a NDC [-1,1]
-    float x0 = ( 2.f * dstrect.x                  / winW) - 1.f;
-    float x1 = ( 2.f * (dstrect.x + dstrect.w)    / winW) - 1.f;
-    float y0 = 1.f - (2.f * dstrect.y             / winH);
-    float y1 = 1.f - (2.f * (dstrect.y + dstrect.h) / winH);
-
-
-    // Quad legacy (GL2 / GLES2 con gl_FragCoord disponible)
-    // Para GLES2 puro habría que usar VBOs; en desktop GL2 glBegin está OK.
-#ifndef __EMSCRIPTEN__
-    glEnable(GL_TEXTURE_2D);
-
-    glBegin(GL_QUADS);
-        glTexCoord2f(0.f, 0.f); glVertex2f(x0, y0);
-        glTexCoord2f(1.f, 0.f); glVertex2f(x1, y0);
-        glTexCoord2f(1.f, 1.f); glVertex2f(x1, y1);
-        glTexCoord2f(0.f, 1.f); glVertex2f(x0, y1);
-    glEnd();
-#else
-    // Emscripten/GLES2: usar atributos de vértice 
-    /*
-    GLfloat verts[] = { x0,y0, x1,y0, x0,y1, x1,y1 };
-    GLfloat uvs[]   = { 0,0,   1,0,   0,1,   1,1   };
-    GLint posLoc = glGetAttribLocation(program, "aPosition");
-    GLint uvLoc  = glGetAttribLocation(program, "aTexCoord");
-    glEnableVertexAttribArray(posLoc);
-    glEnableVertexAttribArray(uvLoc);
-    glVertexAttribPointer(posLoc, 2, GL_FLOAT, GL_FALSE, 0, verts);
-    glVertexAttribPointer(uvLoc,  2, GL_FLOAT, GL_FALSE, 0, uvs);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    glDisableVertexAttribArray(posLoc);
-    glDisableVertexAttribArray(uvLoc); */
-    GLfloat verts[] = { x0,y0,  x1,y0,  x0,y1,  x1,y1 };
-    // imagen invertida boca abajo GLfloat uvs[]   = { 0,1,    1,1,    0,0,    1,0   };
-    GLfloat uvs[]   = { 0,0,    1,0,    0,1,    1,1   };
-
-    GLuint vbo[2];
-    glGenBuffers(2, vbo);
-
-    GLint posLoc = glGetAttribLocation(program, "aPosition");
-    glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STREAM_DRAW);
-    glEnableVertexAttribArray(posLoc);
-    glVertexAttribPointer(posLoc, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-    GLint uvLoc = glGetAttribLocation(program, "aTexCoord");
-    glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(uvs), uvs, GL_STREAM_DRAW);
-    glEnableVertexAttribArray(uvLoc);
-    glVertexAttribPointer(uvLoc, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-    glDisableVertexAttribArray(posLoc);
-    glDisableVertexAttribArray(uvLoc);
-    glDeleteBuffers(2, vbo);
-#endif
-}
-
 void System::updateScreen()
 {
 #ifdef __EMSCRIPTEN__
     if (interruptCounter % 6 == 0) {
 #endif
 
-    if (useWebGL && _glContext && shaderProgram) {
-        // --- Modo GL: blit directo, sin SDL_Renderer ---
-        int ww, wh;
-	SDL_GL_MakeCurrent(window, _glContext);
-        SDL_GetWindowSize(window, &ww, &wh);
-        renderGL(surface, _glTexture, shaderProgram, efectoLocation,
-                 paletaEfecto, dstrect, ww, wh);
+    // Volcar surface a la texture SDL
+    SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
+
+    SDL_SetRenderTarget(renderer, nullptr);
+    SDL_RenderClear(renderer);
+
+    if (useWebGL && shaderProgram) {
+/*
+    	    // Modo GL: bind de la texture, activar shader, quad manual, SwapWindow
+        GLint oldProgram = 0;
+        glGetIntegerv(GL_CURRENT_PROGRAM, &oldProgram);
+
+        SDL_GL_BindTexture(texture, nullptr, nullptr);
+        _gl_UseProgram(shaderProgram);
+        _gl_Uniform1i(efectoLocation, (int)paletaEfecto);
+
+        GLfloat minx = (GLfloat)dstrect.x;
+        GLfloat miny = (GLfloat)dstrect.y;
+        GLfloat maxx = (GLfloat)(dstrect.x + dstrect.w);
+        GLfloat maxy = (GLfloat)(dstrect.y + dstrect.h);
+
+	SDL_Log("dstrect: x=%d y=%d w=%d h=%d", dstrect.x, dstrect.y, dstrect.w, dstrect.h);
+	SDL_Log("quad: minx=%.1f miny=%.1f maxx=%.1f maxy=%.1f", minx, miny, maxx, maxy);
+	int ww, wh;
+SDL_GetWindowSize(window, &ww, &wh);
+SDL_Log("window: %dx%d", ww, wh);
+
+        glBegin(GL_TRIANGLE_STRIP);
+            glTexCoord2f(0.f, 0.f); glVertex2f(minx, miny);
+            glTexCoord2f(1.f, 0.f); glVertex2f(maxx, miny);
+            glTexCoord2f(0.f, 1.f); glVertex2f(minx, maxy);
+            glTexCoord2f(1.f, 1.f); glVertex2f(maxx, maxy);
+        glEnd();
+
+        SDL_GL_UnbindTexture(texture);
         SDL_GL_SwapWindow(window);
+        _gl_UseProgram(oldProgram);
+	*/
+	    GLfloat texW, texH;
+	    //SDL_GL_BindTexture(texture, nullptr, nullptr);
+	    SDL_GL_BindTexture(texture, &texW, &texH);
+	    SDL_Log("texW=%.4f texH=%.4f", texW, texH);
+
+	    GLfloat matrix[16];
+glGetFloatv(GL_PROJECTION_MATRIX, matrix);
+SDL_Log("proj: [0]=%.2f [5]=%.2f [10]=%.2f [12]=%.2f [13]=%.2f",
+        matrix[0], matrix[5], matrix[10], matrix[12], matrix[13]);
+
+glMatrixMode(GL_PROJECTION);
+glPushMatrix();
+glLoadIdentity();
+glOrtho(0, dstrect.x + dstrect.w, dstrect.y + dstrect.h, 0, -1, 1);
+glMatrixMode(GL_MODELVIEW);
+glLoadIdentity();
+
+_gl_UseProgram(shaderProgram);
+_gl_Uniform1i(efectoLocation, (int)paletaEfecto);
+        GLfloat minx = (GLfloat)dstrect.x;
+        GLfloat miny = (GLfloat)dstrect.y;
+        GLfloat maxx = (GLfloat)(dstrect.x + dstrect.w);
+        GLfloat maxy = (GLfloat)(dstrect.y + dstrect.h);
+
+/*
+glBegin(GL_TRIANGLE_STRIP);
+    glTexCoord2f(0.f, 0.f); glVertex2f(minx, miny);
+    glTexCoord2f(1.f, 0.f); glVertex2f(maxx, miny);
+    glTexCoord2f(0.f, 1.f); glVertex2f(minx, maxy);
+    glTexCoord2f(1.f, 1.f); glVertex2f(maxx, maxy);
+glEnd(); */
+	glBegin(GL_TRIANGLE_STRIP);
+    glTexCoord2f(0.f,  0.f);  glVertex2f(minx, miny);
+    glTexCoord2f(texW, 0.f);  glVertex2f(maxx, miny);
+    glTexCoord2f(0.f,  texH); glVertex2f(minx, maxy);
+    glTexCoord2f(texW, texH); glVertex2f(maxx, maxy);
+glEnd();
+
+
+SDL_GL_UnbindTexture(texture);
+SDL_GL_SwapWindow(window);
+	    
     } else {
-        // --- Modo SW: pipeline SDL_Renderer clásico ---
-        SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
-        SDL_RenderClear(renderer);
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        // Modo SW: pipeline SDL_Renderer clásico
 #ifdef ANDROID
         SDL_RenderCopy(renderer, texture, nullptr, nullptr);
 #else
@@ -715,12 +579,9 @@ void System::updateScreen()
 #endif
 }
 
-// updateTexture se mantiene para compatibilidad con el código que la llame,
-// pero en modo GL el upload real se hace en updateScreen.
 void System::updateTexture()
 {
-    if (!useWebGL && texture)
-        SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
+    SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
 }
 
 // ----------------------------------------------------------------------------
