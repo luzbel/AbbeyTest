@@ -3,14 +3,31 @@ R"(
    Hyllian's xBR-lv2 Shader - adaptado para GLSL 1.20 / GLES 1.00
    Copyright (C) 2011-2016 Hyllian - sergiogdb@gmail.com
 */
+#version 120
 #ifdef GL_ES
 precision mediump float;
 #endif
+
+
 
 varying vec2 vTexCoord;
 uniform sampler2D uTexture;
 uniform vec2      uTexSize;
 uniform int       uFiltro;
+uniform float uEfecto;
+
+vec4 applyEfecto(vec4 color) {
+    float grey = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+    vec4 gris  = vec4(grey, grey, grey, color.a);
+    vec4 fosfo = vec4(grey * 0.2, grey * 0.9, grey * 0.1, color.a);
+    vec4 amber = vec4(grey * 0.9, grey * 0.5, 0.0, color.a);
+
+    vec4 res = color;
+    res = mix(res,  gris, step(0.5, uEfecto) * step(uEfecto, 1.5));
+    res = mix(res, fosfo, step(1.5, uEfecto) * step(uEfecto, 2.5));
+    res = mix(res, amber, step(2.5, uEfecto) * step(uEfecto, 3.5));
+    return res;
+}
 
 #define XBR_EQ_THRESHOLD  15.0
 #define XBR_LV2_COEFFICIENT 2.0
@@ -56,9 +73,11 @@ float c_df(vec3 c1, vec3 c2)
 void main()
 {
     vec2 uv = vTexCoord;
+//gl_FragColor = vec4(uEfecto / 4.0, 0.0, 0.0, 1.0);
+//return;
 
     if (uFiltro < 1) {
-        gl_FragColor = texture2D(uTexture, uv);
+        gl_FragColor = applyEfecto(texture2D(uTexture, uv));
         return;
     }
 
@@ -161,7 +180,8 @@ void main()
 
     vec3 res = mix(res1, res2, step(c_df(E, res1), c_df(E, res2)));
 
-    gl_FragColor = vec4(res, 1.0);
+//    gl_FragColor = vec4(res, 1.0);
+	gl_FragColor = applyEfecto(vec4(res, 1.0));
 }
 )";
 

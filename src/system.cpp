@@ -27,6 +27,7 @@ System *const sys = &tmpSys;
 #define _gl_UseProgram        glUseProgram
 #define _gl_GetUniformLocation glGetUniformLocation
 #define _gl_Uniform1i         glUniform1i
+#define _gl_Uniform1f         glUniform1f
 #define _gl_Uniform2f         glUniform2f
 #define _gl_GetAttribLocation glGetAttribLocation
 #define _gl_GenBuffers               glGenBuffers
@@ -49,6 +50,7 @@ static PFNGLLINKPROGRAMPROC        _gl_LinkProgram;
 static PFNGLUSEPROGRAMPROC         _gl_UseProgram;
 static PFNGLGETUNIFORMLOCATIONPROC _gl_GetUniformLocation;
 static PFNGLUNIFORM1IPROC          _gl_Uniform1i;
+static PFNGLUNIFORM1FPROC          _gl_Uniform1f;
 static PFNGLUNIFORM2FPROC          _gl_Uniform2f;
 static PFNGLGETATTRIBLOCATIONPROC _gl_GetAttribLocation;
 static PFNGLGENBUFFERSPROC             _gl_GenBuffers;
@@ -84,6 +86,7 @@ static bool initGLPointers()
     _gl_UseProgram         = (PFNGLUSEPROGRAMPROC)         SDL_GL_GetProcAddress("glUseProgram");
     _gl_GetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC) SDL_GL_GetProcAddress("glGetUniformLocation");
     _gl_Uniform1i          = (PFNGLUNIFORM1IPROC)          SDL_GL_GetProcAddress("glUniform1i");
+    _gl_Uniform1f          = (PFNGLUNIFORM1FPROC)          SDL_GL_GetProcAddress("glUniform1f");
     _gl_Uniform2f          = (PFNGLUNIFORM2FPROC)          SDL_GL_GetProcAddress("glUniform2f");
     _gl_GetAttribLocation = (PFNGLGETATTRIBLOCATIONPROC) SDL_GL_GetProcAddress("glGetAttribLocation");
     _gl_GenBuffers              = (PFNGLGENBUFFERSPROC)              SDL_GL_GetProcAddress("glGenBuffers");
@@ -374,15 +377,16 @@ p[y * _pitch_pixels + x] = 0x000000FF;
     _gl_UseProgram(shaderProgram);
 
     _gl_Uniform1i(textureLocation, 0); // ✅ Vincula textura al sampler
-    _gl_Uniform1i(efectoLocation, (int)paletaEfecto);
+    //_gl_Uniform1i(efectoLocation, (int)paletaEfecto);
+    _gl_Uniform1f(efectoLocation, (float)paletaEfecto); // en versiones antiguas de opengl esto tiene que ser float
     _gl_Uniform1i(filtroLocation, (int)filtro);
     _gl_Uniform2f(texSizeLocation, (float)TEXTURE_WIDTH, (float)TEXTURE_HEIGHT);
 
     GLint posLoc = _gl_GetAttribLocation(shaderProgram, "aPosition");
     GLint uvLoc  = _gl_GetAttribLocation(shaderProgram, "aTexCoord");
-//    SDL_Log("posLoc=%d uvLoc=%d filtroLoc=%d texSizeLoc=%d",
-//            posLoc, uvLoc, filtroLocation, texSizeLocation);
-
+    SDL_Log("posLoc=%d uvLoc=%d efectoLoc =%d filtroLoc=%d texSizeLoc=%d",
+            posLoc, uvLoc, efectoLocation, filtroLocation, texSizeLocation);
+//SDL_Log("uEfecto enviado como float: %f", (float)uEfecto);
     GLuint vbo[2];
     _gl_GenBuffers(2, vbo);
 
