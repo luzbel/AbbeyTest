@@ -27,7 +27,7 @@ public:
 				[[maybe_unused]]UINT8 a=*p++;
 
 				if (!useShader) {
-SDL_Log("efecto SW\n");
+//SDL_Log("efecto SW\n");
 				   switch(efectoPaleta) {
 					case 0: // no hacer nada
 						break;

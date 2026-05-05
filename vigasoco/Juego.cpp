@@ -489,12 +489,19 @@ bool Juego::menuConfigGfx()
 		// 1 Filtro — no implementado
 		configGfxMenu.add(
 			[this]() {
-				return std::string(configGfxMenuText[sys->idioma][1]) + " NINGUNO ";
+				// TODO: faltan traducciones por idioma
+				switch(sys->filtro) {
+				case 0: return std::string(configGfxMenuText[sys->idioma][1]) + " NINGUNO "; break;
+				case 1: return std::string(configGfxMenuText[sys->idioma][1]) + " XBR "; break;
+				case 2: return std::string(configGfxMenuText[sys->idioma][1]) + " HQX"; break;
+				}
+				return std::string("VALOR DE FILTRO CONFIGUDADO INVALIDO");
 			},
 			[this]() {
-				SDL_Log("menuConfigGfx: filtro no implementado");
+//				SDL_Log("menuConfigGfx: filtro no implementado");
+				sys->filtro=(sys->filtro+1)%3; // ciclar 0-2
 			},
-			[this]() { return false; }
+			[this]() { return sys->useWebGL; }
 		);
 
 		// 2 Paleta — no implementado

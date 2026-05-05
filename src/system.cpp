@@ -27,6 +27,7 @@ System *const sys = &tmpSys;
 #define _gl_UseProgram        glUseProgram
 #define _gl_GetUniformLocation glGetUniformLocation
 #define _gl_Uniform1i         glUniform1i
+#define _gl_Uniform2f         glUniform2f
 #define _gl_GetAttribLocation glGetAttribLocation
 #define _gl_GenBuffers               glGenBuffers
 #define _gl_BindBuffer               glBindBuffer
@@ -35,6 +36,7 @@ System *const sys = &tmpSys;
 #define _gl_VertexAttribPointer      glVertexAttribPointer
 #define _gl_DisableVertexAttribArray glDisableVertexAttribArray
 #define _gl_DeleteBuffers            glDeleteBuffers
+#define _gl_GetProgramiv glGetProgramiv
 #else
 #include <SDL2/SDL_opengl.h>
 // Punteros solo para las funciones GL 2.0 (shaders)
@@ -47,6 +49,7 @@ static PFNGLLINKPROGRAMPROC        _gl_LinkProgram;
 static PFNGLUSEPROGRAMPROC         _gl_UseProgram;
 static PFNGLGETUNIFORMLOCATIONPROC _gl_GetUniformLocation;
 static PFNGLUNIFORM1IPROC          _gl_Uniform1i;
+static PFNGLUNIFORM2FPROC          _gl_Uniform2f;
 static PFNGLGETATTRIBLOCATIONPROC _gl_GetAttribLocation;
 static PFNGLGENBUFFERSPROC             _gl_GenBuffers;
 static PFNGLBINDBUFFERPROC             _gl_BindBuffer;
@@ -55,11 +58,15 @@ static PFNGLENABLEVERTEXATTRIBARRAYPROC _gl_EnableVertexAttribArray;
 static PFNGLVERTEXATTRIBPOINTERPROC    _gl_VertexAttribPointer;
 static PFNGLDISABLEVERTEXATTRIBARRAYPROC _gl_DisableVertexAttribArray;
 static PFNGLDELETEBUFFERSPROC          _gl_DeleteBuffers;
+static PFNGLGETPROGRAMIVPROC _gl_GetProgramiv;
 #endif
 
 // Estado GL — el contexto lo gestiona SDL_Renderer internamente
 static GLuint shaderProgram  = 0;
 static GLint  efectoLocation = -1;
+static GLint filtroLocation = -1;
+static GLint texSizeLocation = -1;
+static GLint textureLocation = -1;
 
 // ----------------------------------------------------------------------------
 // initGLPointers — solo en desktop, solo funciones GL 2.0
@@ -77,6 +84,7 @@ static bool initGLPointers()
     _gl_UseProgram         = (PFNGLUSEPROGRAMPROC)         SDL_GL_GetProcAddress("glUseProgram");
     _gl_GetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC) SDL_GL_GetProcAddress("glGetUniformLocation");
     _gl_Uniform1i          = (PFNGLUNIFORM1IPROC)          SDL_GL_GetProcAddress("glUniform1i");
+    _gl_Uniform2f          = (PFNGLUNIFORM2FPROC)          SDL_GL_GetProcAddress("glUniform2f");
     _gl_GetAttribLocation = (PFNGLGETATTRIBLOCATIONPROC) SDL_GL_GetProcAddress("glGetAttribLocation");
     _gl_GenBuffers              = (PFNGLGENBUFFERSPROC)              SDL_GL_GetProcAddress("glGenBuffers");
 _gl_BindBuffer              = (PFNGLBINDBUFFERPROC)              SDL_GL_GetProcAddress("glBindBuffer");
@@ -85,6 +93,7 @@ _gl_EnableVertexAttribArray = (PFNGLENABLEVERTEXATTRIBARRAYPROC) SDL_GL_GetProcA
 _gl_VertexAttribPointer     = (PFNGLVERTEXATTRIBPOINTERPROC)     SDL_GL_GetProcAddress("glVertexAttribPointer");
 _gl_DisableVertexAttribArray= (PFNGLDISABLEVERTEXATTRIBARRAYPROC)SDL_GL_GetProcAddress("glDisableVertexAttribArray");
 _gl_DeleteBuffers           = (PFNGLDELETEBUFFERSPROC)           SDL_GL_GetProcAddress("glDeleteBuffers");
+_gl_GetProgramiv = (PFNGLGETPROGRAMIVPROC)           SDL_GL_GetProcAddress("glGetProgramiv");
 
     if (!_gl_CreateShader || !_gl_CreateProgram || !_gl_UseProgram) {
         return false;
@@ -93,61 +102,11 @@ _gl_DeleteBuffers           = (PFNGLDELETEBUFFERSPROC)           SDL_GL_GetProcA
 }
 #endif
 
-// ----------------------------------------------------------------------------
-// initShader
-// Compila el fragment shader y crea la textura GL que recibirá los pixels.
-// Llámalo después de loadConfig() y de que exista el contexto GL.
-// ----------------------------------------------------------------------------
-/*
 void System::initShader(int efectoPaleta)
 {
+	SDL_Log("initShader 1\n");
     if (!useWebGL) return;
-
-    // Vertex shader: fixed function pipeline — compatible con glBegin/glEnd
-    const char* vertexSource = R"(
-        void main() {
-            gl_TexCoord[0] = gl_MultiTexCoord0;
-            gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
-        }
-    )";
-
-    // Fragment shader: efectos de paleta
-    const char* fragmentSource = R"(
-        uniform sampler2D uTexture;
-        uniform int uEfecto;
-        void main() {
-            vec4 color = texture2D(uTexture, gl_TexCoord[0].xy);
-            float grey = dot(color.rgb, vec3(0.299, 0.587, 0.114));
-            if      (uEfecto == 1) gl_FragColor = vec4(grey, grey, grey, color.a);
-            else if (uEfecto == 2) gl_FragColor = vec4(grey * 0.2, grey * 0.9, grey * 0.1, color.a);
-            else if (uEfecto == 3) gl_FragColor = vec4(grey * 0.9, grey * 0.5, 0.0, color.a);
-            else                   gl_FragColor = color;
-        }
-    )";
-
-    auto compileShader = [&](GLenum type, const char* src) -> GLuint {
-        GLuint s = _gl_CreateShader(type);
-        _gl_ShaderSource(s, 1, &src, nullptr);
-        _gl_CompileShader(s);
-        return s;
-    };
-
-    GLuint vert = compileShader(GL_VERTEX_SHADER,   vertexSource);
-    GLuint frag = compileShader(GL_FRAGMENT_SHADER, fragmentSource);
-
-    shaderProgram = _gl_CreateProgram();
-    _gl_AttachShader(shaderProgram, vert);
-    _gl_AttachShader(shaderProgram, frag);
-    _gl_LinkProgram(shaderProgram);
-
-    efectoLocation = _gl_GetUniformLocation(shaderProgram, "uEfecto");
-
-    SDL_Log("initShader OK — shaderProgram=%u efectoLocation=%d", shaderProgram, efectoLocation);
-} */
-
-void System::initShader(int efectoPaleta)
-{
-    if (!useWebGL) return;
+	SDL_Log("initShader 2\n");
 
     const char* vertexSource = R"(
         attribute vec2 aPosition;
@@ -159,22 +118,19 @@ void System::initShader(int efectoPaleta)
         }
     )";
 
-    const char* fragmentSource = R"(
-        #ifdef GL_ES
-        precision mediump float;
-        #endif
-        varying vec2 vTexCoord;
-        uniform sampler2D uTexture;
-        uniform int uEfecto;
-        void main() {
-            vec4 color = texture2D(uTexture, vTexCoord);
-            float grey = dot(color.rgb, vec3(0.299, 0.587, 0.114));
-            if      (uEfecto == 1) gl_FragColor = vec4(grey, grey, grey, color.a);
-            else if (uEfecto == 2) gl_FragColor = vec4(grey*0.2, grey*0.9, grey*0.1, color.a);
-            else if (uEfecto == 3) gl_FragColor = vec4(grey*0.9, grey*0.5, 0.0, color.a);
-            else                   gl_FragColor = color;
-        }
-    )";
+#ifdef __EMSCRIPTEN__
+    const char* glslHeader = "#version 100\nprecision mediump float;\n";
+#else
+    const char* glslHeader = "#version 120\n";
+#endif
+
+    const char* fragmentSource = 
+//#include "shader.glsl"
+#include "../build/filtro.glsl"
+
+//    std::cout << "DEBUG SHADER CONTENT:\n" << fragmentSource << "\n---END---" << std::endl;
+
+
 
     auto compileShader = [&](GLenum type, const char* src) -> GLuint {
         GLuint s = _gl_CreateShader(type);
@@ -191,8 +147,21 @@ void System::initShader(int efectoPaleta)
     _gl_AttachShader(shaderProgram, frag);
     _gl_LinkProgram(shaderProgram);
 
+        GLint status;
+    _gl_GetProgramiv(shaderProgram, GL_LINK_STATUS, &status);
+    SDL_Log("status1 %d\n",status);
+    if (status == GL_FALSE) {
+     //   char log[512]; _gl_GetProgramInfoLog(shaderProgram, sizeof(log), nullptr, log);
+//        SDL_Log("ERROR ENLACE SHADER: %s", log);
+        useWebGL = false; return;
+    }
+    SDL_Log("status2 %d\n",status);
+
     efectoLocation = _gl_GetUniformLocation(shaderProgram, "uEfecto");
     SDL_Log("initShader OK — shaderProgram=%u efectoLocation=%d", shaderProgram, efectoLocation);
+    texSizeLocation = _gl_GetUniformLocation(shaderProgram, "uTexSize");
+    filtroLocation = _gl_GetUniformLocation(shaderProgram, "uFiltro");
+    textureLocation = _gl_GetUniformLocation(shaderProgram, "uTexture");
 }
 
 // ----------------------------------------------------------------------------
@@ -316,6 +285,10 @@ SDL_Log("despues de  loadConfig\n");
 //                  SDL_TEXTUREACCESS_TARGET, TEXTURE_WIDTH, TEXTURE_HEIGHT);
                   SDL_TEXTUREACCESS_STREAMING, TEXTURE_WIDTH, TEXTURE_HEIGHT);
     if (!texture) print("ERROR: Could not create texture.\n");
+
+//    SDL_SetTextureScaleMode(texture, SDL_ScaleModeNearest);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     // Punteros GL e initShader — después del renderer, que ya creó el contexto GL
     if (useWebGL) {
@@ -568,134 +541,97 @@ void System::toggleFullscreenMode()
     fullscreen = !fullscreen;
     SDL_SetWindowFullscreen(window, fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
 }
-/*
+
 void System::updateScreen()
 {
 #ifdef __EMSCRIPTEN__
     if (interruptCounter % 6 == 0) {
 #endif
 
-    // Volcar surface a la texture SDL
     SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
-
     SDL_SetRenderTarget(renderer, nullptr);
     SDL_RenderClear(renderer);
 
+    if (1==3) { // desactivado, solo para depurar
+    Uint32* p = (Uint32*)surface->pixels;
+    int w = TEXTURE_WIDTH, h = TEXTURE_HEIGHT;
+    for (int y = 0; y < h; ++y) {
+        for (int x = 0; x < w; ++x) {
+            // Mitad superior: AMARILLO puro
+            // Mitad inferior: AZUL puro
+            // Línea central vertical: BLANCA (para detectar desplazamiento)
+            if (x == w/2) p[y * _pitch_pixels + x] = 0xFFFFFFFF;
+            else if (y < h/2) p[y * _pitch_pixels + x] = 0xFFFF00FF; // Amarillo
+            else p[y * _pitch_pixels + x] = 0xFF0000FF;              // Azul
+        }
+    }
+    // Actualiza textura antes de dibujar
+    SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
+    }
+
     if (useWebGL && shaderProgram) {
-	    GLfloat texW, texH;
-	    //SDL_GL_BindTexture(texture, nullptr, nullptr);
-	    SDL_GL_BindTexture(texture, &texW, &texH);
-	    SDL_Log("texW=%.4f texH=%.4f", texW, texH);
+    glClearColor(0.f, 0.f, 0.f, 1.f);
+    glClear(GL_COLOR_BUFFER_BIT); // ✅ Limpia framebuffer raw correctamente
 
-	    GLfloat matrix[16];
-glGetFloatv(GL_PROJECTION_MATRIX, matrix);
-SDL_Log("proj: [0]=%.2f [5]=%.2f [10]=%.2f [12]=%.2f [13]=%.2f",
-        matrix[0], matrix[5], matrix[10], matrix[12], matrix[13]);
+    float tw, th;
+    glActiveTexture(GL_TEXTURE0); // ✅ Asegura unidad 0
+    SDL_GL_BindTexture(texture, &tw, &th);
 
-glMatrixMode(GL_PROJECTION);
-glPushMatrix();
-glLoadIdentity();
-glOrtho(0, dstrect.x + dstrect.w, dstrect.y + dstrect.h, 0, -1, 1);
-glMatrixMode(GL_MODELVIEW);
-glLoadIdentity();
+    int ww, wh;
+    SDL_GetWindowSize(window, &ww, &wh);
+    float x0 = (2.f * dstrect.x                      / ww) - 1.f;
+    float x1 = (2.f * (dstrect.x + dstrect.w)        / ww) - 1.f;
+    float y0 = 1.f - (2.f * dstrect.y                / wh);
+    float y1 = 1.f - (2.f * (dstrect.y + dstrect.h)  / wh);
 
-_gl_UseProgram(shaderProgram);
-_gl_Uniform1i(efectoLocation, (int)paletaEfecto);
-        GLfloat minx = (GLfloat)dstrect.x;
-        GLfloat miny = (GLfloat)dstrect.y;
-        GLfloat maxx = (GLfloat)(dstrect.x + dstrect.w);
-        GLfloat maxy = (GLfloat)(dstrect.y + dstrect.h);
+    GLfloat verts[] = { x0,y0,  x1,y0,  x0,y1,  x1,y1 };
+    GLfloat uvs[]   = { 0.f,0.f, 1.f,0.f, 0.f,1.f, 1.f,1.f }; // ✅ [0,1] estricto
 
-	glBegin(GL_TRIANGLE_STRIP);
-    glTexCoord2f(0.f,  0.f);  glVertex2f(minx, miny);
-    glTexCoord2f(texW, 0.f);  glVertex2f(maxx, miny);
-    glTexCoord2f(0.f,  texH); glVertex2f(minx, maxy);
-    glTexCoord2f(texW, texH); glVertex2f(maxx, maxy);
-glEnd();
+    GLint oldProgram = 0;
+    glGetIntegerv(GL_CURRENT_PROGRAM, &oldProgram);
+    _gl_UseProgram(shaderProgram);
 
+    _gl_Uniform1i(textureLocation, 0); // ✅ Vincula textura al sampler
+    _gl_Uniform1i(efectoLocation, (int)paletaEfecto);
+    _gl_Uniform1i(filtroLocation, (int)filtro);
+    _gl_Uniform2f(texSizeLocation, (float)TEXTURE_WIDTH, (float)TEXTURE_HEIGHT);
 
-SDL_GL_UnbindTexture(texture);
-SDL_GL_SwapWindow(window);
-	    
-    } else {
-        // Modo SW: pipeline SDL_Renderer clásico
+    GLint posLoc = _gl_GetAttribLocation(shaderProgram, "aPosition");
+    GLint uvLoc  = _gl_GetAttribLocation(shaderProgram, "aTexCoord");
+
+    GLuint vbo[2];
+    _gl_GenBuffers(2, vbo);
+
+    _gl_BindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+    _gl_BufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STREAM_DRAW);
+    _gl_EnableVertexAttribArray(posLoc);
+    _gl_VertexAttribPointer(posLoc, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+    _gl_BindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+    _gl_BufferData(GL_ARRAY_BUFFER, sizeof(uvs), uvs, GL_STREAM_DRAW);
+    _gl_EnableVertexAttribArray(uvLoc);
+    _gl_VertexAttribPointer(uvLoc, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    _gl_DisableVertexAttribArray(posLoc);
+    _gl_DisableVertexAttribArray(uvLoc);
+    _gl_DeleteBuffers(2, vbo);
+
+    SDL_GL_UnbindTexture(texture);
+    SDL_GL_SwapWindow(window);
+    _gl_UseProgram(oldProgram);
+} else {
+//     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+     // Modo SW: pipeline SDL_Renderer clásico
 #ifdef ANDROID
-        SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+     SDL_RenderCopy(renderer, texture, nullptr, nullptr);
 #else
-        SDL_RenderCopy(renderer, texture, nullptr, &dstrect);
+     SDL_RenderCopy(renderer, texture, nullptr, &dstrect); 
 #endif
-        SDL_RenderPresent(renderer);
-    }
-
-#ifdef __EMSCRIPTEN__
-    }
-#endif
+     SDL_RenderPresent(renderer);
 }
-*/
 
-void System::updateScreen()
-{
-#ifdef __EMSCRIPTEN__
-    if (interruptCounter % 6 == 0) {
-#endif
-
-    SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
-    SDL_SetRenderTarget(renderer, nullptr);
-    SDL_RenderClear(renderer);
-
-    if (useWebGL && shaderProgram) {
-        GLfloat texW, texH;
-        SDL_GL_BindTexture(texture, &texW, &texH);
-
-        // Convertir dstrect a NDC [-1, 1]
-        int ww, wh;
-        SDL_GetWindowSize(window, &ww, &wh);
-        float x0 = (2.f * dstrect.x                      / ww) - 1.f;
-        float x1 = (2.f * (dstrect.x + dstrect.w)        / ww) - 1.f;
-        float y0 = 1.f - (2.f * dstrect.y                / wh);
-        float y1 = 1.f - (2.f * (dstrect.y + dstrect.h)  / wh);
-
-        GLfloat verts[] = { x0,y0,  x1,y0,  x0,y1,  x1,y1 };
-        GLfloat uvs[]   = { 0.f,0.f, texW,0.f, 0.f,texH, texW,texH };
-
-        GLint oldProgram = 0;
-        glGetIntegerv(GL_CURRENT_PROGRAM, &oldProgram);
-        _gl_UseProgram(shaderProgram);
-        _gl_Uniform1i(efectoLocation, (int)paletaEfecto);
-
-        GLint posLoc = _gl_GetAttribLocation(shaderProgram, "aPosition");
-        GLint uvLoc  = _gl_GetAttribLocation(shaderProgram, "aTexCoord");
-
-        GLuint vbo[2];
-        _gl_GenBuffers(2, vbo);
-
-        _gl_BindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-        _gl_BufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STREAM_DRAW);
-        _gl_EnableVertexAttribArray(posLoc);
-        _gl_VertexAttribPointer(posLoc, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-        _gl_BindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-        _gl_BufferData(GL_ARRAY_BUFFER, sizeof(uvs), uvs, GL_STREAM_DRAW);
-        _gl_EnableVertexAttribArray(uvLoc);
-        _gl_VertexAttribPointer(uvLoc, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-        _gl_DisableVertexAttribArray(posLoc);
-        _gl_DisableVertexAttribArray(uvLoc);
-        _gl_DeleteBuffers(2, vbo);
-
-        SDL_GL_UnbindTexture(texture);
-        SDL_GL_SwapWindow(window);
-        _gl_UseProgram(oldProgram);
-    } else {
-#ifdef ANDROID
-        SDL_RenderCopy(renderer, texture, nullptr, nullptr);
-#else
-        SDL_RenderCopy(renderer, texture, nullptr, &dstrect);
-#endif
-        SDL_RenderPresent(renderer);
-    }
 
 #ifdef __EMSCRIPTEN__
     }
