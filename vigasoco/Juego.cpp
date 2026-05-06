@@ -491,15 +491,16 @@ bool Juego::menuConfigGfx()
 			[this]() {
 				// TODO: faltan traducciones por idioma
 				switch(sys->filtro) {
-				case 0: return std::string(configGfxMenuText[sys->idioma][1]) + " NINGUNO "; break;
-				case 1: return std::string(configGfxMenuText[sys->idioma][1]) + " XBR "; break;
-				case 2: return std::string(configGfxMenuText[sys->idioma][1]) + " HQX"; break;
+				case 0: return std::string(configGfxMenuText[sys->idioma][1]) + " NINGUNO"; break;
+				case 1: return std::string(configGfxMenuText[sys->idioma][1]) + " XBR    "; break;
+//				case 2: return std::string(configGfxMenuText[sys->idioma][1]) + " HQX    "; break;
 				}
 				return std::string("VALOR DE FILTRO CONFIGUDADO INVALIDO");
 			},
 			[this]() {
 //				SDL_Log("menuConfigGfx: filtro no implementado");
-				sys->filtro=(sys->filtro+1)%3; // ciclar 0-2
+//				sys->filtro=(sys->filtro+1)%3; // ciclar 0-2
+				sys->filtro=(sys->filtro+1)%2; // ciclar 0-1 mientras no está implementado HQX
 			},
 			[this]() { return sys->useWebGL; }
 		);
