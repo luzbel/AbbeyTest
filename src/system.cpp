@@ -384,8 +384,8 @@ p[y * _pitch_pixels + x] = 0x000000FF;
 
     GLint posLoc = _gl_GetAttribLocation(shaderProgram, "aPosition");
     GLint uvLoc  = _gl_GetAttribLocation(shaderProgram, "aTexCoord");
-    SDL_Log("posLoc=%d uvLoc=%d efectoLoc =%d filtroLoc=%d texSizeLoc=%d",
-            posLoc, uvLoc, efectoLocation, filtroLocation, texSizeLocation);
+//    SDL_Log("posLoc=%d uvLoc=%d efectoLoc =%d filtroLoc=%d texSizeLoc=%d",
+//            posLoc, uvLoc, efectoLocation, filtroLocation, texSizeLocation);
 //SDL_Log("uEfecto enviado como float: %f", (float)uEfecto);
     GLuint vbo[2];
     _gl_GenBuffers(2, vbo);

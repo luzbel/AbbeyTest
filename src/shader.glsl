@@ -3,12 +3,9 @@ R"(
    Hyllian's xBR-lv2 Shader - adaptado para GLSL 1.20 / GLES 1.00
    Copyright (C) 2011-2016 Hyllian - sergiogdb@gmail.com
 */
-#version 120
 #ifdef GL_ES
 precision mediump float;
 #endif
-
-
 
 varying vec2 vTexCoord;
 uniform sampler2D uTexture;
