@@ -296,7 +296,7 @@ constexpr const char* helpManejoText[TOTAL_LANGUAGES][9] = {
 			"CURSOR IZQUIERDA: GIRAR A LA IZQUIERDA",
 			"CURSOR DERECHA: GIRAR A LA DERECHA",
 			"ESPACIO: DEJAR OBJETOS",
-			"SUPR: PAUSA",
+			"ESC: MENÚ-PAUSA",
 			"",
 			"    -PULSA ESPACIO PARA CONTINUAR-" 
 	},
@@ -307,9 +307,9 @@ constexpr const char* helpManejoText[TOTAL_LANGUAGES][9] = {
 			"LEFT ARROW: TURN LEFT",
 			"RIGHT ARROW: TURN RIGHT",
 			"SPACE: DROP OBJECTS",
-			"SUPR: PAUSE",
+			"ESC: MENU-PAUSE",
 			"",
-			"           -PRESS SPACE-          "
+			"     -PRESS SPACE TO CONTINUE-    "
 		},
 		{ // 2 PORTUGUES BRASIL
 			"           MANEJO DEL TECLADO          ",
@@ -318,8 +318,9 @@ constexpr const char* helpManejoText[TOTAL_LANGUAGES][9] = {
 			"CURSOR IZQUIERDA: GIRAR A LA IZQUIERDA",
 			"CURSOR DERECHA: GIRAR A LA DERECHA",
 			"ESPACIO: DEJAR OBJETOS",
-			"SUPR: PAUSA",
+			"ESC: MENU-PAUSA",
 			"",
+			"    -APERTE ESPAÇO PARA CONTINUAR-"
 		},
 		{ // 3 CATALAN
 			"           MANEJO DEL TECLADO          ",
@@ -328,8 +329,9 @@ constexpr const char* helpManejoText[TOTAL_LANGUAGES][9] = {
 			"CURSOR IZQUIERDA: GIRAR A LA IZQUIERDA",
 			"CURSOR DERECHA: GIRAR A LA DERECHA",
 			"ESPACIO: DEJAR OBJETOS",
-			"SUPR: PAUSA",
+			"ESC: MENÚ-PAUSA",
 			"",
+			"       -PREME ESPAI PER CONTINUAR-"
 		},
 		{ // 4 GALLEGO
 			"           MANEJO DEL TECLADO          ",
@@ -338,8 +340,9 @@ constexpr const char* helpManejoText[TOTAL_LANGUAGES][9] = {
 			"CURSOR IZQUIERDA: GIRAR A LA IZQUIERDA",
 			"CURSOR DERECHA: GIRAR A LA DERECHA",
 			"ESPACIO: DEJAR OBJETOS",
-			"SUPR: PAUSA",
+			"ESC: MENÚ-PAUSA",
 			"",
+			"     -PREME ESPAZO PARA CONTINUAR-"
 		},
 		{ // 5 ITALIANO
 			"           MANEJO DEL TECLADO          ",
@@ -348,8 +351,9 @@ constexpr const char* helpManejoText[TOTAL_LANGUAGES][9] = {
 			"CURSOR IZQUIERDA: GIRAR A LA IZQUIERDA",
 			"CURSOR DERECHA: GIRAR A LA DERECHA",
 			"ESPACIO: DEJAR OBJETOS",
-			"SUPR: PAUSA",
+			"ESC: MENU-PAUSA",
 			"",
+			"     -PREMI SPAZIO PER CONTINUARE-"
 		},
 		{ // 6 FINES
 			"                 KEYBOARD              ",
@@ -358,8 +362,9 @@ constexpr const char* helpManejoText[TOTAL_LANGUAGES][9] = {
 			"LEFT ARROW: TURN LEFT",
 			"RIGHT ARROW: TURN RIGHT",
 			"SPACE: DROP OBJECTS",
-			"SUPR: PAUSE",
+			"ESC: VALIKKO-TAUKO",
 			"",
+			"   -PAINA VÄLILYÖNTIÄ JATKAAKSESI-" 
 		},
 		{ // 7 PORTUGUES
 			"           MANEJO DEL TECLADO          ",
@@ -368,8 +373,9 @@ constexpr const char* helpManejoText[TOTAL_LANGUAGES][9] = {
 			"CURSOR IZQUIERDA: GIRAR A LA IZQUIERDA",
 			"CURSOR DERECHA: GIRAR A LA DERECHA",
 			"ESPACIO: DEJAR OBJETOS",
-			"SUPR: PAUSA",
+			"ESC: MENU-PAUSA",
 			"",
+			"     -PREMA ESPAÇO PARA CONTINUAR-" 
 		}
 };
 constexpr const char* helpCamarasText[TOTAL_LANGUAGES][9] = {

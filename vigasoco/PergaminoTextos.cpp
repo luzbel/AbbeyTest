@@ -599,8 +599,8 @@ const unsigned char * Pergamino::pergaminoInicio[8] =
 	u8"    Antonio Giner\x0d"
 	u8"suomennos:\x0d"
 	u8"    Riikka Halonen\x0d"
-    " Abbey port:\x0d\x0d"
-    "   Samuel Salinas\x1a",
+        u8" Abbey port:\x0d\x0d"
+        u8"   Samuel Salinas\x1a",
     
 		// fin textos 6 fines
 		// textos 7 portugues
@@ -676,8 +676,8 @@ const unsigned char * Pergamino::pergaminoInicio[8] =
 	u8"    Antonio Giner\x0d"
 	u8"tradução:\x0d"
 	u8"    Filipe Silva\x0d"
-    " Abbey port:\x0d\x0d"
-    "   Samuel Salinas\x1a"
+        u8" Abbey port:\x0d\x0d"
+        u8"   Samuel Salinas\x1a"
 		// fin textos 7 portugues
 	};
 
@@ -1687,6 +1687,12 @@ const unsigned char * Pergamino::pergaminoReferencias[8] =
 	u8"    Riikka Halonen\x0d"
 	u8"Traducción portugués:\x0d"
 	u8"    Filipe Silva\x0d\x0a"
+	u8"Gráficos VGA:\x0d"
+	u8"    Antonio Giner\x0d"
+        u8" Abbey port:\x0d"
+        u8"   Samuel Salinas\x0d"
+        u8"XBR:\x0d"
+        u8"   Hyllian\x0a"
 	u8"Código original:\x0d"
 	u8"    Paco Menéndez\x0d"
 	u8"Gráficos y carátula\x0d"

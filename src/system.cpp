@@ -920,8 +920,10 @@ void System::handleEvents()
 // Velocidad
 // ----------------------------------------------------------------------------
 
-void System::setFastSpeed()   { minimumFrameTime = SCROLL_FRAME_TIME; }
-void System::setNormalSpeed() { minimumFrameTime = GAME_FRAME_TIME;   }
+//void System::setFastSpeed()   { minimumFrameTime = SCROLL_FRAME_TIME; }
+//void System::setNormalSpeed() { minimumFrameTime = GAME_FRAME_TIME;   }
+void System::setFastSpeed()   { minimumFrameTime = 1; }
+void System::setNormalSpeed() { minimumFrameTime = 1;   }
 
 // ----------------------------------------------------------------------------
 // Utilidades
