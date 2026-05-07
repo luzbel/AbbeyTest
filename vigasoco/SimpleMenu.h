@@ -172,10 +172,10 @@ public:
 		std::string l1 = p.substr(0, nl);
 		std::string l2 = nl != std::string::npos ? p.substr(nl+1) : "";
 		int x = (320 - l1.length() * 8) >> 1;
-		marcador.imprimeFrase(l1, x, y, 0, 4);
+		marcador.imprimeFrase(l1, x, y, 0, 4,true);
 		if (!l2.empty()) {
 			x = (320 - l2.length() * 8) >> 1;
-			marcador.imprimeFrase(l2, x, y + 12, 0, 4);
+			marcador.imprimeFrase(l2, x, y + 12, 0, 4,true);
 			y += 24;
 		} else y += 20;
 	}
@@ -191,7 +191,7 @@ public:
                 bool isSel = (i == selected);
                 bool enabled = entries[i].isEnabled();
 		//
-                marcador.imprimeFrase(txt, x, y + i * lineSpacing, isSel ? 4 : (enabled ? 0 : 1), isSel ? 0 : 4);
+                marcador.imprimeFrase(txt, x, y + i * lineSpacing, isSel ? 4 : (enabled ? 0 : 1), isSel ? 0 : 4,true);
             }
         } else {
             int totalW = 0;
@@ -202,7 +202,7 @@ public:
                 bool isSel = (i == selected);
                 bool enabled = entries[i].isEnabled();
                 //marcador.imprimeFrase(txt, xCursor, y, isSel ? 0 : (enabled ? 4 : 5), isSel ? 4 : 0);
-                marcador.imprimeFrase(txt, xCursor, y, isSel ? 4 : (enabled ? 0 : 1), isSel ? 0 : 4);
+                marcador.imprimeFrase(txt, xCursor, y, isSel ? 4 : (enabled ? 0 : 1), isSel ? 0 : 4,true);
                 xCursor += txt.length() * 8 + 40;
             }
         }

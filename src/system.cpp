@@ -242,6 +242,7 @@ void System::init()
                                    rmask, gmask, bmask, amask);
     if (!surface || !surfaceMap || !surfaceMenu) print("Error: Can't create surfaces.\n");
     _pixels       = static_cast<Uint32*>(surface->pixels);
+    _pixelsMenu   = static_cast<Uint32*>(surfaceMenu->pixels);
     _pitch_pixels = surface->pitch / sizeof(UINT32);
 
     // tiene que inicializarse antes del setcallback de setmute
@@ -338,7 +339,6 @@ void System::updateScreen()
 		{
 			case Abadia::STATES::INTRO:
 				SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
-				SDL_Log("INTRO updateScreen\n*****\n");
 				break;
 			case Abadia::STATES::CONFIG_GFX:
 			case Abadia::STATES::CONFIG_SND:

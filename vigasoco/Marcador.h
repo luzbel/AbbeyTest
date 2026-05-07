@@ -41,8 +41,8 @@ public:
 
 	void decrementaObsequium(int unidades);
 
-	void imprimeFrase(std::string frase, int x, int y, int colorTexto, int colorFondo);
-	void imprimirCaracter(int caracter, int x, int y, int colorTexto, int colorFondo);
+	void imprimeFrase(std::string frase, int x, int y, int colorTexto, int colorFondo,bool isMenu=false);
+	void imprimirCaracter(int caracter, int x, int y, int colorTexto, int colorFondo,bool isMenu=false);
 
 	// inicialización y limpieza
 	Marcador();

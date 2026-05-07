@@ -351,6 +351,10 @@ struct System
 		assert(x < 320); assert(y < 200);
 		return _pixels[y * _pitch_pixels + x];
 	}
+	void setPixelMenu(UINT32 x, UINT32 y, UINT8 color) {
+		assert(x < 320); assert(y < 200); assert(color < 256);
+		_pixelsMenu[y * _pitch_pixels + x] = _paleta->rgb[color];
+	}
 	void setPixel(UINT32 x, UINT32 y, UINT8 color) {
 		assert(x < 320); assert(y < 200); assert(color < 256);
 		_pixels[y * _pitch_pixels + x] = _paleta->rgb[color];
@@ -361,46 +365,9 @@ struct System
 		assert((x + width) <= 320 && (y + height) <= 200);
 		fillRect(x, y, width, height, color);
 	}
-
-	void setTexture(Abadia::STATES currentState) {
-		_state=currentState;
-		switch(_state)
-		{
-			case Abadia::STATES::INTRO:
-				_pixels = static_cast<Uint32*>(surface->pixels);
-				break;
-			case Abadia::STATES::CONFIG_GFX:
-			case Abadia::STATES::CONFIG_SND:
-			case Abadia::STATES::HELP:
-			case Abadia::STATES::HELP_INTRODUCCION:
-			case Abadia::STATES::HELP_MANEJO:
-			case Abadia::STATES::HELP_AYUDAS:
-			case Abadia::STATES::HELP_CAMARAS:
-			case Abadia::STATES::HELP_REFERENCIAS:
-			case Abadia::STATES::CONFIG:
-			case Abadia::STATES::ASK_EXIT:
-			case Abadia::STATES::ASK_CONTINUE:
-			case Abadia::STATES::ASK_NEW_GAME:
-			case Abadia::STATES::LANGUAGE:
-			case Abadia::STATES::MENU:
-			case Abadia::STATES::LOAD:
-			case Abadia::STATES::SAVE:
-				_pixels = static_cast<Uint32*>(surfaceMenu->pixels);
-				break;
-			case Abadia::STATES::SCROLL:
-			case Abadia::STATES::HELP_MANEJO_PERGAMINO:
-			case Abadia::STATES::ENDING:
-				_pixels = static_cast<Uint32*>(surface->pixels);
-				break;
-			case Abadia::STATES::PLAY:
-				_pixels = static_cast<Uint32*>(surface->pixels);
-				break;
-		}
-
-	}
+	Abadia::STATES _state; // para saber que textura actualizar
 
 private:
-	Abadia::STATES _state=Abadia::STATES::INTRO; // quizás estate debería ser de sys y no de juego o juego dejarlo publico
 	void fillRect(int x, int y, int width, int height, int color) {
 		int xLimit = width + x - 1;
 		for (; height > 0; height--, y++) {
@@ -415,6 +382,7 @@ private:
 	std::string slotPath(int slot);
 
 	UINT32       *_pixels          = nullptr;
+	UINT32       *_pixelsMenu      = nullptr;
 	UINT32        _pitch_pixels    = 0;
 	Paleta       *_paleta          = nullptr;
 	Uint32        minimumFrameTime = GAME_FRAME_TIME;

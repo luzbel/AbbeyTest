@@ -380,7 +380,7 @@ void Marcador::limpiaAreaFrases()
 }
 
 // recorre los caracteres de la frase, mostrándolos por pantalla
-void Marcador::imprimeFrase(std::string frase, int x, int y, int colorTexto, int colorFondo)
+void Marcador::imprimeFrase(std::string frase, int x, int y, int colorTexto, int colorFondo,bool isMenu)
 {
 //	SDL_Log("frase %s\n",frase.c_str());
 	
@@ -395,12 +395,12 @@ void Marcador::imprimeFrase(std::string frase, int x, int y, int colorTexto, int
         std::u32string utf32str = conv.from_bytes(frase);
         int i=0;
         for (auto &letter : utf32str) {
-                imprimirCaracter(letter, x + 8*i, y, colorTexto, colorFondo);
+                imprimirCaracter(letter, x + 8*i, y, colorTexto, colorFondo,isMenu);
                 i++;
         }
 }
 
-void Marcador::imprimirCaracter(int caracter, int x, int y, int colorTexto, int colorFondo)
+void Marcador::imprimirCaracter(int caracter, int x, int y, int colorTexto, int colorFondo,bool isMenu)
 {
 	switch(caracter) {
 		case L',': caracter=0x3c; break;
@@ -537,7 +537,10 @@ void Marcador::imprimirCaracter(int caracter, int x, int y, int colorTexto, int 
 		int bit = 0x80;
 		int valor = *data;
 		for (int i = 0; i < 8; i++){
-			sys->setPixel(x + i, y + j, 
+			isMenu?
+				sys->setPixelMenu(x + i, y + j, 
+				(valor & bit) ? colorTexto : colorFondo):
+				sys->setPixel(x + i, y + j, 
 				(valor & bit) ? colorTexto : colorFondo);
 			bit = bit >> 1;
 		}

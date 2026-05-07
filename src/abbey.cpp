@@ -231,8 +231,7 @@ void Abbey::logic()
         //  que ya viene calculado del frame anterior via changeState)
     }
 */
-
-    sys->setTexture(_game->currentState);
+	sys->_state=_game->currentState; // mejorar
     switch (_game->currentState)
     {
         case STATES::INTRO:
