@@ -246,11 +246,13 @@ struct System
 	SDL_Surface        *surface      = nullptr;
 	SDL_Surface        *surfaceMap   = nullptr;
 	SDL_Surface        *surfaceMenu  = nullptr;
+	SDL_Surface        *surfaceIntro = nullptr;
 	SDL_Rect            dstrect      = {};
 	SDL_Renderer       *renderer     = nullptr;
 	SDL_Texture        *texture      = nullptr;
 	SDL_Texture        *textureMap   = nullptr;
-	SDL_Texture        *textureMenu   = nullptr;
+	SDL_Texture        *textureMenu  = nullptr;
+	SDL_Texture        *textureIntro = nullptr;
 	SDL_Window         *window       = nullptr;
 	SDL_GameController *gamepad      = nullptr;
 	SDL_Haptic         *hapticDevice = nullptr;
@@ -351,6 +353,10 @@ struct System
 		assert(x < 320); assert(y < 200);
 		return _pixels[y * _pitch_pixels + x];
 	}
+	void setPixelIntro(UINT32 x, UINT32 y, UINT8 color) {
+		assert(x < 320); assert(y < 200); assert(color < 256);
+		_pixelsIntro[y * _pitch_pixels + x] = _paleta->rgb[color];
+	}
 	void setPixelMap(UINT32 x, UINT32 y, UINT8 color) {
 		assert(x < 320); assert(y < 200); assert(color < 256);
 		_pixelsMap[y * _pitch_pixels + x] = _paleta->rgb[color];
@@ -387,7 +393,8 @@ private:
 
 	UINT32       *_pixels          = nullptr;
 	UINT32       *_pixelsMenu      = nullptr;
-	UINT32       *_pixelsMap      = nullptr;
+	UINT32       *_pixelsMap       = nullptr;
+	UINT32       *_pixelsIntro     = nullptr;
 	UINT32        _pitch_pixels    = 0;
 	Paleta       *_paleta          = nullptr;
 	Uint32        minimumFrameTime = GAME_FRAME_TIME;

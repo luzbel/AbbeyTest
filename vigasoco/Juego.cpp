@@ -159,7 +159,7 @@ void Juego::pintaPortada()
 	UINT8 *screen  = romsVGA + 0x1ADF0;
 	for (int j = 0; j < 200; j++)
 		for (int i = 0; i < 320; i++)
-			sys->setPixel(i, j, *screen++);
+			sys->setPixelIntro(i, j, *screen++);
 }
 
 // Repinta la pantalla completa usando la paleta y el contenido adecuados

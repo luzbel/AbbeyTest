@@ -7,6 +7,7 @@ varying vec2 vTexCoord;
 uniform sampler2D uTexture;
 uniform sampler2D uTextureMap;
 uniform sampler2D uTextureMenu;
+uniform sampler2D uTextureIntro;
 uniform vec2      uTexSize;
 uniform int       uFiltro;
 uniform float     uEfecto;
@@ -44,5 +45,27 @@ vec4 bgPattern(vec2 uv) {
 }
 
 #define CONTENT_RATIO (320.0 / 400.0)   // ancho/alto del contenido CPC real
+
+
+bool debugThumbs(vec2 uv) {
+    float thumbH = BOOK_MARGIN * 8.0;
+    float thumbW = thumbH * CONTENT_RATIO;
+    float gap    = (1.0 - 4.0 * thumbW) / 5.0;
+    for (int i = 0; i < 4; i++) {
+        float x0 = gap + float(i) * (thumbW + gap);
+        float x1 = x0 + thumbW;
+        float y0 = BOOK_MARGIN;
+        float y1 = BOOK_MARGIN + thumbH;
+        if (uv.x > x0 && uv.x < x1 && uv.y > y0 && uv.y < y1) {
+            vec2 tUV = vec2((uv.x - x0) / thumbW, (uv.y - y0) / thumbH);
+            if      (i == 0) gl_FragColor = texture2D(uTexture,      tUV);
+            else if (i == 1) gl_FragColor = texture2D(uTextureMap,   tUV);
+            else if (i == 2) gl_FragColor = texture2D(uTextureMenu,  tUV);
+            else             gl_FragColor = texture2D(uTextureIntro, tUV);
+            return true;
+        }
+    }
+    return false;
+}
 
 )"

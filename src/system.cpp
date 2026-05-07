@@ -71,6 +71,7 @@ static GLint texSizeLocation = -1;
 static GLint textureLocation = -1;
 static GLint textureMapLocation = -1;
 static GLint textureMenuLocation = -1;
+static GLint textureIntroLocation = -1;
 
 // ----------------------------------------------------------------------------
 // initGLPointers — solo en desktop, solo funciones GL 2.0
@@ -165,6 +166,7 @@ void System::initShader(int efectoPaleta)
     textureLocation = _gl_GetUniformLocation(shaderProgram, "uTexture");
     textureMapLocation = _gl_GetUniformLocation(shaderProgram, "uTextureMap");
     textureMenuLocation = _gl_GetUniformLocation(shaderProgram, "uTextureMenu");
+    textureIntroLocation = _gl_GetUniformLocation(shaderProgram, "uTextureIntro");
 }
 
 // ----------------------------------------------------------------------------
@@ -240,10 +242,13 @@ void System::init()
                                    rmask, gmask, bmask, amask);
     surfaceMenu = SDL_CreateRGBSurface(0, TEXTURE_WIDTH, TEXTURE_HEIGHT, 32,
                                    rmask, gmask, bmask, amask);
-    if (!surface || !surfaceMap || !surfaceMenu) print("Error: Can't create surfaces.\n");
+    surfaceIntro = SDL_CreateRGBSurface(0, TEXTURE_WIDTH, TEXTURE_HEIGHT, 32,
+                                   rmask, gmask, bmask, amask);
+    if (!surface || !surfaceMap || !surfaceMenu || !surfaceIntro) print("Error: Can't create surfaces.\n");
     _pixels       = static_cast<Uint32*>(surface->pixels);
     _pixelsMenu   = static_cast<Uint32*>(surfaceMenu->pixels);
     _pixelsMap    = static_cast<Uint32*>(surfaceMap->pixels);
+    _pixelsIntro  = static_cast<Uint32*>(surfaceIntro->pixels);
     _pitch_pixels = surface->pitch / sizeof(UINT32);
 
     // tiene que inicializarse antes del setcallback de setmute
@@ -295,7 +300,9 @@ SDL_Log("despues de  loadConfig\n");
                   SDL_TEXTUREACCESS_STREAMING, TEXTURE_WIDTH, TEXTURE_HEIGHT);
     textureMenu = SDL_CreateTexture(renderer, surfaceMenu->format->format,
                   SDL_TEXTUREACCESS_STREAMING, TEXTURE_WIDTH, TEXTURE_HEIGHT);
-    if (!texture || !textureMap || !textureMenu) print("ERROR: Could not create textures.\n");
+    textureIntro = SDL_CreateTexture(renderer, surfaceIntro->format->format,
+                  SDL_TEXTUREACCESS_STREAMING, TEXTURE_WIDTH, TEXTURE_HEIGHT);
+    if (!texture || !textureMap || !textureMenu || !textureIntro) print("ERROR: Could not create textures.\n");
 
 //    SDL_SetTextureScaleMode(texture, SDL_ScaleModeNearest);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -340,7 +347,7 @@ void System::updateScreen()
 		switch(_state)
 		{
 			case Abadia::STATES::INTRO:
-				SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
+				SDL_UpdateTexture(textureIntro, nullptr, surfaceIntro->pixels, surface->pitch);
 				break;
 			case Abadia::STATES::CONFIG_GFX:
 			case Abadia::STATES::CONFIG_SND:
@@ -483,14 +490,19 @@ if (useWebGL && shaderProgram) {
     SDL_GL_BindTexture(texture, &tw, &th);
 
     // Unidad 1: uTextureMenu (página izquierda)
-    float tw2, th2;
+    float tw1, th1;
     glActiveTexture(GL_TEXTURE1);
-    SDL_GL_BindTexture(textureMenu, &tw2, &th2);
+    SDL_GL_BindTexture(textureMenu, &tw1, &th1);
 
 	// Unidad 2: uTextureMap 
-    float tw3, th3;
+    float tw2, th2;
     glActiveTexture(GL_TEXTURE2);
-    SDL_GL_BindTexture(textureMap, &tw3, &th3);
+    SDL_GL_BindTexture(textureMap, &tw2, &th2);
+
+	// Unidad 3: uTextureIntro
+    float tw3, th3;
+    glActiveTexture(GL_TEXTURE3);
+    SDL_GL_BindTexture(textureIntro, &tw3, &th3);
 
     glActiveTexture(GL_TEXTURE0);
 
@@ -501,6 +513,7 @@ if (useWebGL && shaderProgram) {
     _gl_Uniform1i(textureLocation,    0);
     _gl_Uniform1i(textureMenuLocation, 1);
     _gl_Uniform1i(textureMapLocation, 2);
+    _gl_Uniform1i(textureIntroLocation, 3);
     _gl_Uniform1f(efectoLocation,     (float)paletaEfecto);
     _gl_Uniform1i(filtroLocation,     (int)filtro);
     _gl_Uniform2f(texSizeLocation,    (float)TEXTURE_WIDTH, (float)TEXTURE_HEIGHT);
@@ -528,6 +541,8 @@ if (useWebGL && shaderProgram) {
     _gl_DisableVertexAttribArray(uvLoc);
     _gl_DeleteBuffers(2, vbo);
 
+    glActiveTexture(GL_TEXTURE3);
+    SDL_GL_UnbindTexture(textureIntro);
     glActiveTexture(GL_TEXTURE2);
     SDL_GL_UnbindTexture(textureMap);
     glActiveTexture(GL_TEXTURE1);
@@ -633,6 +648,7 @@ void System::quit()
     if (texture)  SDL_DestroyTexture(texture);
     if (textureMap)  SDL_DestroyTexture(textureMap);
     if (textureMenu)  SDL_DestroyTexture(textureMenu);
+    if (textureIntro)  SDL_DestroyTexture(textureIntro);
     if (renderer) SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
 

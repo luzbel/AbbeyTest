@@ -1,6 +1,7 @@
 R"(
 void main() {
     vec2 uv = vTexCoord;
+	if (debugThumbs(uv)) return;
 
     // Fondo fuera del libro
     if (uv.x < BOOK_MARGIN || uv.x > 1.0 - BOOK_MARGIN ||
@@ -62,12 +63,13 @@ void main() {
  //       : texture2D(uTexture,    contentUV);
 
     vec4 color = isLeft
-        ? (uFiltro < 1 ? applyEfecto(texture2D(uTextureMap, contentUV)) : 
-		applyEfecto(xbrSample(uTextureMap, contentUV)))
+        ? (uFiltro < 1 ? applyEfecto(texture2D(uTextureIntro, contentUV)) : 
+		applyEfecto(xbrSample(uTextureIntro, contentUV)))
         : (uFiltro < 1 ? applyEfecto(texture2D(uTexture,    contentUV)) : 
 		applyEfecto(xbrSample(uTexture,    contentUV)));
 
     color.rgb *= (1.0 - shadow);
     gl_FragColor = color; 
+
 }
 )";
