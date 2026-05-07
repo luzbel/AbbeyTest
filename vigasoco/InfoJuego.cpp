@@ -641,7 +641,7 @@ void InfoJuego::dibujaPixelCuadrado(int x, int y, int color)
 	assert((y >= 0) && (y < 200));
 	assert((color >= 0) && (color < 32));
 
-	sys->setPixel(x, y, color);
+	sys->setPixelMap(x, y, color);
 }
 
 // igual que el método anterior pero con un factor de zoom

@@ -243,6 +243,7 @@ void System::init()
     if (!surface || !surfaceMap || !surfaceMenu) print("Error: Can't create surfaces.\n");
     _pixels       = static_cast<Uint32*>(surface->pixels);
     _pixelsMenu   = static_cast<Uint32*>(surfaceMenu->pixels);
+    _pixelsMap    = static_cast<Uint32*>(surfaceMap->pixels);
     _pitch_pixels = surface->pitch / sizeof(UINT32);
 
     // tiene que inicializarse antes del setcallback de setmute
@@ -335,6 +336,7 @@ void System::updateScreen()
 //    SDL_UpdateTexture(texture,    nullptr, surface->pixels, surface->pitch);
 //    SDL_UpdateTexture(textureMap, nullptr, surfaceMap->pixels, surface->pitch);
 //    SDL_UpdateTexture(textureMenu, nullptr, surfaceMenu->pixels, surface->pitch);
+//TODO si no está en modo webGL igual se puede simplificar
 		switch(_state)
 		{
 			case Abadia::STATES::INTRO:
@@ -365,6 +367,7 @@ void System::updateScreen()
 				break;
 			case Abadia::STATES::PLAY:
 				SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
+				SDL_UpdateTexture(textureMap, nullptr, surfaceMap->pixels, surface->pitch);
 				break;
 		}
     SDL_SetRenderTarget(renderer, nullptr);
@@ -484,6 +487,11 @@ if (useWebGL && shaderProgram) {
     glActiveTexture(GL_TEXTURE1);
     SDL_GL_BindTexture(textureMenu, &tw2, &th2);
 
+	// Unidad 2: uTextureMap 
+    float tw3, th3;
+    glActiveTexture(GL_TEXTURE2);
+    SDL_GL_BindTexture(textureMap, &tw3, &th3);
+
     glActiveTexture(GL_TEXTURE0);
 
     GLint oldProgram = 0;
@@ -492,6 +500,7 @@ if (useWebGL && shaderProgram) {
 
     _gl_Uniform1i(textureLocation,    0);
     _gl_Uniform1i(textureMenuLocation, 1);
+    _gl_Uniform1i(textureMapLocation, 2);
     _gl_Uniform1f(efectoLocation,     (float)paletaEfecto);
     _gl_Uniform1i(filtroLocation,     (int)filtro);
     _gl_Uniform2f(texSizeLocation,    (float)TEXTURE_WIDTH, (float)TEXTURE_HEIGHT);
@@ -519,6 +528,8 @@ if (useWebGL && shaderProgram) {
     _gl_DisableVertexAttribArray(uvLoc);
     _gl_DeleteBuffers(2, vbo);
 
+    glActiveTexture(GL_TEXTURE2);
+    SDL_GL_UnbindTexture(textureMap);
     glActiveTexture(GL_TEXTURE1);
     SDL_GL_UnbindTexture(textureMenu);
     glActiveTexture(GL_TEXTURE0);

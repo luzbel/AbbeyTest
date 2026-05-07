@@ -351,6 +351,10 @@ struct System
 		assert(x < 320); assert(y < 200);
 		return _pixels[y * _pitch_pixels + x];
 	}
+	void setPixelMap(UINT32 x, UINT32 y, UINT8 color) {
+		assert(x < 320); assert(y < 200); assert(color < 256);
+		_pixelsMap[y * _pitch_pixels + x] = _paleta->rgb[color];
+	}
 	void setPixelMenu(UINT32 x, UINT32 y, UINT8 color) {
 		assert(x < 320); assert(y < 200); assert(color < 256);
 		_pixelsMenu[y * _pitch_pixels + x] = _paleta->rgb[color];
@@ -383,6 +387,7 @@ private:
 
 	UINT32       *_pixels          = nullptr;
 	UINT32       *_pixelsMenu      = nullptr;
+	UINT32       *_pixelsMap      = nullptr;
 	UINT32        _pitch_pixels    = 0;
 	Paleta       *_paleta          = nullptr;
 	Uint32        minimumFrameTime = GAME_FRAME_TIME;

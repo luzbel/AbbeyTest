@@ -62,8 +62,8 @@ void main() {
  //       : texture2D(uTexture,    contentUV);
 
     vec4 color = isLeft
-        ? (uFiltro < 1 ? applyEfecto(texture2D(uTextureMenu, contentUV)) : 
-		applyEfecto(xbrSample(uTextureMenu, contentUV)))
+        ? (uFiltro < 1 ? applyEfecto(texture2D(uTextureMap, contentUV)) : 
+		applyEfecto(xbrSample(uTextureMap, contentUV)))
         : (uFiltro < 1 ? applyEfecto(texture2D(uTexture,    contentUV)) : 
 		applyEfecto(xbrSample(uTexture,    contentUV)));
 
