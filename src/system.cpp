@@ -69,6 +69,8 @@ static GLint  efectoLocation = -1;
 static GLint filtroLocation = -1;
 static GLint texSizeLocation = -1;
 static GLint textureLocation = -1;
+static GLint textureMapLocation = -1;
+static GLint textureMenuLocation = -1;
 
 // ----------------------------------------------------------------------------
 // initGLPointers — solo en desktop, solo funciones GL 2.0
@@ -121,15 +123,10 @@ void System::initShader(int efectoPaleta)
         }
     )";
 
-#ifdef __EMSCRIPTEN__
-    const char* glslHeader = "#version 100\nprecision mediump float;\n";
-#else
-    const char* glslHeader = "#version 120\n";
-#endif
-
     const char* fragmentSource = 
-#include "shader.glsl"
-//#include "../build/filtro.glsl"
+#include "shader_common.glsl"
+#include "shader_xbr.glsl"
+#include "shader_main.glsl"
 
 //    std::cout << "DEBUG SHADER CONTENT:\n" << fragmentSource << "\n---END---" << std::endl;
 
@@ -166,6 +163,8 @@ void System::initShader(int efectoPaleta)
     texSizeLocation = _gl_GetUniformLocation(shaderProgram, "uTexSize");
     filtroLocation = _gl_GetUniformLocation(shaderProgram, "uFiltro");
     textureLocation = _gl_GetUniformLocation(shaderProgram, "uTexture");
+    textureMapLocation = _gl_GetUniformLocation(shaderProgram, "uTextureMap");
+    textureMenuLocation = _gl_GetUniformLocation(shaderProgram, "uTextureMenu");
 }
 
 // ----------------------------------------------------------------------------
@@ -237,7 +236,11 @@ void System::init()
     // -------------------------------------------------------------------
     surface = SDL_CreateRGBSurface(0, TEXTURE_WIDTH, TEXTURE_HEIGHT, 32,
                                    rmask, gmask, bmask, amask);
-    if (!surface) print("Error: Can't create surface.\n");
+    surfaceMap = SDL_CreateRGBSurface(0, TEXTURE_WIDTH, TEXTURE_HEIGHT, 32,
+                                   rmask, gmask, bmask, amask);
+    surfaceMenu = SDL_CreateRGBSurface(0, TEXTURE_WIDTH, TEXTURE_HEIGHT, 32,
+                                   rmask, gmask, bmask, amask);
+    if (!surface || !surfaceMap || !surfaceMenu) print("Error: Can't create surfaces.\n");
     _pixels       = static_cast<Uint32*>(surface->pixels);
     _pitch_pixels = surface->pitch / sizeof(UINT32);
 
@@ -284,15 +287,17 @@ SDL_Log("despues de  loadConfig\n");
     // SDL_TEXTUREACCESS_TARGET permite SDL_SetRenderTarget
     // SDL_TEXTUREACCESS_STREAMING permitiría UpdateTexture directo
     // Usamos STREAMING para poder hacer UpdateTexture desde surface->pixels
-    //texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888,
     texture = SDL_CreateTexture(renderer, surface->format->format,
-//                  SDL_TEXTUREACCESS_TARGET, TEXTURE_WIDTH, TEXTURE_HEIGHT);
                   SDL_TEXTUREACCESS_STREAMING, TEXTURE_WIDTH, TEXTURE_HEIGHT);
-    if (!texture) print("ERROR: Could not create texture.\n");
+    textureMap = SDL_CreateTexture(renderer, surfaceMap->format->format,
+                  SDL_TEXTUREACCESS_STREAMING, TEXTURE_WIDTH, TEXTURE_HEIGHT);
+    textureMenu = SDL_CreateTexture(renderer, surfaceMenu->format->format,
+                  SDL_TEXTUREACCESS_STREAMING, TEXTURE_WIDTH, TEXTURE_HEIGHT);
+    if (!texture || !textureMap || !textureMenu) print("ERROR: Could not create textures.\n");
 
 //    SDL_SetTextureScaleMode(texture, SDL_ScaleModeNearest);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     // Punteros GL e initShader — después del renderer, que ya creó el contexto GL
     if (useWebGL) {
@@ -326,7 +331,42 @@ void System::updateScreen()
     if (interruptCounter % 6 == 0) {
 #endif
 
-    SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
+//    SDL_UpdateTexture(texture,    nullptr, surface->pixels, surface->pitch);
+//    SDL_UpdateTexture(textureMap, nullptr, surfaceMap->pixels, surface->pitch);
+//    SDL_UpdateTexture(textureMenu, nullptr, surfaceMenu->pixels, surface->pitch);
+		switch(_state)
+		{
+			case Abadia::STATES::INTRO:
+				SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
+				SDL_Log("INTRO updateScreen\n*****\n");
+				break;
+			case Abadia::STATES::CONFIG_GFX:
+			case Abadia::STATES::CONFIG_SND:
+			case Abadia::STATES::HELP:
+			case Abadia::STATES::HELP_INTRODUCCION:
+			case Abadia::STATES::HELP_MANEJO:
+			case Abadia::STATES::HELP_AYUDAS:
+			case Abadia::STATES::HELP_CAMARAS:
+			case Abadia::STATES::HELP_REFERENCIAS:
+			case Abadia::STATES::CONFIG:
+			case Abadia::STATES::ASK_EXIT:
+			case Abadia::STATES::ASK_CONTINUE:
+			case Abadia::STATES::ASK_NEW_GAME:
+			case Abadia::STATES::LANGUAGE:
+			case Abadia::STATES::MENU:
+			case Abadia::STATES::LOAD:
+			case Abadia::STATES::SAVE:
+				SDL_UpdateTexture(textureMenu, nullptr, surfaceMenu->pixels, surfaceMenu->pitch);
+				break;
+			case Abadia::STATES::SCROLL:
+			case Abadia::STATES::HELP_MANEJO_PERGAMINO:
+			case Abadia::STATES::ENDING:
+				SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
+				break;
+			case Abadia::STATES::PLAY:
+				SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
+				break;
+		}
     SDL_SetRenderTarget(renderer, nullptr);
     SDL_RenderClear(renderer);
 #define EBUGSHADER
@@ -350,16 +390,26 @@ p[y * _pitch_pixels + x] = 0x000000FF;
     }
     // Actualiza textura antes de dibujar
     SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
+    SDL_UpdateTexture(textureMap, nullptr, surface->pixels, surface->pitch);
     }
 #endif
 
-    if (useWebGL && shaderProgram) {
+/*    if (useWebGL && shaderProgram) {
     glClearColor(0.f, 0.f, 0.f, 1.f);
     glClear(GL_COLOR_BUFFER_BIT); // ✅ Limpia framebuffer raw correctamente
 
     float tw, th;
     glActiveTexture(GL_TEXTURE0); // ✅ Asegura unidad 0
     SDL_GL_BindTexture(texture, &tw, &th);
+    _gl_Uniform1i(textureLocation, 0); // ✅ Vincula textura al sampler
+				       
+    float twMenu, thMenu;
+    glActiveTexture(GL_TEXTURE1); // ✅ Asegura unidad 0
+    SDL_GL_BindTexture(textureMenu, &twMenu, &thMenu);
+    _gl_Uniform1i(textureMenuLocation, 0); // ✅ Vincula textura al sampler
+ 
+//    SDL_GL_BindTexture(textureMap, &tw, &th);
+    SDL_GL_BindTexture(textureMenu, &tw, &th);
 //    SDL_Log("****SDL_GL_BindTexture: tw=%.4f th=%.4f****", tw, th);
 
     int ww, wh;
@@ -376,7 +426,8 @@ p[y * _pitch_pixels + x] = 0x000000FF;
     glGetIntegerv(GL_CURRENT_PROGRAM, &oldProgram);
     _gl_UseProgram(shaderProgram);
 
-    _gl_Uniform1i(textureLocation, 0); // ✅ Vincula textura al sampler
+//    _gl_Uniform1i(textureMapLocation, 0); // ✅ Vincula textura al sampler
+    _gl_Uniform1i(textureMenuLocation, 0); // ✅ Vincula textura al sampler
     //_gl_Uniform1i(efectoLocation, (int)paletaEfecto);
     _gl_Uniform1f(efectoLocation, (float)paletaEfecto); // en versiones antiguas de opengl esto tiene que ser float
     _gl_Uniform1i(filtroLocation, (int)filtro);
@@ -387,6 +438,7 @@ p[y * _pitch_pixels + x] = 0x000000FF;
 //    SDL_Log("posLoc=%d uvLoc=%d efectoLoc =%d filtroLoc=%d texSizeLoc=%d",
 //            posLoc, uvLoc, efectoLocation, filtroLocation, texSizeLocation);
 //SDL_Log("uEfecto enviado como float: %f", (float)uEfecto);
+
     GLuint vbo[2];
     _gl_GenBuffers(2, vbo);
 
@@ -406,10 +458,76 @@ p[y * _pitch_pixels + x] = 0x000000FF;
     _gl_DisableVertexAttribArray(uvLoc);
     _gl_DeleteBuffers(2, vbo);
 
+    glActiveTexture(GL_TEXTURE0); // ✅ Asegura unidad 0
     SDL_GL_UnbindTexture(texture);
+//    SDL_GL_UnbindTexture(textureMap);
+    glActiveTexture(GL_TEXTURE1); // ✅ Asegura unidad 0
+    SDL_GL_UnbindTexture(textureMenu);
     SDL_GL_SwapWindow(window);
     _gl_UseProgram(oldProgram);
-} else {
+}
+*/
+if (useWebGL && shaderProgram) {
+    int ww, wh;
+    SDL_GetWindowSize(window, &ww, &wh);
+    glViewport(0, 0, ww, wh);
+    glClearColor(0.f, 0.f, 0.f, 1.f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    // Unidad 0: uTexture (página derecha)
+    float tw, th;
+    glActiveTexture(GL_TEXTURE0);
+    SDL_GL_BindTexture(texture, &tw, &th);
+
+    // Unidad 1: uTextureMenu (página izquierda)
+    float tw2, th2;
+    glActiveTexture(GL_TEXTURE1);
+    SDL_GL_BindTexture(textureMenu, &tw2, &th2);
+
+    glActiveTexture(GL_TEXTURE0);
+
+    GLint oldProgram = 0;
+    glGetIntegerv(GL_CURRENT_PROGRAM, &oldProgram);
+    _gl_UseProgram(shaderProgram);
+
+    _gl_Uniform1i(textureLocation,    0);
+    _gl_Uniform1i(textureMenuLocation, 1);
+    _gl_Uniform1f(efectoLocation,     (float)paletaEfecto);
+    _gl_Uniform1i(filtroLocation,     (int)filtro);
+    _gl_Uniform2f(texSizeLocation,    (float)TEXTURE_WIDTH, (float)TEXTURE_HEIGHT);
+
+    GLfloat verts[] = { -1.f,1.f,  1.f,1.f,  -1.f,-1.f,  1.f,-1.f };
+    GLfloat uvs[]   = {  0.f,0.f,  1.f,0.f,   0.f, 1.f,  1.f, 1.f };
+
+    GLint posLoc = _gl_GetAttribLocation(shaderProgram, "aPosition");
+    GLint uvLoc  = _gl_GetAttribLocation(shaderProgram, "aTexCoord");
+
+    GLuint vbo[2];
+    _gl_GenBuffers(2, vbo);
+    _gl_BindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+    _gl_BufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STREAM_DRAW);
+    _gl_EnableVertexAttribArray(posLoc);
+    _gl_VertexAttribPointer(posLoc, 2, GL_FLOAT, GL_FALSE, 0, 0);
+    _gl_BindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+    _gl_BufferData(GL_ARRAY_BUFFER, sizeof(uvs), uvs, GL_STREAM_DRAW);
+    _gl_EnableVertexAttribArray(uvLoc);
+    _gl_VertexAttribPointer(uvLoc, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    _gl_DisableVertexAttribArray(posLoc);
+    _gl_DisableVertexAttribArray(uvLoc);
+    _gl_DeleteBuffers(2, vbo);
+
+    glActiveTexture(GL_TEXTURE1);
+    SDL_GL_UnbindTexture(textureMenu);
+    glActiveTexture(GL_TEXTURE0);
+    SDL_GL_UnbindTexture(texture);
+
+    SDL_GL_SwapWindow(window);
+    _gl_UseProgram(oldProgram);
+}
+else {
 //     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
      // Modo SW: pipeline SDL_Renderer clásico
 #ifdef ANDROID
@@ -426,10 +544,11 @@ p[y * _pitch_pixels + x] = 0x000000FF;
 #endif
 }
 
-void System::updateTexture()
-{
-    SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
-}
+//void System::updateTexture()
+//{
+//666    SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
+//666    SDL_UpdateTexture(textureMap, nullptr, surface->pixels, surface->pitch);
+//}
 // ----------------------------------------------------------------------------
 // Utilidades
 // ----------------------------------------------------------------------------
@@ -501,6 +620,8 @@ void System::quit()
     SDL_HapticClose(hapticDevice);
 
     if (texture)  SDL_DestroyTexture(texture);
+    if (textureMap)  SDL_DestroyTexture(textureMap);
+    if (textureMenu)  SDL_DestroyTexture(textureMenu);
     if (renderer) SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
 

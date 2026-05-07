@@ -165,7 +165,7 @@ void Abbey::mainLoop()
 
                 handleEvents();
                 logic();
-    		sys->updateTexture();
+//666    		sys->updateTexture();
                 sys->updateScreen();
 
 		sys->endFrame();
@@ -231,6 +231,8 @@ void Abbey::logic()
         //  que ya viene calculado del frame anterior via changeState)
     }
 */
+
+    sys->setTexture(_game->currentState);
     switch (_game->currentState)
     {
         case STATES::INTRO:
