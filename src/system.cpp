@@ -348,6 +348,28 @@ SDL_Log("despues de  loadConfig\n");
 #endif
 }
 
+/*
+ 
+TODO: probar en vez de sumar 0.1
+
+//El shader solo renderiza t ∈ [0,1]. Para que parezca un libro real, no lineales uFlipT. Usa una curva de aceleración en el bucle de actualización:
+
+// Ejemplo C++/Emscripten
+float flipDuration = 0.45f; // segundos
+float elapsed = 0.0f;
+bool animating = true;
+
+void UpdateBookCover(float dt) {
+    if (!animating) return;
+    elapsed += dt;
+    float rawT = std::min(elapsed / flipDuration, 1.0f);
+    // Ease-in-out cuadrática: arranca suave, frena al llegar al plano
+    uFlipT = rawT * rawT * (3.0f - 2.0f * rawT);
+
+    if (rawT >= 1.0f) animating = false; // 🛑 Detiene la animación
+} 
+*/
+
 void System::updateScreen()
 {
 #ifdef __EMSCRIPTEN__
@@ -536,7 +558,7 @@ if (useWebGL && shaderProgram) {
 //    tmp=tmp+0.01f;
 //SDL_Log("tmp %f\n", tmp);
 //    _gl_Uniform1f(flipTLocation,     (float)tmp);
-	uFlipT+=0.01f;
+	uFlipT+=0.01f; // probar el UpdateBookCover que propone QWEN
     _gl_Uniform1f(flipTLocation,     (float)uFlipT);
     _gl_Uniform1f(efectoLocation,     (float)paletaEfecto);
     _gl_Uniform1i(filtroLocation,     (int)filtro);
