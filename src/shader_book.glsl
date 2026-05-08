@@ -12,30 +12,31 @@ vec4 sampleNext(bool isLeft, vec2 uv) {
 }
 
 vec4 pageCurl(vec2 pageLoc, bool isLeft, vec2 contentUV, float t) {
-    // El curl avanza de derecha a izquierda en la página derecha
-    // El borde de la página que se levanta está en x = 1.0 - t
+    float angle  = 0.3;   // ajustar: 0=horizontal 1.57=vertical
+    float radius = 0.06;  // ajustar: grosor del rollo
+
+    // Dirección del curl según ángulo
+    vec2 dir = vec2(cos(angle), sin(angle));
     float edge = 1.0 - t;
 
-    // Zona ya volteada: muestra la página siguiente
-    if (pageLoc.x < edge - 0.02) {
+    // Proyección del pixel sobre la dirección del curl
+    float proj = dot(pageLoc - vec2(edge, 0.5), dir);
+
+    if (proj < -radius) {
         return sampleCurrent(isLeft, contentUV);
     }
 
-    // Zona del curl: franja estrecha donde se dobla
-    if (pageLoc.x < edge + 0.02) {
-        float localT = (pageLoc.x - (edge - 0.02)) / 0.04;
-        // Compresión horizontal simula el doblez
-        float curl = sin(localT * 3.14159 * 0.5);
-        vec2 curledUV = vec2(contentUV.x + curl * 0.03, contentUV.y);
-        // Sombra en el doblez
+    if (proj < radius) {
+        float localT = (proj + radius) / (2.0 * radius);
+        float curl   = sin(localT * 3.14159 * 0.5);
         float shadow = 1.0 - curl * 0.4;
-        vec4 c = sampleCurrent(isLeft, curledUV);
+        vec2 curledUV = contentUV + dir * curl * 0.03;
+        vec4 c = sampleCurrent(isLeft, clamp(curledUV, vec2(0.0), vec2(1.0)));
         c.rgb *= shadow;
         return c;
     }
 
-    // Zona levantada: muestra el reverso (página siguiente) con sombra
-    float shadow = 0.7 + 0.3 * (pageLoc.x - (edge + 0.02)) / (1.0 - edge - 0.02);
+    float shadow = 0.7 + 0.3 * min((proj - radius) / 0.3, 1.0);
     vec4 c = sampleNext(isLeft, contentUV);
     c.rgb *= shadow;
     return c;
