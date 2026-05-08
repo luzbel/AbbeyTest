@@ -137,7 +137,8 @@ void System::initShader(int efectoPaleta)
 		std::string("#define NEXT_PAGE_RIGHT ") + "uTexture" + "\n" +
 #include "shader_common.glsl"
 #include "shader_xbr.glsl"
-#include "shader_book.glsl"
+//#include "shader_book.glsl"
+#include "shader_book_cover.glsl"
 #include "shader_main.glsl"
 
 

@@ -79,6 +79,7 @@ void main() {
 
     vec2 uv = vTexCoord;
     if (debugThumbs(uv)) return;
-    gl_FragColor = renderBook(uv);
+//    gl_FragColor = renderBook(uv);
+    gl_FragColor = renderCover(uv);
 }
 )";
