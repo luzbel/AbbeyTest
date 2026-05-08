@@ -123,13 +123,22 @@ void System::initShader(int efectoPaleta)
             gl_Position = vec4(aPosition, 0.0, 1.0);
         }
     )";
-
+/*
     const char* fragmentSource = 
 #include "shader_common.glsl"
 #include "shader_xbr.glsl"
 #include "shader_main.glsl"
+*/
+	std::string fragmentSource = 
+		std::string("#define PAGE_LEFT ") + "uTextureMap" + "\n" + 
+		std::string("#define PAGE_RIGHT ") + "uTexture" + "\n" +
+#include "shader_common.glsl"
+#include "shader_xbr.glsl"
+#include "shader_book.glsl"
+#include "shader_main.glsl"
 
-//    std::cout << "DEBUG SHADER CONTENT:\n" << fragmentSource << "\n---END---" << std::endl;
+
+    std::cout << "DEBUG SHADER CONTENT:\n" << fragmentSource << "\n---END---" << std::endl;
 
 
 
@@ -141,7 +150,7 @@ void System::initShader(int efectoPaleta)
     };
 
     GLuint vert = compileShader(GL_VERTEX_SHADER,   vertexSource);
-    GLuint frag = compileShader(GL_FRAGMENT_SHADER, fragmentSource);
+    GLuint frag = compileShader(GL_FRAGMENT_SHADER, fragmentSource.c_str());
 
     shaderProgram = _gl_CreateProgram();
     _gl_AttachShader(shaderProgram, vert);
@@ -344,6 +353,7 @@ void System::updateScreen()
 //    SDL_UpdateTexture(textureMap, nullptr, surfaceMap->pixels, surface->pitch);
 //    SDL_UpdateTexture(textureMenu, nullptr, surfaceMenu->pixels, surface->pitch);
 //TODO si no está en modo webGL igual se puede simplificar
+	if((bool)sys->useWebGL) {
 		switch(_state)
 		{
 			case Abadia::STATES::INTRO:
@@ -377,6 +387,9 @@ void System::updateScreen()
 				SDL_UpdateTexture(textureMap, nullptr, surfaceMap->pixels, surface->pitch);
 				break;
 		}
+    } else
+	SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
+
     SDL_SetRenderTarget(renderer, nullptr);
     SDL_RenderClear(renderer);
 #define EBUGSHADER
@@ -1068,10 +1081,10 @@ void System::handleEvents()
 // Velocidad
 // ----------------------------------------------------------------------------
 
-//void System::setFastSpeed()   { minimumFrameTime = SCROLL_FRAME_TIME; }
-//void System::setNormalSpeed() { minimumFrameTime = GAME_FRAME_TIME;   }
-void System::setFastSpeed()   { minimumFrameTime = 1; }
-void System::setNormalSpeed() { minimumFrameTime = 1;   }
+void System::setFastSpeed()   { minimumFrameTime = SCROLL_FRAME_TIME; }
+void System::setNormalSpeed() { minimumFrameTime = GAME_FRAME_TIME;   }
+//void System::setFastSpeed()   { minimumFrameTime = 1; }
+//void System::setNormalSpeed() { minimumFrameTime = 1;   }
 
 // ----------------------------------------------------------------------------
 // Utilidades

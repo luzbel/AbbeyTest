@@ -355,15 +355,27 @@ struct System
 	}
 	void setPixelIntro(UINT32 x, UINT32 y, UINT8 color) {
 		assert(x < 320); assert(y < 200); assert(color < 256);
-		_pixelsIntro[y * _pitch_pixels + x] = _paleta->rgb[color];
+		if ((bool)useWebGL)
+			_pixelsIntro[y * _pitch_pixels + x] = _paleta->rgb[color];
+		else
+			setPixel(x,y,color);
 	}
 	void setPixelMap(UINT32 x, UINT32 y, UINT8 color) {
 		assert(x < 320); assert(y < 200); assert(color < 256);
-		_pixelsMap[y * _pitch_pixels + x] = _paleta->rgb[color];
+		if (useWebGL)
+			_pixelsMap[y * _pitch_pixels + x] = _paleta->rgb[color];
+		else
+			setPixel(x,y,color);
 	}
 	void setPixelMenu(UINT32 x, UINT32 y, UINT8 color) {
 		assert(x < 320); assert(y < 200); assert(color < 256);
-		_pixelsMenu[y * _pitch_pixels + x] = _paleta->rgb[color];
+		if ((bool)useWebGL)
+			_pixelsMenu[y * _pitch_pixels + x] = _paleta->rgb[color];
+		else
+			setPixel(x,y,color); 
+	}
+	void limpiaMenu(void) {
+		SDL_FillRect(surfaceMenu, nullptr, _paleta->rgb[4]);
 	}
 	void setPixel(UINT32 x, UINT32 y, UINT8 color) {
 		assert(x < 320); assert(y < 200); assert(color < 256);

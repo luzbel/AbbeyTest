@@ -1,15 +1,13 @@
 R"(
-void main() {
-
-/*
-    vec2 uv = vTexCoord;
-	if (debugThumbs(uv)) return;
+vec4 renderBook(vec2 uv) {
+ //   vec2 uv = vTexCoord;
+//	if (debugThumbs(uv)) return;
 
     // Fondo fuera del libro
     if (uv.x < BOOK_MARGIN || uv.x > 1.0 - BOOK_MARGIN ||
         uv.y < BOOK_MARGIN || uv.y > 1.0 - BOOK_MARGIN) {
-        gl_FragColor = bgPattern(uv);
-        return;
+        //gl_FragColor = bgPattern(uv);
+        return bgPattern(uv);
     } 
     // Interior del libro
     vec2  inner     = (uv - vec2(BOOK_MARGIN)) / vec2(1.0 - 2.0 * BOOK_MARGIN);
@@ -20,8 +18,8 @@ void main() {
     if (cx > 0.5 - spineHalf && cx < 0.5 + spineHalf) {
         float t = (cx - (0.5 - spineHalf)) / SPINE_WIDTH;
         float v = 0.3 + 0.4 * abs(t - 0.5) * 2.0;
-        gl_FragColor = vec4(v*0.55, v*0.48, v*0.72, 1.0);
-        return;
+        //gl_FragColor = vec4(v*0.55, v*0.48, v*0.72, 1.0);
+        return gl_FragColor = vec4(v*0.55, v*0.48, v*0.72, 1.0);
     }
 
     bool  isLeft = (cx < 0.5);
@@ -55,8 +53,8 @@ void main() {
                    contentUV.y < 0.0 || contentUV.y > 1.0;
 
     if (outside) {
-        gl_FragColor = paperColor();
-        return;
+        //gl_FragColor = paperColor();
+        return gl_FragColor = paperColor();
     }
 
 // sin xbr
@@ -74,11 +72,8 @@ void main() {
 
 
     color.rgb *= (1.0 - shadow);
-    gl_FragColor = color; 
-*/
+//    gl_FragColor = color; 
+	return color;
 
-    vec2 uv = vTexCoord;
-    if (debugThumbs(uv)) return;
-    gl_FragColor = renderBook(uv);
 }
-)";
+)"

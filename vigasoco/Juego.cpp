@@ -801,6 +801,7 @@ void Juego::changeState(Abadia::STATES newState)
 			sys->setGamePalette(2);
 			limpiaAreaJuego(4);
 			marcador->limpiaAreaMarcador();  // solo el marcador, no ReiniciaPantalla completo
+			if ((bool)sys->useWebGL) sys->limpiaMenu();
 			break;
 		case STATES::SCROLL:
 		case STATES::ENDING:
@@ -1047,7 +1048,7 @@ void Juego::muestraPresentacion()
 // Pintamos la portada cada frame (la paleta intro puede haberse
 // sobreescrito si se vuelve aquí desde otro estado).
 	pintaPortada();
-	if (BUTTON_YES)
+	if (BUTTON_YES || (bool)sys->useWebGL)
 	{
 		changeState(Abadia::STATES::MENU);
 	}

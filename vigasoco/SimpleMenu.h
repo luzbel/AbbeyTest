@@ -162,7 +162,7 @@ public:
                 y += 24;
             } else y += 20;
         } */
-	// Reemplaza el bloque que empieza por "int y = prompt.empty() ? 48 : 32;"
+	
 	//int y = 48;
 	int y = 16;
 	if (getPrompt) {
