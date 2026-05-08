@@ -759,6 +759,7 @@ void Juego::preRun()
 void Juego::changeState(Abadia::STATES newState)
 {
 	if (newState == currentState) return;
+	sys->uFlipT=0.0f;
 	marcador->limpiaAreaMarcador();  // solo el marcador, no ReiniciaPantalla completo
 
 	switch (currentState) {

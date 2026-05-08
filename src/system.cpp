@@ -72,6 +72,7 @@ static GLint textureLocation = -1;
 static GLint textureMapLocation = -1;
 static GLint textureMenuLocation = -1;
 static GLint textureIntroLocation = -1;
+static GLint flipTLocation = -1;
 
 // ----------------------------------------------------------------------------
 // initGLPointers — solo en desktop, solo funciones GL 2.0
@@ -130,8 +131,10 @@ void System::initShader(int efectoPaleta)
 #include "shader_main.glsl"
 */
 	std::string fragmentSource = 
-		std::string("#define PAGE_LEFT ") + "uTextureMap" + "\n" + 
-		std::string("#define PAGE_RIGHT ") + "uTexture" + "\n" +
+		std::string("#define PAGE_LEFT ") + "uTextureMenu" + "\n" + 
+		std::string("#define PAGE_RIGHT ") + "uTextureIntro" + "\n" +
+		std::string("#define NEXT_PAGE_LEFT ") + "uTextureMap" + "\n" + 
+		std::string("#define NEXT_PAGE_RIGHT ") + "uTexture" + "\n" +
 #include "shader_common.glsl"
 #include "shader_xbr.glsl"
 #include "shader_book.glsl"
@@ -176,6 +179,7 @@ void System::initShader(int efectoPaleta)
     textureMapLocation = _gl_GetUniformLocation(shaderProgram, "uTextureMap");
     textureMenuLocation = _gl_GetUniformLocation(shaderProgram, "uTextureMenu");
     textureIntroLocation = _gl_GetUniformLocation(shaderProgram, "uTextureIntro");
+    flipTLocation = _gl_GetUniformLocation(shaderProgram, "uFlipT");
 }
 
 // ----------------------------------------------------------------------------
@@ -527,6 +531,12 @@ if (useWebGL && shaderProgram) {
     _gl_Uniform1i(textureMenuLocation, 1);
     _gl_Uniform1i(textureMapLocation, 2);
     _gl_Uniform1i(textureIntroLocation, 3);
+//    static float tmp=0.0f;
+//    tmp=tmp+0.01f;
+//SDL_Log("tmp %f\n", tmp);
+//    _gl_Uniform1f(flipTLocation,     (float)tmp);
+	uFlipT+=0.01f;
+    _gl_Uniform1f(flipTLocation,     (float)uFlipT);
     _gl_Uniform1f(efectoLocation,     (float)paletaEfecto);
     _gl_Uniform1i(filtroLocation,     (int)filtro);
     _gl_Uniform2f(texSizeLocation,    (float)TEXTURE_WIDTH, (float)TEXTURE_HEIGHT);

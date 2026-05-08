@@ -12,6 +12,7 @@ uniform vec2      uTexSize;
 uniform int       uFiltro;
 uniform float     uEfecto;
 uniform float     uBookState;
+uniform float uFlipT; 
 
 // ---- Efecto de paleta ----
 vec4 applyEfecto(vec4 color) {

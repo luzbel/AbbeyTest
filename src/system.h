@@ -388,6 +388,7 @@ struct System
 		fillRect(x, y, width, height, color);
 	}
 	Abadia::STATES _state; // para saber que textura actualizar
+	float uFlipT=1.0f;
 
 private:
 	void fillRect(int x, int y, int width, int height, int color) {
