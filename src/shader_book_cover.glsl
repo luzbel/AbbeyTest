@@ -14,11 +14,7 @@ vec4 sampleUnderLeft(vec2 uv) {
 }
 
 vec4 renderCover(vec2 uv) {
-    if (uv.x < BOOK_MARGIN || uv.x > 1.0 - BOOK_MARGIN ||
-        uv.y < BOOK_MARGIN || uv.y > 1.0 - BOOK_MARGIN) {
-        return bgPattern(uv);
-    }
-
+    // Geometría básica del libro
     vec2 inner = (uv - vec2(BOOK_MARGIN)) / vec2(1.0 - 2.0 * BOOK_MARGIN);
     float spineHalf = SPINE_WIDTH * 0.5;
     float cx = inner.x;
@@ -30,11 +26,32 @@ vec4 renderCover(vec2 uv) {
         return vec4(v*0.55, v*0.48, v*0.72, 1.0);
     }
 
-    bool isLeft = cx < 0.5;
-    float pageX = isLeft ? cx / (0.5 - spineHalf) : (cx - (0.5 + spineHalf)) / (0.5 - spineHalf);
-    vec2 pageLoc = vec2(pageX, inner.y);
+    // --- Parámetros de giro ---
+    float flipT = clamp(uFlipT, 0.0, 1.0);
+    float angle = flipT * 3.14159265;
+    float cosA = cos(angle);
+    float sinA = abs(sin(angle)); // Magnitud para expansión trapecial
 
-    // Escala y márgenes de contenido (320x200)
+    // Límite X de la tapa en espacio normalizado
+    float coverEdge = 0.5 + 0.5 * cosA;
+    float minX = min(0.5, coverEdge);
+    float maxX = max(0.5, coverEdge);
+    bool inCoverX = cx >= minX && cx <= maxX;
+
+    // Coordenada local X de la tapa (0=lomo, 1=borde exterior)
+    float localX = 0.5;
+    if (abs(cosA) > 0.001) {
+        localX = (cx - 0.5) / (0.5 * cosA);
+    }
+    localX = clamp(localX, 0.0, 1.0);
+
+    // --- Expansión trapecial en Y ---
+    // El borde exterior se alarga verticalmente según sin(angle)
+    float stretch = sinA * 0.45; 
+    float halfH = 0.5 * (1.0 + stretch * localX);
+    bool onCover = inCoverX && (abs(inner.y - 0.5) < halfH);
+
+    // Escalado letterbox (idéntico al de las páginas)
     float pageW = 0.5 - spineHalf - BOOK_MARGIN;
     float pageH = 1.0 - 2.0 * BOOK_MARGIN;
     float pageRatio = pageW / pageH;
@@ -44,60 +61,43 @@ vec4 renderCover(vec2 uv) {
     float mX = (1.0 - scaleX) * 0.5;
     float mY = (1.0 - scaleY) * 0.5;
 
-    // --- Giro rígido de la tapa ---
-    float angle = uFlipT * 3.14159265;
-    float cosA = cos(angle);
-    float sinA = sin(angle);
-    float pivot = 0.5;
-    float coverW = 0.5;
-    float coverEdge = pivot + coverW * cosA;
-
-    float minX = min(pivot, coverEdge);
-    float maxX = max(pivot, coverEdge);
-    bool onCover = (cx >= minX && cx <= maxX);
-
+    // Renderizar tapa si el fragmento pertenece a ella
     if (onCover) {
-        // Coordenada local en la tapa (0 en lomo, 1 en borde exterior)
-        float localX = (abs(cosA) > 0.001) ? (cx - pivot) / (coverW * cosA) : 0.5;
-        // Compresión vertical sutil para simular perspectiva de plano rígido
-        float perspY = (inner.y - 0.5) * (1.0 - 0.12 * sinA) + 0.5;
-        vec2 coverUV = vec2(localX, perspY);
+        // Mapeo UV con corrección trapecial
+        vec2 coverUV;
+        coverUV.x = localX;
+        coverUV.y = ((inner.y - 0.5) / halfH) * 0.5 + 0.5;
 
+        // Convertir a UV de contenido
         vec2 contentUV = (coverUV - vec2(mX, mY)) / vec2(scaleX, scaleY);
         bool outside = contentUV.x < 0.0 || contentUV.x > 1.0 || contentUV.y < 0.0 || contentUV.y > 1.0;
-        vec4 paper = paperColor();
 
-        if (uFlipT < 0.5) {
-            // Anverso: portada (PAGE_RIGHT)
-            vec4 c = outside ? paper : sampleCoverFront(contentUV);
-            // Atenuación progresiva mientras gira
-            c.rgb *= mix(1.0, 0.88, uFlipT * 2.0);
-            return c;
-        } else {
-            // Reverso: contraportada interior (NEXT_PAGE_LEFT)
-            vec4 c = outside ? paper : sampleCoverBack(contentUV);
-            // Recuperación de iluminación al completar el giro
-            c.rgb *= mix(0.88, 1.0, (uFlipT - 0.5) * 2.0);
-            return c;
-        }
+        vec4 c = outside ? paperColor() : (flipT < 0.5 ? sampleCoverFront(contentUV) : sampleCoverBack(contentUV));
+        
+        // Atenuación de luz durante el giro
+        float light = flipT < 0.5 ? mix(1.0, 0.82, flipT * 2.0) : mix(0.82, 1.0, (flipT - 0.5) * 2.0);
+        c.rgb *= light;
+        return c;
     }
 
-    // --- Páginas expuestas bajo la tapa ---
-    // Sombra proyectada por la tapa sobre la nueva página derecha
+    // --- Páginas expuestas (fuera de la tapa) ---
+    float pageX = cx < 0.5 ? cx / (0.5 - spineHalf) : (cx - (0.5 + spineHalf)) / (0.5 - spineHalf);
+    vec2 pageLoc = vec2(pageX, inner.y);
+    vec2 pageContentUV = (pageLoc - vec2(mX, mY)) / vec2(scaleX, scaleY);
+    bool pageOutside = pageContentUV.x < 0.0 || pageContentUV.x > 1.0 || pageContentUV.y < 0.0 || pageContentUV.y > 1.0;
+
+    // Sombra proyectada por la tapa
     float shadow = 0.0;
-    if (!isLeft && uFlipT > 0.0 && uFlipT < 1.0) {
-        float distFromEdge = cx - coverEdge;
-        shadow = smoothstep(0.0, 0.18, distFromEdge) * sinA * 0.45;
+    if (flipT > 0.0 && flipT < 1.0) {
+        float dist = cx - coverEdge;
+        float sideMask = (flipT < 0.5) ? step(coverEdge, cx) : step(cx, coverEdge);
+        shadow = smoothstep(0.0, 0.18, dist) * sinA * 0.5 * sideMask;
     }
 
-    if (isLeft) {
-        vec2 contentUV = (pageLoc - vec2(mX, mY)) / vec2(scaleX, scaleY);
-        bool outside = contentUV.x < 0.0 || contentUV.x > 1.0 || contentUV.y < 0.0 || contentUV.y > 1.0;
-        return outside ? paperColor() : sampleUnderLeft(contentUV);
+    if (cx < 0.5) {
+        return pageOutside ? paperColor() : sampleUnderLeft(pageContentUV);
     } else {
-        vec2 contentUV = (pageLoc - vec2(mX, mY)) / vec2(scaleX, scaleY);
-        bool outside = contentUV.x < 0.0 || contentUV.x > 1.0 || contentUV.y < 0.0 || contentUV.y > 1.0;
-        vec4 c = outside ? paperColor() : sampleNewRight(contentUV);
+        vec4 c = pageOutside ? paperColor() : sampleNewRight(pageContentUV);
         c.rgb *= (1.0 - shadow);
         return c;
     }
