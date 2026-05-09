@@ -140,7 +140,7 @@ void System::initShader(int efectoPaleta)
 //#include "shader_book.glsl"
 #include "shader_book_cover.glsl"
 #include "shader_main.glsl"
-
+//#include "shaderQWEN.glsl"
 
     std::cout << "DEBUG SHADER CONTENT:\n" << fragmentSource << "\n---END---" << std::endl;
 

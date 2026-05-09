@@ -31,8 +31,8 @@ vec4 applyEfecto(vec4 color) {
 #define BOOK_MARGIN    0.03
 #define PAGE_CONTENT   1.00
 #define SPINE_WIDTH    0.05
-#define CURVE_STRENGTH 0.022
-#define CURVE_FALLOFF  0.18
+//#define CURVE_STRENGTH 0.022
+//#define CURVE_FALLOFF  0.18
 
 vec4 paperColor() {
     return vec4(0.945, 0.941, 0.910, 1.0);
