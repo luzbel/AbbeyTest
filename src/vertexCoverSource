@@ -1,0 +1,14 @@
+R"(
+attribute vec2 aPosition;
+attribute vec2 aTexCoord;
+varying vec2 vTexCoord;
+uniform float uFlipT;
+
+void main() {
+    vTexCoord = aTexCoord;
+    float angle = uFlipT * 3.14159;
+    float cosA  = cos(angle);
+    float w     = mix(1.0, abs(cosA) + 0.001, aTexCoord.x);
+    gl_Position = vec4(aPosition.x * cosA, aPosition.y, 0.0, w);
+}
+)";

@@ -223,8 +223,9 @@ void main() {
 }
 )";
 */
-    const char* vertexCoverSource = R"(
-attribute vec2 aPosition;
+    const char* NOUSAR_vertexCoverSource = R"(
+/*
+ attribute vec2 aPosition;
 attribute vec2 aTexCoord;
 varying vec2 vTexCoord;
 uniform float uFlipT;
@@ -238,8 +239,42 @@ void main() {
     // En Y: el borde libre se estira según sin(angle) — efecto trapecio
     float y = aPosition.y * (1.0 + sin(angle) * 0.3 * aTexCoord.x);
     gl_Position = vec4(x, y, 0.0, 1.0);
+} */
+/*
+attribute vec2 aPosition;
+attribute vec2 aTexCoord;
+varying vec2 vTexCoord;
+uniform float uFlipT;
+void main() {
+    vTexCoord = aTexCoord;
+    float angle = uFlipT * 3.14159;
+    float cosA  = cos(angle);
+    float x     = aPosition.x * cosA;
+    float y     = aPosition.y;
+    // W varía según posición en la tapa: lomo W=1, borde libre W=cos(angle)
+    // Esto fuerza interpolación perspectiva correcta
+    float w = mix(1.0, abs(cosA) + 0.001, aTexCoord.x);
+    gl_Position = vec4(x * w, y * w, 0.0, w);
+}
+attribute vec2 aPosition;
+attribute vec2 aTexCoord;
+varying vec2 vTexCoord;
+uniform float uFlipT;
+void main() {
+    vTexCoord = aTexCoord;
+    float angle = uFlipT * 3.14159;
+    float cosA  = cos(angle);
+    float x = aPosition.x * cosA;
+    float y = aPosition.y;
+    gl_Position = vec4(x, y, 0.0, 1.0);
 }
 )";
+
+
+std::string vertexCoverSource=
+#include "vertexCoverSource"
+
+
 /*
 const char* fragCoverSource = R"(
 #ifdef GL_ES
@@ -263,7 +298,7 @@ std::string fragCoverSource =
 #include "shader_xbr.glsl"
 #include "shaderProgramPageXXX.glsl"	
 
-GLuint vertCover = compileShader(GL_VERTEX_SHADER,   vertexCoverSource);
+GLuint vertCover = compileShader(GL_VERTEX_SHADER,   vertexCoverSource.c_str());
 GLuint fragCover = compileShader(GL_FRAGMENT_SHADER, fragCoverSource.c_str());
 shaderProgramCover = _gl_CreateProgram();
 _gl_AttachShader(shaderProgramCover, vertCover);
