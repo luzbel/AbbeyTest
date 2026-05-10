@@ -65,6 +65,8 @@ static PFNGLGETPROGRAMIVPROC _gl_GetProgramiv;
 
 // Estado GL — el contexto lo gestiona SDL_Renderer internamente
 static GLuint shaderProgram  = 0;
+static GLuint shaderProgram2  = 0;
+static GLuint shaderProgramCover  = 0;
 static GLint  efectoLocation = -1;
 static GLint filtroLocation = -1;
 static GLint texSizeLocation = -1;
@@ -114,7 +116,7 @@ void System::initShader(int efectoPaleta)
 	SDL_Log("initShader 1\n");
     if (!useWebGL) return;
 	SDL_Log("initShader 2\n");
-
+/*
     const char* vertexSource = R"(
         attribute vec2 aPosition;
         attribute vec2 aTexCoord;
@@ -124,6 +126,36 @@ void System::initShader(int efectoPaleta)
             gl_Position = vec4(aPosition, 0.0, 1.0);
         }
     )";
+*/
+
+    const char* vertexSource = R"(
+// vertex shader de la tapa
+attribute vec2 aPosition;
+attribute vec2 aTexCoord;
+varying vec2 vTexCoord;
+uniform float uFlipT;
+
+void main() {
+    vTexCoord = aTexCoord;
+    vec2 pos = aPosition;
+    // Rotar sobre x=0.0 según uFlipT
+    // El borde libre (aTexCoord.x=1) se mueve, el lomo (aTexCoord.x=0) no
+    float angle = uFlipT * 3.14159;
+    pos.x = aPosition.x * cos(angle);  // proyección perspectiva simple
+    gl_Position = vec4(pos, 0.0, 1.0);
+}
+    )";
+
+    const char* vertexSimpleSource = R"(
+attribute vec2 aPosition;
+attribute vec2 aTexCoord;
+varying vec2 vTexCoord;
+void main() {
+    vTexCoord = aTexCoord;
+    gl_Position = vec4(aPosition, 0.0, 1.0);
+}
+)";
+
 /*
     const char* fragmentSource = 
 #include "shader_common.glsl"
@@ -144,6 +176,13 @@ void System::initShader(int efectoPaleta)
 
     std::cout << "DEBUG SHADER CONTENT:\n" << fragmentSource << "\n---END---" << std::endl;
 
+	std::string shaderProgramPage =
+		std::string("#define PAGE_LEFT ") + "uTextureMenu" + "\n" + 
+		std::string("#define PAGE_RIGHT ") + "uTextureIntro" + "\n" +
+		std::string("#define NEXT_PAGE_LEFT ") + "uTextureMap" + "\n" + 
+		std::string("#define NEXT_PAGE_RIGHT ") + "uTexture" + "\n" +
+#include "shader_common.glsl" 
+#include "shaderProgramPage.glsl"	
 
 
     auto compileShader = [&](GLenum type, const char* src) -> GLuint {
@@ -154,12 +193,80 @@ void System::initShader(int efectoPaleta)
     };
 
     GLuint vert = compileShader(GL_VERTEX_SHADER,   vertexSource);
+    GLuint vert2 = compileShader(GL_VERTEX_SHADER,   vertexSimpleSource);
     GLuint frag = compileShader(GL_FRAGMENT_SHADER, fragmentSource.c_str());
+    GLuint frag2 = compileShader(GL_FRAGMENT_SHADER, shaderProgramPage.c_str());
 
     shaderProgram = _gl_CreateProgram();
     _gl_AttachShader(shaderProgram, vert);
     _gl_AttachShader(shaderProgram, frag);
     _gl_LinkProgram(shaderProgram);
+
+    shaderProgram2 = _gl_CreateProgram();
+    _gl_AttachShader(shaderProgram2, vert2);
+    _gl_AttachShader(shaderProgram2, frag2);
+    _gl_LinkProgram(shaderProgram2);
+
+/*
+    const char* vertexCoverSource = R"(
+attribute vec2 aPosition;
+attribute vec2 aTexCoord;
+varying vec2 vTexCoord;
+uniform float uFlipT;
+void main() {
+    vTexCoord = aTexCoord;
+    float angle = uFlipT * 3.14159;
+    float x = aPosition.x * cos(angle);
+    float y = aPosition.y;
+    gl_Position = vec4(x, y, 0.0, 1.0);
+}
+)";
+*/
+    const char* vertexCoverSource = R"(
+attribute vec2 aPosition;
+attribute vec2 aTexCoord;
+varying vec2 vTexCoord;
+uniform float uFlipT;
+void main() {
+    vTexCoord = aTexCoord;
+    float angle = uFlipT * 3.14159;
+    // El lomo (aTexCoord.x=0) no se mueve, el borde libre (aTexCoord.x=1) se proyecta
+    float projX = aPosition.x * cos(angle);
+    // Interpolamos entre lomo fijo y borde proyectado según texCoord.x
+    float x = mix(0.0, projX, aTexCoord.x);  // lomo siempre en x=0
+    // En Y: el borde libre se estira según sin(angle) — efecto trapecio
+    float y = aPosition.y * (1.0 + sin(angle) * 0.3 * aTexCoord.x);
+    gl_Position = vec4(x, y, 0.0, 1.0);
+}
+)";
+/*
+const char* fragCoverSource = R"(
+#ifdef GL_ES
+precision mediump float;
+#endif
+varying vec2 vTexCoord;
+uniform float uFlipT;
+void main() {
+    gl_FragColor = uFlipT < 0.5
+        ? vec4(0.0, 0.0, 1.0, 1.0)
+        : vec4(0.0, 1.0, 0.0, 1.0);
+}
+)";
+*/
+std::string fragCoverSource =
+		std::string("#define PAGE_LEFT ") + "uTextureMenu" + "\n" + 
+		std::string("#define PAGE_RIGHT ") + "uTextureIntro" + "\n" +
+		std::string("#define NEXT_PAGE_LEFT ") + "uTextureMap" + "\n" + 
+		std::string("#define NEXT_PAGE_RIGHT ") + "uTexture" + "\n" +
+#include "shader_common.glsl"
+#include "shaderProgramPageXXX.glsl"	
+
+GLuint vertCover = compileShader(GL_VERTEX_SHADER,   vertexCoverSource);
+GLuint fragCover = compileShader(GL_FRAGMENT_SHADER, fragCoverSource.c_str());
+shaderProgramCover = _gl_CreateProgram();
+_gl_AttachShader(shaderProgramCover, vertCover);
+_gl_AttachShader(shaderProgramCover, fragCover);
+_gl_LinkProgram(shaderProgramCover);
 
         GLint status;
     _gl_GetProgramiv(shaderProgram, GL_LINK_STATUS, &status);
@@ -167,11 +274,14 @@ void System::initShader(int efectoPaleta)
     if (status == GL_FALSE) {
     SDL_Log("**********\n************\nCAGADA\n**********\n********\nstatus1 %d\n",status);
      //   char log[512]; _gl_GetProgramInfoLog(shaderProgram, sizeof(log), nullptr, log);
-//        SDL_Log("ERROR ENLACE SHADER: %s", log);
+//        SDL_Log("ERROR ENLACE SHADER 1: %s", log);
         useWebGL = false; return;
     }
     SDL_Log("status2 %d\n",status);
-
+        GLint status2;
+    _gl_GetProgramiv(shaderProgram2, GL_LINK_STATUS, &status2);
+    SDL_Log("status1 de 2 %d\n",status2);
+ 
     efectoLocation = _gl_GetUniformLocation(shaderProgram, "uEfecto");
     SDL_Log("initShader OK — shaderProgram=%u efectoLocation=%d", shaderProgram, efectoLocation);
     texSizeLocation = _gl_GetUniformLocation(shaderProgram, "uTexSize");
@@ -521,7 +631,8 @@ if (useWebGL && shaderProgram) {
     int ww, wh;
     SDL_GetWindowSize(window, &ww, &wh);
     glViewport(0, 0, ww, wh);
-    glClearColor(0.f, 0.f, 0.f, 1.f);
+//    glClearColor(0.f, 0.f, 0.f, 1.f);
+    glClearColor(1.f, 1.f, 1.f, 1.f);  // blanco mientras depuramos
     glClear(GL_COLOR_BUFFER_BIT);
 
     // Unidad 0: uTexture (página derecha)
@@ -548,7 +659,7 @@ if (useWebGL && shaderProgram) {
 
     GLint oldProgram = 0;
     glGetIntegerv(GL_CURRENT_PROGRAM, &oldProgram);
-    _gl_UseProgram(shaderProgram);
+    _gl_UseProgram(shaderProgram2);
 
     _gl_Uniform1i(textureLocation,    0);
     _gl_Uniform1i(textureMenuLocation, 1);
@@ -559,13 +670,26 @@ if (useWebGL && shaderProgram) {
 //SDL_Log("tmp %f\n", tmp);
 //    _gl_Uniform1f(flipTLocation,     (float)tmp);
 	uFlipT+=0.01f; // probar el UpdateBookCover que propone QWEN
+if (uFlipT > 1.0f) uFlipT = 1.0f;
+
     _gl_Uniform1f(flipTLocation,     (float)uFlipT);
     _gl_Uniform1f(efectoLocation,     (float)paletaEfecto);
     _gl_Uniform1i(filtroLocation,     (int)filtro);
     _gl_Uniform2f(texSizeLocation,    (float)TEXTURE_WIDTH, (float)TEXTURE_HEIGHT);
 
-    GLfloat verts[] = { -1.f,1.f,  1.f,1.f,  -1.f,-1.f,  1.f,-1.f };
-    GLfloat uvs[]   = {  0.f,0.f,  1.f,0.f,   0.f, 1.f,  1.f, 1.f };
+//    GLfloat verts[] = { -1.f,1.f,  1.f,1.f,  -1.f,-1.f,  1.f,-1.f };
+//    GLfloat uvs[]   = {  0.f,0.f,  1.f,0.f,   0.f, 1.f,  1.f, 1.f };
+
+
+    //GLfloat vertsPage[] = {
+    GLfloat verts[] = {
+    0.0f,  0.9f,   // top-left
+    0.9f,  0.9f,   // top-right
+    0.0f, -0.9f,   // bot-left
+    0.9f, -0.9f    // bot-right
+};
+//GLfloat uvsPage[] = { 0.f,0.f, 1.f,0.f, 0.f,1.f, 1.f,1.f };
+GLfloat uvs[] = { 0.f,0.f, 1.f,0.f, 0.f,1.f, 1.f,1.f };
 
     GLint posLoc = _gl_GetAttribLocation(shaderProgram, "aPosition");
     GLint uvLoc  = _gl_GetAttribLocation(shaderProgram, "aTexCoord");
@@ -582,10 +706,43 @@ if (useWebGL && shaderProgram) {
     _gl_VertexAttribPointer(uvLoc, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
     _gl_DisableVertexAttribArray(posLoc);
     _gl_DisableVertexAttribArray(uvLoc);
     _gl_DeleteBuffers(2, vbo);
+    
+    
+    _gl_UseProgram(shaderProgramCover);
+
+
+GLint posLocC = _gl_GetAttribLocation(shaderProgramCover, "aPosition");
+    GLint uvLocC  = _gl_GetAttribLocation(shaderProgramCover, "aTexCoord");
+    GLint flipLocC = _gl_GetUniformLocation(shaderProgramCover, "uFlipT");
+    _gl_Uniform1f(flipLocC, (float)uFlipT);
+
+    // === Draw 2: tapa (azul/verde según reverso) ===
+// El vertex shader rota sobre el eje izquierdo (x=0.0 NDC = lomo)
+GLfloat vertsCover[] = {
+    0.0f,  0.9f,   // top-left  (lomo, fijo)
+    0.9f,  0.9f,   // top-right (borde libre)
+    0.0f, -0.9f,   // bot-left  (lomo, fijo)
+    0.9f, -0.9f    // bot-right (borde libre)
+};
+GLfloat uvsCover[] = { 0.f,0.f, 1.f,0.f, 0.f,1.f, 1.f,1.f };
+GLuint vbo2[2];
+    _gl_GenBuffers(2, vbo2);
+    _gl_BindBuffer(GL_ARRAY_BUFFER, vbo2[0]);
+    _gl_BufferData(GL_ARRAY_BUFFER, sizeof(verts), vertsCover, GL_STREAM_DRAW);
+    _gl_EnableVertexAttribArray(posLocC);
+    _gl_VertexAttribPointer(posLocC, 2, GL_FLOAT, GL_FALSE, 0, 0);
+    _gl_BindBuffer(GL_ARRAY_BUFFER, vbo2[1]);
+    _gl_BufferData(GL_ARRAY_BUFFER, sizeof(uvsCover), uvsCover, GL_STREAM_DRAW);
+    _gl_EnableVertexAttribArray(uvLocC);
+    _gl_VertexAttribPointer(uvLocC, 2, GL_FLOAT, GL_FALSE, 0, 0);
+glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    _gl_DisableVertexAttribArray(posLocC);
+    _gl_DisableVertexAttribArray(uvLocC);
+    _gl_DeleteBuffers(2, vbo2);
+
 
     glActiveTexture(GL_TEXTURE3);
     SDL_GL_UnbindTexture(textureIntro);
