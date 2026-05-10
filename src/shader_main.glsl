@@ -80,6 +80,15 @@ void main() {
     vec2 uv = vTexCoord;
 //    if (debugThumbs(uv)) return;
 //    gl_FragColor = renderBook(uv);
-    gl_FragColor = renderCover(uv);
+
+//    gl_FragColor = renderCover(uv);
+/*
+vec4 color = renderCover(uv);
+    if (color.a < 0.5) gl_FragColor = bgPattern(uv);
+    else gl_FragColor = color; */
+
+gl_FragColor = bgPattern(uv);  // fondo por defecto
+    if (debugThumbs(uv)) return;
+    renderCover(uv);  // sobreescribe solo donde toca
 }
 )";
