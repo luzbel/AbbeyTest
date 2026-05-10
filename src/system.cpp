@@ -182,6 +182,7 @@ void main() {
 		std::string("#define NEXT_PAGE_LEFT ") + "uTextureMap" + "\n" + 
 		std::string("#define NEXT_PAGE_RIGHT ") + "uTexture" + "\n" +
 #include "shader_common.glsl" 
+#include "shader_xbr.glsl"
 #include "shaderProgramPage.glsl"	
 
 
@@ -259,6 +260,7 @@ std::string fragCoverSource =
 		std::string("#define NEXT_PAGE_LEFT ") + "uTextureMap" + "\n" + 
 		std::string("#define NEXT_PAGE_RIGHT ") + "uTexture" + "\n" +
 #include "shader_common.glsl"
+#include "shader_xbr.glsl"
 #include "shaderProgramPageXXX.glsl"	
 
 GLuint vertCover = compileShader(GL_VERTEX_SHADER,   vertexCoverSource);

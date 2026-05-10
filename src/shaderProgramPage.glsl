@@ -6,10 +6,12 @@ void main() {
     float shadowOnLeft  = shadow * vTexCoord.x          * step(0.5, uFlipT);
     float s = 1.0 - shadowOnRight - shadowOnLeft;
 
-    vec4 color = vTexCoord.x < 0.5
-        ? texture2D(PAGE_LEFT,  vTexCoord * 2.0)
-        : texture2D(PAGE_RIGHT, (vTexCoord - vec2(0.5, 0.0)) * 2.0);
+    float scaleY = CONTENT_RATIO;
+    float mY = (1.0 - scaleY) * 0.5;
+    vec2 uv = vec2(vTexCoord.x, (vTexCoord.y - mY) / scaleY);
+    bool outside = uv.y < 0.0 || uv.y > 1.0;
 
+    vec4 color = outside ? paperColor() : texture2D(NEXT_PAGE_RIGHT, uv);
     gl_FragColor = vec4(color.rgb * s, 1.0);
 }
 )";

@@ -1049,6 +1049,7 @@ void Juego::muestraPresentacion()
 // Pintamos la portada cada frame (la paleta intro puede haberse
 // sobreescrito si se vuelve aquí desde otro estado).
 	pintaPortada();
+
 	if (BUTTON_YES || (bool)sys->useWebGL)
 	{
 		changeState(Abadia::STATES::MENU);
