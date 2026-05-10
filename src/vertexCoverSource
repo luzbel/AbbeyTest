@@ -8,7 +8,10 @@ void main() {
     vTexCoord = aTexCoord;
     float angle = uFlipT * 3.14159;
     float cosA  = cos(angle);
-    float w     = mix(1.0, abs(cosA) + 0.001, aTexCoord.x);
+//    float w     = mix(1.0, abs(cosA) + 0.001, aTexCoord.x);
+// Jugar con el 0.85 del max(abs(cosA), XXX) 
+// para que la perspectiva del libro al abrir sea mayor o menor
+float w = mix(1.0, max(abs(cosA), 0.85), aTexCoord.x);
     gl_Position = vec4(aPosition.x * cosA, aPosition.y, 0.0, w);
 }
 )";
