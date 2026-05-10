@@ -613,7 +613,7 @@ if (useWebGL && shaderProgram) {
     if (uFlipT > 1.0f) uFlipT = 1.0f;
 
     // === Draw 1: páginas fijas (izquierda + derecha) ===
-    /*
+  /*  
     GLfloat vertsPage[] = {
         -1.f,  1.f,
          1.f,  1.f,
@@ -626,13 +626,13 @@ if (useWebGL && shaderProgram) {
     0.9f,  0.9f,
     0.0f, -0.9f,
     0.9f, -0.9f
-};
+}; 
     _gl_UseProgram(shaderProgram2);
     setCommonUniforms(shaderProgram2);
     drawQuad(shaderProgram2, vertsPage, uvs, 4);
 
     // === Draw 2: tapa con vertex shader de rotación ===
-    /*
+ /*   
     GLfloat vertsCover[] = {
         0.0f,  1.f,
         1.0f,  1.f,

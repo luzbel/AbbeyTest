@@ -29,12 +29,9 @@ vec4 applyEfecto(vec4 color) {
 
 
 // ---- Libro: parámetros ----
-//#define BOOK_MARGIN    0.03
 #define BOOK_MARGIN    0.03
 #define PAGE_CONTENT   1.00
 #define SPINE_WIDTH    0.05
-//#define CURVE_STRENGTH 0.022
-//#define CURVE_FALLOFF  0.18
 
 //vec4 paperColor() {
 //    return vec4(0.945, 0.941, 0.910, 1.0);
@@ -49,7 +46,7 @@ vec4 bgPattern(vec2 uv) {
     return vec4(0.149, 0.127, 0.361, 1.0) + vec4(pat);
 }
 
-#define CONTENT_RATIO (320.0 / 400.0)   // ancho/alto del contenido CPC real
+#define CONTENT_RATIO (320.0 / 200.0)   // ancho/alto del contenido CPC real
 
 
 bool debugThumbs(vec2 uv) {
