@@ -556,233 +556,115 @@ p[y * _pitch_pixels + x] = 0x000000FF;
     }
 #endif
 
-/*    if (useWebGL && shaderProgram) {
-    glClearColor(0.f, 0.f, 0.f, 1.f);
-    glClear(GL_COLOR_BUFFER_BIT); // ✅ Limpia framebuffer raw correctamente
-
-    float tw, th;
-    glActiveTexture(GL_TEXTURE0); // ✅ Asegura unidad 0
-    SDL_GL_BindTexture(texture, &tw, &th);
-    _gl_Uniform1i(textureLocation, 0); // ✅ Vincula textura al sampler
-				       
-    float twMenu, thMenu;
-    glActiveTexture(GL_TEXTURE1); // ✅ Asegura unidad 0
-    SDL_GL_BindTexture(textureMenu, &twMenu, &thMenu);
-    _gl_Uniform1i(textureMenuLocation, 0); // ✅ Vincula textura al sampler
- 
-//    SDL_GL_BindTexture(textureMap, &tw, &th);
-    SDL_GL_BindTexture(textureMenu, &tw, &th);
-//    SDL_Log("****SDL_GL_BindTexture: tw=%.4f th=%.4f****", tw, th);
-
-    int ww, wh;
-    SDL_GetWindowSize(window, &ww, &wh);
-    float x0 = (2.f * dstrect.x                      / ww) - 1.f;
-    float x1 = (2.f * (dstrect.x + dstrect.w)        / ww) - 1.f;
-    float y0 = 1.f - (2.f * dstrect.y                / wh);
-    float y1 = 1.f - (2.f * (dstrect.y + dstrect.h)  / wh);
-
-    GLfloat verts[] = { x0,y0,  x1,y0,  x0,y1,  x1,y1 };
-    GLfloat uvs[]   = { 0.f,0.f, 1.f,0.f, 0.f,1.f, 1.f,1.f }; // ✅ [0,1] estricto
-
-    GLint oldProgram = 0;
-    glGetIntegerv(GL_CURRENT_PROGRAM, &oldProgram);
-    _gl_UseProgram(shaderProgram);
-
-//    _gl_Uniform1i(textureMapLocation, 0); // ✅ Vincula textura al sampler
-    _gl_Uniform1i(textureMenuLocation, 0); // ✅ Vincula textura al sampler
-    //_gl_Uniform1i(efectoLocation, (int)paletaEfecto);
-    _gl_Uniform1f(efectoLocation, (float)paletaEfecto); // en versiones antiguas de opengl esto tiene que ser float
-    _gl_Uniform1i(filtroLocation, (int)filtro);
-    _gl_Uniform2f(texSizeLocation, (float)TEXTURE_WIDTH, (float)TEXTURE_HEIGHT);
-
-    GLint posLoc = _gl_GetAttribLocation(shaderProgram, "aPosition");
-    GLint uvLoc  = _gl_GetAttribLocation(shaderProgram, "aTexCoord");
-//    SDL_Log("posLoc=%d uvLoc=%d efectoLoc =%d filtroLoc=%d texSizeLoc=%d",
-//            posLoc, uvLoc, efectoLocation, filtroLocation, texSizeLocation);
-//SDL_Log("uEfecto enviado como float: %f", (float)uEfecto);
-
-    GLuint vbo[2];
-    _gl_GenBuffers(2, vbo);
-
-    _gl_BindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-    _gl_BufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STREAM_DRAW);
-    _gl_EnableVertexAttribArray(posLoc);
-    _gl_VertexAttribPointer(posLoc, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-    _gl_BindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-    _gl_BufferData(GL_ARRAY_BUFFER, sizeof(uvs), uvs, GL_STREAM_DRAW);
-    _gl_EnableVertexAttribArray(uvLoc);
-    _gl_VertexAttribPointer(uvLoc, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-    _gl_DisableVertexAttribArray(posLoc);
-    _gl_DisableVertexAttribArray(uvLoc);
-    _gl_DeleteBuffers(2, vbo);
-
-    glActiveTexture(GL_TEXTURE0); // ✅ Asegura unidad 0
-    SDL_GL_UnbindTexture(texture);
-//    SDL_GL_UnbindTexture(textureMap);
-    glActiveTexture(GL_TEXTURE1); // ✅ Asegura unidad 0
-    SDL_GL_UnbindTexture(textureMenu);
-    SDL_GL_SwapWindow(window);
-    _gl_UseProgram(oldProgram);
-}
-*/
 if (useWebGL && shaderProgram) {
     int ww, wh;
     SDL_GetWindowSize(window, &ww, &wh);
     glViewport(0, 0, ww, wh);
-//    glClearColor(0.f, 0.f, 0.f, 1.f);
-    glClearColor(1.f, 1.f, 1.f, 1.f);  // blanco mientras depuramos
+    glClearColor(1.f, 1.f, 1.f, 1.f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    // Unidad 0: uTexture (página derecha)
+    // Vincular las 4 texturas a sus unidades GL
     float tw, th;
-    glActiveTexture(GL_TEXTURE0);
-    SDL_GL_BindTexture(texture, &tw, &th);
-
-    // Unidad 1: uTextureMenu (página izquierda)
-    float tw1, th1;
-    glActiveTexture(GL_TEXTURE1);
-    SDL_GL_BindTexture(textureMenu, &tw1, &th1);
-
-	// Unidad 2: uTextureMap 
-    float tw2, th2;
-    glActiveTexture(GL_TEXTURE2);
-    SDL_GL_BindTexture(textureMap, &tw2, &th2);
-
-	// Unidad 3: uTextureIntro
-    float tw3, th3;
-    glActiveTexture(GL_TEXTURE3);
-    SDL_GL_BindTexture(textureIntro, &tw3, &th3);
-
+    glActiveTexture(GL_TEXTURE0); SDL_GL_BindTexture(texture,      &tw, &th);
+    glActiveTexture(GL_TEXTURE1); SDL_GL_BindTexture(textureMenu,  &tw, &th);
+    glActiveTexture(GL_TEXTURE2); SDL_GL_BindTexture(textureMap,   &tw, &th);
+    glActiveTexture(GL_TEXTURE3); SDL_GL_BindTexture(textureIntro, &tw, &th);
     glActiveTexture(GL_TEXTURE0);
 
     GLint oldProgram = 0;
     glGetIntegerv(GL_CURRENT_PROGRAM, &oldProgram);
+
+    // Helper lambda para pasar uniforms comunes a cualquier programa
+    auto setCommonUniforms = [&](GLuint prog) {
+        _gl_Uniform1i(_gl_GetUniformLocation(prog, "uTexture"),      0);
+        _gl_Uniform1i(_gl_GetUniformLocation(prog, "uTextureMenu"),  1);
+        _gl_Uniform1i(_gl_GetUniformLocation(prog, "uTextureMap"),   2);
+        _gl_Uniform1i(_gl_GetUniformLocation(prog, "uTextureIntro"), 3);
+        _gl_Uniform1f(_gl_GetUniformLocation(prog, "uFlipT"),        (float)uFlipT);
+        _gl_Uniform1f(_gl_GetUniformLocation(prog, "uEfecto"),       (float)paletaEfecto);
+        _gl_Uniform1i(_gl_GetUniformLocation(prog, "uFiltro"),       (int)filtro);
+        _gl_Uniform2f(_gl_GetUniformLocation(prog, "uTexSize"),      (float)TEXTURE_WIDTH, (float)TEXTURE_HEIGHT);
+    };
+
+    // Helper lambda para dibujar un quad
+    auto drawQuad = [&](GLuint prog, GLfloat* verts, GLfloat* uvs, int count) {
+        GLint posLoc = _gl_GetAttribLocation(prog, "aPosition");
+        GLint uvLoc  = _gl_GetAttribLocation(prog, "aTexCoord");
+        GLuint vbo[2];
+        _gl_GenBuffers(2, vbo);
+        _gl_BindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+        _gl_BufferData(GL_ARRAY_BUFFER, count * 2 * sizeof(GLfloat), verts, GL_STREAM_DRAW);
+        _gl_EnableVertexAttribArray(posLoc);
+        _gl_VertexAttribPointer(posLoc, 2, GL_FLOAT, GL_FALSE, 0, 0);
+        _gl_BindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+        _gl_BufferData(GL_ARRAY_BUFFER, count * 2 * sizeof(GLfloat), uvs, GL_STREAM_DRAW);
+        _gl_EnableVertexAttribArray(uvLoc);
+        _gl_VertexAttribPointer(uvLoc, 2, GL_FLOAT, GL_FALSE, 0, 0);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, count);
+        _gl_DisableVertexAttribArray(posLoc);
+        _gl_DisableVertexAttribArray(uvLoc);
+        _gl_DeleteBuffers(2, vbo);
+    };
+
+    GLfloat uvs[] = { 0.f,0.f, 1.f,0.f, 0.f,1.f, 1.f,1.f };
+
+    // Avanzar animación
+    uFlipT += 0.01f;
+    if (uFlipT > 1.0f) uFlipT = 1.0f;
+
+    // === Draw 1: páginas fijas (izquierda + derecha) ===
+    /*
+    GLfloat vertsPage[] = {
+        -1.f,  1.f,
+         1.f,  1.f,
+        -1.f, -1.f,
+         1.f, -1.f
+    }; */
+
+    GLfloat vertsPage[] = {
+    0.0f,  0.9f,
+    0.9f,  0.9f,
+    0.0f, -0.9f,
+    0.9f, -0.9f
+};
     _gl_UseProgram(shaderProgram2);
+    setCommonUniforms(shaderProgram2);
+    drawQuad(shaderProgram2, vertsPage, uvs, 4);
 
-    _gl_Uniform1i(textureLocation,    0);
-    _gl_Uniform1i(textureMenuLocation, 1);
-    _gl_Uniform1i(textureMapLocation, 2);
-    _gl_Uniform1i(textureIntroLocation, 3);
-
-    GLint texL2  = _gl_GetUniformLocation(shaderProgram2, "uTextureMenu");
-GLint texR2  = _gl_GetUniformLocation(shaderProgram2, "uTextureIntro");
-GLint flip2  = _gl_GetUniformLocation(shaderProgram2, "uFlipT");
-_gl_Uniform1i(texL2,  1);
-_gl_Uniform1i(texR2,  3);
-_gl_Uniform1f(flip2,  (float)uFlipT);
-//    static float tmp=0.0f;
-//    tmp=tmp+0.01f;
-//SDL_Log("tmp %f\n", tmp);
-//    _gl_Uniform1f(flipTLocation,     (float)tmp);
-	uFlipT+=0.01f; // probar el UpdateBookCover que propone QWEN
-if (uFlipT > 1.0f) uFlipT = 1.0f;
-
-    _gl_Uniform1f(flipTLocation,     (float)uFlipT);
-    _gl_Uniform1f(efectoLocation,     (float)paletaEfecto);
-    _gl_Uniform1i(filtroLocation,     (int)filtro);
-    _gl_Uniform2f(texSizeLocation,    (float)TEXTURE_WIDTH, (float)TEXTURE_HEIGHT);
-
-//    GLfloat verts[] = { -1.f,1.f,  1.f,1.f,  -1.f,-1.f,  1.f,-1.f };
-//    GLfloat uvs[]   = {  0.f,0.f,  1.f,0.f,   0.f, 1.f,  1.f, 1.f };
-
-
-    //GLfloat vertsPage[] = {
-    GLfloat verts[] = {
-    0.0f,  0.9f,   // top-left
-    0.9f,  0.9f,   // top-right
-    0.0f, -0.9f,   // bot-left
-    0.9f, -0.9f    // bot-right
+    // === Draw 2: tapa con vertex shader de rotación ===
+    /*
+    GLfloat vertsCover[] = {
+        0.0f,  1.f,
+        1.0f,  1.f,
+        0.0f, -1.f,
+        1.0f, -1.f
+    }; */
+    GLfloat vertsCover[] = {
+    0.0f,  0.9f,
+    0.9f,  0.9f,
+    0.0f, -0.9f,
+    0.9f, -0.9f
 };
-//GLfloat uvsPage[] = { 0.f,0.f, 1.f,0.f, 0.f,1.f, 1.f,1.f };
-GLfloat uvs[] = { 0.f,0.f, 1.f,0.f, 0.f,1.f, 1.f,1.f };
-
-    GLint posLoc = _gl_GetAttribLocation(shaderProgram, "aPosition");
-    GLint uvLoc  = _gl_GetAttribLocation(shaderProgram, "aTexCoord");
-
-    GLuint vbo[2];
-    _gl_GenBuffers(2, vbo);
-    _gl_BindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-    _gl_BufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STREAM_DRAW);
-    _gl_EnableVertexAttribArray(posLoc);
-    _gl_VertexAttribPointer(posLoc, 2, GL_FLOAT, GL_FALSE, 0, 0);
-    _gl_BindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-    _gl_BufferData(GL_ARRAY_BUFFER, sizeof(uvs), uvs, GL_STREAM_DRAW);
-    _gl_EnableVertexAttribArray(uvLoc);
-    _gl_VertexAttribPointer(uvLoc, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    _gl_DisableVertexAttribArray(posLoc);
-    _gl_DisableVertexAttribArray(uvLoc);
-    _gl_DeleteBuffers(2, vbo);
-    
-    
     _gl_UseProgram(shaderProgramCover);
+    setCommonUniforms(shaderProgramCover);
+    drawQuad(shaderProgramCover, vertsCover, uvs, 4);
 
-
-GLint posLocC = _gl_GetAttribLocation(shaderProgramCover, "aPosition");
-    GLint uvLocC  = _gl_GetAttribLocation(shaderProgramCover, "aTexCoord");
-    GLint flipLocC = _gl_GetUniformLocation(shaderProgramCover, "uFlipT");
-    _gl_Uniform1f(flipLocC, (float)uFlipT);
-
-GLint texRC  = _gl_GetUniformLocation(shaderProgramCover, "uTextureIntro");
-GLint texNLC = _gl_GetUniformLocation(shaderProgramCover, "uTextureMap");
-GLint flipC  = _gl_GetUniformLocation(shaderProgramCover, "uFlipT");
-_gl_Uniform1i(texRC,  3);
-_gl_Uniform1i(texNLC, 2);
-_gl_Uniform1f(flipC,  (float)uFlipT);
-
-    // === Draw 2: tapa (azul/verde según reverso) ===
-// El vertex shader rota sobre el eje izquierdo (x=0.0 NDC = lomo)
-GLfloat vertsCover[] = {
-    0.0f,  0.9f,   // top-left  (lomo, fijo)
-    0.9f,  0.9f,   // top-right (borde libre)
-    0.0f, -0.9f,   // bot-left  (lomo, fijo)
-    0.9f, -0.9f    // bot-right (borde libre)
-};
-GLfloat uvsCover[] = { 0.f,0.f, 1.f,0.f, 0.f,1.f, 1.f,1.f };
-GLuint vbo2[2];
-    _gl_GenBuffers(2, vbo2);
-    _gl_BindBuffer(GL_ARRAY_BUFFER, vbo2[0]);
-    _gl_BufferData(GL_ARRAY_BUFFER, sizeof(verts), vertsCover, GL_STREAM_DRAW);
-    _gl_EnableVertexAttribArray(posLocC);
-    _gl_VertexAttribPointer(posLocC, 2, GL_FLOAT, GL_FALSE, 0, 0);
-    _gl_BindBuffer(GL_ARRAY_BUFFER, vbo2[1]);
-    _gl_BufferData(GL_ARRAY_BUFFER, sizeof(uvsCover), uvsCover, GL_STREAM_DRAW);
-    _gl_EnableVertexAttribArray(uvLocC);
-    _gl_VertexAttribPointer(uvLocC, 2, GL_FLOAT, GL_FALSE, 0, 0);
-glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    _gl_DisableVertexAttribArray(posLocC);
-    _gl_DisableVertexAttribArray(uvLocC);
-    _gl_DeleteBuffers(2, vbo2);
-
-
-    glActiveTexture(GL_TEXTURE3);
-    SDL_GL_UnbindTexture(textureIntro);
-    glActiveTexture(GL_TEXTURE2);
-    SDL_GL_UnbindTexture(textureMap);
-    glActiveTexture(GL_TEXTURE1);
-    SDL_GL_UnbindTexture(textureMenu);
-    glActiveTexture(GL_TEXTURE0);
-    SDL_GL_UnbindTexture(texture);
+    // Desvincular texturas
+    glActiveTexture(GL_TEXTURE3); SDL_GL_UnbindTexture(textureIntro);
+    glActiveTexture(GL_TEXTURE2); SDL_GL_UnbindTexture(textureMap);
+    glActiveTexture(GL_TEXTURE1); SDL_GL_UnbindTexture(textureMenu);
+    glActiveTexture(GL_TEXTURE0); SDL_GL_UnbindTexture(texture);
 
     SDL_GL_SwapWindow(window);
     _gl_UseProgram(oldProgram);
-}
-else {
-//     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-     // Modo SW: pipeline SDL_Renderer clásico
+} else {
 #ifdef ANDROID
-     SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+    SDL_RenderCopy(renderer, texture, nullptr, nullptr);
 #else
-     SDL_RenderCopy(renderer, texture, nullptr, &dstrect); 
+    SDL_RenderCopy(renderer, texture, nullptr, &dstrect);
 #endif
-     SDL_RenderPresent(renderer);
+    SDL_RenderPresent(renderer);
 }
-
 
 #ifdef __EMSCRIPTEN__
     }

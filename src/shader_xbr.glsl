@@ -99,4 +99,10 @@ vec4 xbrSample(sampler2D tex, vec2 uv) {
     vec3 res=mix(res1,res2,step(c_df(E,res1),c_df(E,res2)));
     return vec4(res,1.0);
 }
+
+vec4 sampleTex(sampler2D tex, vec2 uv) {
+    return uFiltro < 1
+        ? applyEfecto(texture2D(tex, uv))
+        : applyEfecto(xbrSample(tex, uv));
+}
 )"

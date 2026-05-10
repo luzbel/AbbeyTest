@@ -11,7 +11,7 @@ void main() {
     vec2 uv = vec2(vTexCoord.x, (vTexCoord.y - mY) / scaleY);
     bool outside = uv.y < 0.0 || uv.y > 1.0;
 
-    vec4 color = outside ? paperColor() : texture2D(NEXT_PAGE_RIGHT, uv);
+    vec4 color = outside ? paperColor() : sampleTex(NEXT_PAGE_RIGHT, uv);
     gl_FragColor = vec4(color.rgb * s, 1.0);
 }
 )";

@@ -27,6 +27,7 @@ vec4 applyEfecto(vec4 color) {
     return res;
 }
 
+
 // ---- Libro: parámetros ----
 //#define BOOK_MARGIN    0.03
 #define BOOK_MARGIN    0.03

@@ -18,8 +18,8 @@ void main() {
         color = paperColor();
     } else {
         color = uFlipT < 0.5
-            ? texture2D(PAGE_RIGHT,    uv)
-            : texture2D(NEXT_PAGE_LEFT, uv);
+            ? sampleTex(PAGE_RIGHT,    uv)
+            : sampleTex(NEXT_PAGE_LEFT, uv);
     }
     gl_FragColor = vec4(color.rgb * light, 1.0);
 }
