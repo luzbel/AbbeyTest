@@ -1,19 +1,15 @@
 R"(
-//#ifdef GL_ES
-//precision mediump float;
-//#endif
-//varying vec2 vTexCoord;
-//uniform float uFlipT;
 void main() {
-    float angle  = uFlipT * 3.14159;
+    float angle = uFlipT * 3.14159;
     float shadow = sin(angle) * 0.5;
-
-    // Antes de 90°: tapa sobre página derecha, sombra cerca del lomo (x=0)
-    // Después de 90°: tapa sobre página izquierda, sombra cerca del lomo (x=1)
     float shadowOnRight = shadow * (1.0 - vTexCoord.x) * step(uFlipT, 0.5);
     float shadowOnLeft  = shadow * vTexCoord.x          * step(0.5, uFlipT);
-
     float s = 1.0 - shadowOnRight - shadowOnLeft;
-    gl_FragColor = vec4(s, 0.0, 0.0, 1.0);
+
+    vec4 color = vTexCoord.x < 0.5
+        ? texture2D(PAGE_LEFT,  vTexCoord * 2.0)
+        : texture2D(PAGE_RIGHT, (vTexCoord - vec2(0.5, 0.0)) * 2.0);
+
+    gl_FragColor = vec4(color.rgb * s, 1.0);
 }
 )";

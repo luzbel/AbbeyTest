@@ -665,6 +665,13 @@ if (useWebGL && shaderProgram) {
     _gl_Uniform1i(textureMenuLocation, 1);
     _gl_Uniform1i(textureMapLocation, 2);
     _gl_Uniform1i(textureIntroLocation, 3);
+
+    GLint texL2  = _gl_GetUniformLocation(shaderProgram2, "uTextureMenu");
+GLint texR2  = _gl_GetUniformLocation(shaderProgram2, "uTextureIntro");
+GLint flip2  = _gl_GetUniformLocation(shaderProgram2, "uFlipT");
+_gl_Uniform1i(texL2,  1);
+_gl_Uniform1i(texR2,  3);
+_gl_Uniform1f(flip2,  (float)uFlipT);
 //    static float tmp=0.0f;
 //    tmp=tmp+0.01f;
 //SDL_Log("tmp %f\n", tmp);
@@ -718,6 +725,13 @@ GLint posLocC = _gl_GetAttribLocation(shaderProgramCover, "aPosition");
     GLint uvLocC  = _gl_GetAttribLocation(shaderProgramCover, "aTexCoord");
     GLint flipLocC = _gl_GetUniformLocation(shaderProgramCover, "uFlipT");
     _gl_Uniform1f(flipLocC, (float)uFlipT);
+
+GLint texRC  = _gl_GetUniformLocation(shaderProgramCover, "uTextureIntro");
+GLint texNLC = _gl_GetUniformLocation(shaderProgramCover, "uTextureMap");
+GLint flipC  = _gl_GetUniformLocation(shaderProgramCover, "uFlipT");
+_gl_Uniform1i(texRC,  3);
+_gl_Uniform1i(texNLC, 2);
+_gl_Uniform1f(flipC,  (float)uFlipT);
 
     // === Draw 2: tapa (azul/verde según reverso) ===
 // El vertex shader rota sobre el eje izquierdo (x=0.0 NDC = lomo)
