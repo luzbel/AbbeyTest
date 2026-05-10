@@ -45,7 +45,7 @@ void System::updateScreen()
     SDL_SetRenderTarget(renderer, nullptr);
     SDL_RenderClear(renderer);
 
-if (useWebGL && shaderProgram) {
+if (useWebGL && shaderProgramBook) {
     int ww, wh;
     SDL_GetWindowSize(window, &ww, &wh);
     glViewport(0, 0, ww, wh);
@@ -116,9 +116,9 @@ if (useWebGL && shaderProgram) {
     0.0f, -0.9f,
     0.9f, -0.9f
 }; 
-    _gl_UseProgram(shaderProgram2);
-    setCommonUniforms(shaderProgram2);
-    drawQuad(shaderProgram2, vertsPage, uvs, 4);
+    _gl_UseProgram(shaderProgramPage);
+    setCommonUniforms(shaderProgramPage);
+    drawQuad(shaderProgramPage, vertsPage, uvs, 4);
 
     // === Draw 2: tapa con vertex shader de rotación ===
  /*   

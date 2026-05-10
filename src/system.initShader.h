@@ -1,26 +1,10 @@
 void System::initShader(int efectoPaleta)
 {
-	SDL_Log("initShader 1\n");
     if (!useWebGL) return;
-	SDL_Log("initShader 2\n");
-    const char* vertexSource = R"(
-// vertex shader de la tapa
-attribute vec2 aPosition;
-attribute vec2 aTexCoord;
-varying vec2 vTexCoord;
-uniform float uFlipT;
 
-void main() {
-    vTexCoord = aTexCoord;
-    vec2 pos = aPosition;
-    // Rotar sobre x=0.0 según uFlipT
-    // El borde libre (aTexCoord.x=1) se mueve, el lomo (aTexCoord.x=0) no
-    float angle = uFlipT * 3.14159;
-    pos.x = aPosition.x * cos(angle);  // proyección perspectiva simple
-    gl_Position = vec4(pos, 0.0, 1.0);
-}
-    )";
+    // ---- Vertex shaders ----
 
+    // Quad plano sin transformación — para páginas estáticas
     const char* vertexSimpleSource = R"(
 attribute vec2 aPosition;
 attribute vec2 aTexCoord;
@@ -31,91 +15,108 @@ void main() {
 }
 )";
 
-	std::string fragmentSource = 
-		std::string("#define PAGE_LEFT ") + "uTextureMenu" + "\n" + 
-		std::string("#define PAGE_RIGHT ") + "uTextureIntro" + "\n" +
-		std::string("#define NEXT_PAGE_LEFT ") + "uTextureMap" + "\n" + 
-		std::string("#define NEXT_PAGE_RIGHT ") + "uTexture" + "\n" +
+    // Quad con rotación perspectiva sobre el eje izquierdo — para la tapa
+    // TODO: leer de fichero vertexCoverSource
+    const char* vertexCoverSource = R"(
+attribute vec2 aPosition;
+attribute vec2 aTexCoord;
+varying vec2 vTexCoord;
+uniform float uFlipT;
+void main() {
+    vTexCoord = aTexCoord;
+    float angle = uFlipT * 3.14159;
+    float cosA  = cos(angle);
+	// Jugar con el 0.85 del max(abs(cosA), XXX) 
+	// para que la perspectiva del libro al abrir sea mayor o menor
+    float w     = mix(1.0, max(abs(cosA), 0.85), aTexCoord.x);
+    gl_Position = vec4(aPosition.x * cosA, aPosition.y, 0.0, w);
+}
+)";
+
+    // ---- Defines comunes de texturas ----
+    std::string textureDefines =
+        std::string("#define PAGE_LEFT ")       + "uTextureMenu"  + "\n" +
+        std::string("#define PAGE_RIGHT ")      + "uTextureIntro" + "\n" +
+        std::string("#define NEXT_PAGE_LEFT ")  + "uTextureMap"   + "\n" +
+        std::string("#define NEXT_PAGE_RIGHT ") + "uTexture"      + "\n";
+
+    // ---- Fragment shaders ----
+
+    // Libro abierto estático — reservado para uso futuro
+    std::string fragBook =
+        textureDefines +
 #include "shader_common.glsl"
 #include "shader_xbr.glsl"
 #include "shader_book_cover.glsl"
 #include "shader_main.glsl"
 
-    std::cout << "DEBUG SHADER CONTENT:\n" << fragmentSource << "\n---END---" << std::endl;
-
-	std::string shaderProgramPage =
-		std::string("#define PAGE_LEFT ") + "uTextureMenu" + "\n" + 
-		std::string("#define PAGE_RIGHT ") + "uTextureIntro" + "\n" +
-		std::string("#define NEXT_PAGE_LEFT ") + "uTextureMap" + "\n" + 
-		std::string("#define NEXT_PAGE_RIGHT ") + "uTexture" + "\n" +
-#include "shader_common.glsl" 
+    // Página fija (derecha) — quad plano con NEXT_PAGE_RIGHT
+    std::string fragPage =
+        textureDefines +
+#include "shader_common.glsl"
 #include "shader_xbr.glsl"
-#include "shaderProgramPage.glsl"	
+#include "frag_page.glsl"
 
+    // Tapa girando — anverso PAGE_RIGHT, reverso NEXT_PAGE_LEFT
+    std::string fragCover =
+        textureDefines +
+#include "shader_common.glsl"
+#include "shader_xbr.glsl"
+#include "frag_cover.glsl"
 
+    // ---- Compilación ----
     auto compileShader = [&](GLenum type, const char* src) -> GLuint {
         GLuint s = _gl_CreateShader(type);
         _gl_ShaderSource(s, 1, &src, nullptr);
-        _gl_CompileShader(s);
+        _gl_CompileShader(s); /* faltan los punteros a estas funciones gl 
+        GLint ok; _gl_GetShaderiv(s, GL_COMPILE_STATUS, &ok);
+        if (!ok) {
+            char log[512]; glGetShaderInfoLog(s, sizeof(log), nullptr, log);
+            SDL_Log("ERROR compile shader: %s", log);
+        } */
         return s;
     };
 
-    GLuint vert = compileShader(GL_VERTEX_SHADER,   vertexSource);
-    GLuint vert2 = compileShader(GL_VERTEX_SHADER,   vertexSimpleSource);
-    GLuint frag = compileShader(GL_FRAGMENT_SHADER, fragmentSource.c_str());
-    GLuint frag2 = compileShader(GL_FRAGMENT_SHADER, shaderProgramPage.c_str());
+    auto linkProgram = [&](GLuint vert, GLuint frag) -> GLuint {
+        GLuint prog = _gl_CreateProgram();
+        _gl_AttachShader(prog, vert);
+        _gl_AttachShader(prog, frag);
+        _gl_LinkProgram(prog);
+        GLint ok; _gl_GetProgramiv(prog, GL_LINK_STATUS, &ok);
+        if (!ok) {
+		/* falta el punteor a glGetProgramInfoLog
+            char log[512]; glGetProgramInfoLog(prog, sizeof(log), nullptr, log);
+            SDL_Log("ERROR link program: %s", log); */
+		SDL_Log("ERROR compilando shader");
+        }
+        return prog;
+    };
 
-    shaderProgram = _gl_CreateProgram();
-    _gl_AttachShader(shaderProgram, vert);
-    _gl_AttachShader(shaderProgram, frag);
-    _gl_LinkProgram(shaderProgram);
+    GLuint vertSimple = compileShader(GL_VERTEX_SHADER,   vertexSimpleSource);
+    GLuint vertCover  = compileShader(GL_VERTEX_SHADER,   vertexCoverSource);
+    GLuint fragBookC  = compileShader(GL_FRAGMENT_SHADER, fragBook.c_str());
+    GLuint fragPageC  = compileShader(GL_FRAGMENT_SHADER, fragPage.c_str());
+    GLuint fragCoverC = compileShader(GL_FRAGMENT_SHADER, fragCover.c_str());
 
-    shaderProgram2 = _gl_CreateProgram();
-    _gl_AttachShader(shaderProgram2, vert2);
-    _gl_AttachShader(shaderProgram2, frag2);
-    _gl_LinkProgram(shaderProgram2);
+    shaderProgramBook  = linkProgram(vertSimple, fragBookC);   // futuro: libro abierto
+    shaderProgramPage  = linkProgram(vertSimple, fragPageC);   // página fija
+    shaderProgramCover = linkProgram(vertCover,  fragCoverC);  // tapa girando
 
-std::string vertexCoverSource=
-#include "vertexCoverSource"
-
-
-std::string fragCoverSource =
-		std::string("#define PAGE_LEFT ") + "uTextureMenu" + "\n" + 
-		std::string("#define PAGE_RIGHT ") + "uTextureIntro" + "\n" +
-		std::string("#define NEXT_PAGE_LEFT ") + "uTextureMap" + "\n" + 
-		std::string("#define NEXT_PAGE_RIGHT ") + "uTexture" + "\n" +
-#include "shader_common.glsl"
-#include "shader_xbr.glsl"
-#include "shaderProgramPageXXX.glsl"	
-
-GLuint vertCover = compileShader(GL_VERTEX_SHADER,   vertexCoverSource.c_str());
-GLuint fragCover = compileShader(GL_FRAGMENT_SHADER, fragCoverSource.c_str());
-shaderProgramCover = _gl_CreateProgram();
-_gl_AttachShader(shaderProgramCover, vertCover);
-_gl_AttachShader(shaderProgramCover, fragCover);
-_gl_LinkProgram(shaderProgramCover);
-
-        GLint status;
-    _gl_GetProgramiv(shaderProgram, GL_LINK_STATUS, &status);
-    SDL_Log("status1 %d\n",status);
-    if (status == GL_FALSE) {
-    SDL_Log("**********\n************\nCAGADA\n**********\n********\nstatus1 %d\n",status);
-     //   char log[512]; _gl_GetProgramInfoLog(shaderProgram, sizeof(log), nullptr, log);
-//        SDL_Log("ERROR ENLACE SHADER 1: %s", log);
-        useWebGL = false; return;
+    if (!shaderProgramBook || !shaderProgramPage || !shaderProgramCover) {
+        useWebGL = false;
+        return;
     }
-    SDL_Log("status2 %d\n",status);
-        GLint status2;
-    _gl_GetProgramiv(shaderProgram2, GL_LINK_STATUS, &status2);
-    SDL_Log("status1 de 2 %d\n",status2);
- 
-    efectoLocation = _gl_GetUniformLocation(shaderProgram, "uEfecto");
-    SDL_Log("initShader OK — shaderProgram=%u efectoLocation=%d", shaderProgram, efectoLocation);
-    texSizeLocation = _gl_GetUniformLocation(shaderProgram, "uTexSize");
-    filtroLocation = _gl_GetUniformLocation(shaderProgram, "uFiltro");
-    textureLocation = _gl_GetUniformLocation(shaderProgram, "uTexture");
-    textureMapLocation = _gl_GetUniformLocation(shaderProgram, "uTextureMap");
-    textureMenuLocation = _gl_GetUniformLocation(shaderProgram, "uTextureMenu");
-    textureIntroLocation = _gl_GetUniformLocation(shaderProgram, "uTextureIntro");
-    flipTLocation = _gl_GetUniformLocation(shaderProgram, "uFlipT");
+
+    // Locations de shaderProgramBook (usado también como referencia)
+    efectoLocation       = _gl_GetUniformLocation(shaderProgramBook, "uEfecto");
+    filtroLocation       = _gl_GetUniformLocation(shaderProgramBook, "uFiltro");
+    texSizeLocation      = _gl_GetUniformLocation(shaderProgramBook, "uTexSize");
+    textureLocation      = _gl_GetUniformLocation(shaderProgramBook, "uTexture");
+    textureMapLocation   = _gl_GetUniformLocation(shaderProgramBook, "uTextureMap");
+    textureMenuLocation  = _gl_GetUniformLocation(shaderProgramBook, "uTextureMenu");
+    textureIntroLocation = _gl_GetUniformLocation(shaderProgramBook, "uTextureIntro");
+    flipTLocation        = _gl_GetUniformLocation(shaderProgramBook, "uFlipT");
+
+    SDL_Log("initShader OK — book=%u page=%u cover=%u",
+            shaderProgramBook, shaderProgramPage, shaderProgramCover);
 }

@@ -64,8 +64,8 @@ static PFNGLGETPROGRAMIVPROC _gl_GetProgramiv;
 #endif
 
 // Estado GL — el contexto lo gestiona SDL_Renderer internamente
-static GLuint shaderProgram  = 0;
-static GLuint shaderProgram2  = 0;
+static GLuint shaderProgramBook  = 0;
+static GLuint shaderProgramPage  = 0;
 static GLuint shaderProgramCover  = 0;
 static GLint  efectoLocation = -1;
 static GLint filtroLocation = -1;
