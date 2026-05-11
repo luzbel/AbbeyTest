@@ -1,3 +1,7 @@
+#ifdef __EMSCRIPTEN__
+#include <emscripten/html5.h>
+#endif
+
 void System::updateScreen()
 {
 #ifdef __EMSCRIPTEN__
@@ -6,46 +10,79 @@ void System::updateScreen()
 
 //TODO si no está en modo webGL igual se puede simplificar
 	if((bool)sys->useWebGL) {
+
+//		SDL_Log("updateScreen %d\n", (int)_state);
 		switch(_state)
 		{
 			case Abadia::STATES::INTRO:
-				SDL_UpdateTexture(textureIntro, nullptr, surfaceIntro->pixels, surface->pitch);
+				SDL_UpdateTexture(texturePR, nullptr, surfaceIntro->pixels, surface->pitch);
+//				SDL_UpdateTexture(textureNPR, nullptr, surfaceMenu->pixels, surface->pitch);
 				break;
 			case Abadia::STATES::CONFIG_GFX:
 			case Abadia::STATES::CONFIG_SND:
 			case Abadia::STATES::HELP:
-			case Abadia::STATES::HELP_INTRODUCCION:
 			case Abadia::STATES::HELP_MANEJO:
 			case Abadia::STATES::HELP_AYUDAS:
 			case Abadia::STATES::HELP_CAMARAS:
-			case Abadia::STATES::HELP_REFERENCIAS:
 			case Abadia::STATES::CONFIG:
 			case Abadia::STATES::ASK_EXIT:
 			case Abadia::STATES::ASK_CONTINUE:
 			case Abadia::STATES::ASK_NEW_GAME:
 			case Abadia::STATES::LANGUAGE:
-			case Abadia::STATES::MENU:
 			case Abadia::STATES::LOAD:
 			case Abadia::STATES::SAVE:
-				SDL_UpdateTexture(textureMenu, nullptr, surfaceMenu->pixels, surfaceMenu->pitch);
+				SDL_UpdateTexture(texturePR, nullptr, surfaceIntro->pixels, surface->pitch);
+				SDL_UpdateTexture(textureNPR, nullptr, surfaceMenu->pixels, surface->pitch);
+				SDL_UpdateTexture(textureNPL, nullptr, surfaceMap->pixels, surface->pitch);
+				break;
+			case Abadia::STATES::MENU:
+				// ojo, que esto se pinta como si fuese el final del flip
+				// de la portada. Por eso portada es PR (aunque girada)
+				// y NPR es el menu
+				SDL_UpdateTexture(texturePR, nullptr, surfaceIntro->pixels, surface->pitch);
+				SDL_UpdateTexture(textureNPR, nullptr, surfaceMenu->pixels, surface->pitch);
+				SDL_UpdateTexture(textureNPL, nullptr, surfaceMap->pixels, surface->pitch);
 				break;
 			case Abadia::STATES::SCROLL:
 			case Abadia::STATES::HELP_MANEJO_PERGAMINO:
+			case Abadia::STATES::HELP_REFERENCIAS:   // referencias es un pergamino, no texto por marcador
+			case Abadia::STATES::HELP_INTRODUCCION:
 			case Abadia::STATES::ENDING:
-				SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
+				SDL_UpdateTexture(texturePR, nullptr, surfaceMenu->pixels, surface->pitch);
+				SDL_UpdateTexture(textureNPR, nullptr, surface->pixels, surface->pitch);
 				break;
 			case Abadia::STATES::PLAY:
-				SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
-				SDL_UpdateTexture(textureMap, nullptr, surfaceMap->pixels, surface->pitch);
+				SDL_UpdateTexture(texturePR, nullptr, surface->pixels, surface->pitch);
+				SDL_UpdateTexture(textureNPR, nullptr, surface->pixels, surface->pitch);
+				SDL_UpdateTexture(textureNPL, nullptr, surfaceMap->pixels, surface->pitch);
 				break;
 		}
     } else
-	SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
+	SDL_UpdateTexture(texturePR, nullptr, surface->pixels, surface->pitch);
 
     SDL_SetRenderTarget(renderer, nullptr);
     SDL_RenderClear(renderer);
 
-if (useWebGL && shaderProgramBook) {
+if (useWebGL && shaderProgramBook && shaderProgramPage && shaderProgramPage) {
+
+
+#ifdef __EMSCRIPTEN__
+	// ver si esto se puede captar en handleEvents
+	// de alguna manera para no hacerlo constantemente
+	// en updateScreen
+    int canvasW, canvasH;
+EMSCRIPTEN_RESULT r =     emscripten_get_canvas_element_size("#canvas", &canvasW, &canvasH);
+    SDL_Log("r: %d deberia ser %d - canvas %d x %d\n",r,EMSCRIPTEN_RESULT_SUCCESS, canvasW, canvasH);
+    //if (canvasW != w || canvasH != h) {
+    if (canvasW != 0 && canvasH != 0) {
+        SDL_SetWindowSize(window, canvasW, canvasH);
+        w = canvasW;
+        h = canvasH;
+    }
+#endif
+
+    // ver si esto se puede garantizar que nos llega en handleEvents
+    // y actualizamos el tamaño solo cuando cambie la ventana (o el canvas en emscripten)
     int ww, wh;
     SDL_GetWindowSize(window, &ww, &wh);
     glViewport(0, 0, ww, wh);
@@ -54,25 +91,28 @@ if (useWebGL && shaderProgramBook) {
 
     // Vincular las 4 texturas a sus unidades GL
     float tw, th;
-    glActiveTexture(GL_TEXTURE0); SDL_GL_BindTexture(texture,      &tw, &th);
-    glActiveTexture(GL_TEXTURE1); SDL_GL_BindTexture(textureMenu,  &tw, &th);
-    glActiveTexture(GL_TEXTURE2); SDL_GL_BindTexture(textureMap,   &tw, &th);
-    glActiveTexture(GL_TEXTURE3); SDL_GL_BindTexture(textureIntro, &tw, &th);
-    glActiveTexture(GL_TEXTURE0);
+    glActiveTexture(GL_TEXTURE0); SDL_GL_BindTexture(texturePR,      &tw, &th);
+    glActiveTexture(GL_TEXTURE1); SDL_GL_BindTexture(texturePL,  &tw, &th);
+    glActiveTexture(GL_TEXTURE2); SDL_GL_BindTexture(textureNPR,   &tw, &th);
+    glActiveTexture(GL_TEXTURE3); SDL_GL_BindTexture(textureNPL, &tw, &th);
 
     GLint oldProgram = 0;
     glGetIntegerv(GL_CURRENT_PROGRAM, &oldProgram);
 
     // Helper lambda para pasar uniforms comunes a cualquier programa
     auto setCommonUniforms = [&](GLuint prog) {
-        _gl_Uniform1i(_gl_GetUniformLocation(prog, "uTexture"),      0);
-        _gl_Uniform1i(_gl_GetUniformLocation(prog, "uTextureMenu"),  1);
-        _gl_Uniform1i(_gl_GetUniformLocation(prog, "uTextureMap"),   2);
-        _gl_Uniform1i(_gl_GetUniformLocation(prog, "uTextureIntro"), 3);
+        _gl_Uniform1i(_gl_GetUniformLocation(prog, "uTexturePR"),      0);
+        _gl_Uniform1i(_gl_GetUniformLocation(prog, "uTexturePL"),  1);
+        _gl_Uniform1i(_gl_GetUniformLocation(prog, "uTextureNPR"),   2);
+        _gl_Uniform1i(_gl_GetUniformLocation(prog, "uTextureNPL"), 3);
         _gl_Uniform1f(_gl_GetUniformLocation(prog, "uFlipT"),        (float)uFlipT);
         _gl_Uniform1f(_gl_GetUniformLocation(prog, "uEfecto"),       (float)paletaEfecto);
         _gl_Uniform1i(_gl_GetUniformLocation(prog, "uFiltro"),       (int)filtro);
         _gl_Uniform2f(_gl_GetUniformLocation(prog, "uTexSize"),      (float)TEXTURE_WIDTH, (float)TEXTURE_HEIGHT);
+        _gl_Uniform1i(_gl_GetUniformLocation(prog, "uPortada"),       (int)(
+		(_state==Abadia::STATES::INTRO)||
+		(_state==Abadia::STATES::MENU && (uFlipT<1.0))
+		)?1:0);
     };
 
     // Helper lambda para dibujar un quad
@@ -98,9 +138,13 @@ if (useWebGL && shaderProgramBook) {
     GLfloat uvs[] = { 0.f,0.f, 1.f,0.f, 0.f,1.f, 1.f,1.f };
 
     // Avanzar animación
-    uFlipT += 0.01f;
-    if (uFlipT > 1.0f) uFlipT = 1.0f;
-
+    if (uFlipInProgress==true) {
+	    uFlipT += 0.01f;
+	    if (uFlipT > 1.0f) {
+		    uFlipInProgress=false;
+	    }
+    }
+   
     // === Draw 1: páginas fijas (izquierda + derecha) ===
   /*  
     GLfloat vertsPage[] = {
@@ -109,17 +153,32 @@ if (useWebGL && shaderProgramBook) {
         -1.f, -1.f,
          1.f, -1.f
     }; */
-
+/* solo para la izquierda
     GLfloat vertsPage[] = {
     0.0f,  0.9f,
     0.9f,  0.9f,
     0.0f, -0.9f,
-    0.9f, -0.9f
-}; 
+    0.9f, -0.9f */
+    GLfloat vertsPage[] = {
+    -0.9f,  0.9f,
+     0.9f,  0.9f,
+    -0.9f, -0.9f,
+     0.9f, -0.9f
+};
+
+//if ( (_state == Abadia::STATES::INTRO || _state==Abadia::STATES::MENU)  && uFlipT < 1.0f) 
+//if ( _state != Abadia::STATES::INTRO ) 
+if (true)
+{
+//	SDL_Log("Abadia::STATES::INTRO && uFlipT < 1.0f\n");
+
     _gl_UseProgram(shaderProgramPage);
     setCommonUniforms(shaderProgramPage);
     drawQuad(shaderProgramPage, vertsPage, uvs, 4);
-
+}
+//if (_state==Abadia::STATES::INTRO || _state==Abadia::STATES::MENU) {
+if (true)
+{
     // === Draw 2: tapa con vertex shader de rotación ===
  /*   
     GLfloat vertsCover[] = {
@@ -132,25 +191,44 @@ if (useWebGL && shaderProgramBook) {
     0.0f,  0.9f,
     0.9f,  0.9f,
     0.0f, -0.9f,
-    0.9f, -0.9f
+    0.9f, -0.9f 
 };
+
+// if (uFlipT > 0.0f) 
+	{
+//	SDL_Log("Abadia::STATES::INTRO && uFlipT < 1.0f -> uFlipT > 0.0f\n");
     _gl_UseProgram(shaderProgramCover);
     setCommonUniforms(shaderProgramCover);
-    drawQuad(shaderProgramCover, vertsCover, uvs, 4);
+    drawQuad(shaderProgramCover, vertsCover, uvs, 4); 
+	}
+
+}
+
+/*
+if (true ) {
+// Activar scissor para limpiar solo la mitad izquierda
+glEnable(GL_SCISSOR_TEST);
+glScissor(0, 0, ww/2, wh);
+glClearColor(0.149f, 0.127f, 0.361f, 1.f);  // color fondo
+glClear(GL_COLOR_BUFFER_BIT);
+glDisable(GL_SCISSOR_TEST);
+}
+*/
+
 
     // Desvincular texturas
-    glActiveTexture(GL_TEXTURE3); SDL_GL_UnbindTexture(textureIntro);
-    glActiveTexture(GL_TEXTURE2); SDL_GL_UnbindTexture(textureMap);
-    glActiveTexture(GL_TEXTURE1); SDL_GL_UnbindTexture(textureMenu);
-    glActiveTexture(GL_TEXTURE0); SDL_GL_UnbindTexture(texture);
+    glActiveTexture(GL_TEXTURE3); SDL_GL_UnbindTexture(textureNPL);
+    glActiveTexture(GL_TEXTURE2); SDL_GL_UnbindTexture(textureNPR);
+    glActiveTexture(GL_TEXTURE1); SDL_GL_UnbindTexture(texturePL);
+    glActiveTexture(GL_TEXTURE0); SDL_GL_UnbindTexture(texturePR);
 
     SDL_GL_SwapWindow(window);
     _gl_UseProgram(oldProgram);
 } else {
 #ifdef ANDROID
-    SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+    SDL_RenderCopy(renderer, texturePR, nullptr, nullptr);
 #else
-    SDL_RenderCopy(renderer, texture, nullptr, &dstrect);
+    SDL_RenderCopy(renderer, texturePR, nullptr, &dstrect);
 #endif
     SDL_RenderPresent(renderer);
 }

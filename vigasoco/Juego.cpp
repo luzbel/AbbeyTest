@@ -689,10 +689,10 @@ bool Juego::helpManejo() {
 	if (BUTTON_YES) {
 		changeState(STATES::MENU);
 	} else {
-		marcador->imprimeFrase(helpManejoText[sys->idioma][0], 8, 16+(0*16),4, 0);
+		marcador->imprimeFrase(helpManejoText[sys->idioma][0], 8, 16+(0*16),4, 0,true);
 		for (int i=1;i<9;i++)
 		{
-			marcador->imprimeFrase(helpManejoText[sys->idioma][i], 8, 16+(i*16),0, 4);
+			marcador->imprimeFrase(helpManejoText[sys->idioma][i], 8, 16+(i*16),0, 4,true);
 		}
 	}
 	return true;
@@ -702,10 +702,10 @@ bool Juego::helpAyudas() {
 	if (BUTTON_YES) {
 		changeState(STATES::HELP);
 	} else {
-		marcador->imprimeFrase(helpAyudasText[sys->idioma][0], 8, 16+(0*16),4, 0);
+		marcador->imprimeFrase(helpAyudasText[sys->idioma][0], 8, 16+(0*16),4, 0,true);
 		for (int i=1;i<9;i++)
 		{
-			marcador->imprimeFrase(helpAyudasText[sys->idioma][i], 8, 16+(i*16),0, 4);
+			marcador->imprimeFrase(helpAyudasText[sys->idioma][i], 8, 16+(i*16),0, 4,true);
 		}
 	}
 	return true;
@@ -715,10 +715,10 @@ bool Juego::helpCamaras() {
 	if (BUTTON_YES) {
 		changeState(STATES::HELP);
 	} else {
-		marcador->imprimeFrase(helpCamarasText[sys->idioma][0], 0, 16+(0*16),4, 0);
+		marcador->imprimeFrase(helpCamarasText[sys->idioma][0], 0, 16+(0*16),4, 0,true);
 		for (int i=1;i<9;i++)
 		{
-			marcador->imprimeFrase(helpCamarasText[sys->idioma][i], 0, 16+(i*16),0, 4);
+			marcador->imprimeFrase(helpCamarasText[sys->idioma][i], 0, 16+(i*16),0, 4,true);
 		}
 	}
 	return true;
@@ -759,13 +759,29 @@ void Juego::preRun()
 void Juego::changeState(Abadia::STATES newState)
 {
 	if (newState == currentState) return;
-	sys->uFlipT=0.0f;
+	SDL_Log("changeState 1 de %d a %d con uFlipT %f y uFlipInProgress %d\n",(int)currentState,(int)newState,sys->uFlipT,sys->uFlipInProgress);
+//	sys->uFlipT=0.5f;
+		sys->uFlipInProgress=false;
+	SDL_Log("changeState 2 de %d a %d con uFlipT %f y uFlipInProgress %d\n",(int)currentState,(int)newState,sys->uFlipT,sys->uFlipInProgress);
 	marcador->limpiaAreaMarcador();  // solo el marcador, no ReiniciaPantalla completo
 
 	switch (currentState) {
 		case STATES::SCROLL:  sys->stopSound(Abadia::SONIDOS::Inicio); break;
 		case STATES::ENDING:  sys->stopSound(Abadia::SONIDOS::Final);  break;
 		default: break;
+	}
+
+	if (currentState==STATES::INTRO && newState==STATES::MENU) {
+		sys->uFlipT=0.0f;
+		sys->uFlipInProgress=true;
+	}
+	if (currentState==STATES::MENU && newState==STATES::SCROLL) {
+		sys->uFlipT=0.0f;
+		sys->uFlipInProgress=true;
+	}
+	if (currentState==STATES::SCROLL&& newState==STATES::PLAY) {
+		sys->uFlipT=0.0f;
+		sys->uFlipInProgress=true;
 	}
 
 	switch (newState) {
@@ -821,6 +837,7 @@ void Juego::changeState(Abadia::STATES newState)
 			break;
 		default: break;
 	}
+	SDL_Log("changeState 3 de %d a %d con uFlipT %f y uFlipInProgress %d\n",(int)currentState,(int)newState,sys->uFlipT,sys->uFlipInProgress);
 
 	currentState = newState;
 }
@@ -1050,8 +1067,10 @@ void Juego::muestraPresentacion()
 // sobreescrito si se vuelve aquí desde otro estado).
 	pintaPortada();
 
-	if (BUTTON_YES || (bool)sys->useWebGL)
+	//if (BUTTON_YES || (bool)sys->useWebGL)
+	if (BUTTON_YES)
 	{
+		if ((bool)sys->useWebGL) sys->uFlipT=0.0f;
 		changeState(Abadia::STATES::MENU);
 	}
 }

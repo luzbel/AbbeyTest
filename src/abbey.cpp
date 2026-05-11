@@ -165,7 +165,6 @@ void Abbey::mainLoop()
 
                 handleEvents();
                 logic();
-//666    		sys->updateTexture();
                 sys->updateScreen();
 
 		sys->endFrame();
@@ -181,7 +180,6 @@ void Abbey::mainLoop()
                 handleEvents();
                 logic();
         }
-	sys->updateTexture();
 	sys->updateScreen();
 
         sys->endFrame();
@@ -220,17 +218,6 @@ void Abbey::logic()
 
     // máquina de estados principal del juego
     using Abadia::STATES;
-/*
-//    _game->pausa = false; // será actualizado por changeState si procede
-    // nota: stateMachine() actualizaba pausa al inicio; lo hacemos aquí
-    // para mantener el mismo comportamiento
-    {
-        bool pausaSolicitada = _game->pausa; // preservamos pausa del jugador si la hubiera
-        // recalculamos igual que hacía stateMachine
-        // (pausaSolicitadaPorElJugador es privado; por ahora usamos el valor actual de pausa
-        //  que ya viene calculado del frame anterior via changeState)
-    }
-*/
 	sys->_state=_game->currentState; // mejorar
     switch (_game->currentState)
     {
@@ -299,6 +286,85 @@ void Abbey::logic()
 	    break;
     }
 }
+
+// prueba alternativa
+/*
+void Abbey::logic()
+{
+        _game->modoInformacion       = true;
+// máquina de estados principal del juego
+    using Abadia::STATES;
+	sys->_state=_game->currentState; // mejorar
+    switch (_game->currentState)
+    {
+        case STATES::PLAY:
+//            _game->menu();
+            _game->run();
+            break;
+        case STATES::INTRO:
+            _game->muestraPresentacion();
+            break;
+        case STATES::LANGUAGE:
+            _game->menuIdioma();
+            break;
+        case STATES::MENU:
+            _game->menu();
+            break;
+        case STATES::LOAD:
+            _game->menuCargar();
+            break;
+        case STATES::SAVE:
+            _game->menuGrabar();
+            break;
+        case STATES::SCROLL:
+            _game->muestraIntroduccion();
+            break;
+        case STATES::ASK_NEW_GAME:
+            _game->askForNewGame();
+            break;
+        case STATES::ASK_CONTINUE:
+            _game->askToContinue();
+            break;
+        case STATES::ASK_EXIT:
+            _game->askExit();
+            break;
+        case STATES::ENDING:
+            _game->muestraFinal();
+            break;
+	case STATES::CONFIG:
+	    _game->menuConfig();
+	    break;
+	case STATES::CONFIG_GFX:
+	    _game->menuConfigGfx();
+	    break;
+	case STATES::CONFIG_SND:
+	    _game->menuConfigSnd();
+	    break;
+	case STATES::HELP:
+	    _game->menuAyuda();
+	    break;
+	case STATES::HELP_INTRODUCCION:
+	    _game->helpIntroduccion();
+	    break;
+	case STATES::HELP_MANEJO_PERGAMINO:
+	    _game->helpManejoPergamino();
+	    break;
+	case STATES::HELP_MANEJO:
+	    _game->helpManejo();
+	    break;
+	case STATES::HELP_AYUDAS:
+	    _game->helpAyudas();
+	    break;
+	case STATES::HELP_CAMARAS:
+	    _game->helpCamaras();
+	    break;
+	case STATES::HELP_REFERENCIAS:
+	    _game->helpReferencias();
+	    break;
+    }
+}	
+*/
+
 
 // -------------------------------------------------------------------------
 // reOrderAndCopy

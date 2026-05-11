@@ -67,14 +67,14 @@ static PFNGLGETPROGRAMIVPROC _gl_GetProgramiv;
 static GLuint shaderProgramBook  = 0;
 static GLuint shaderProgramPage  = 0;
 static GLuint shaderProgramCover  = 0;
-static GLint  efectoLocation = -1;
-static GLint filtroLocation = -1;
-static GLint texSizeLocation = -1;
-static GLint textureLocation = -1;
-static GLint textureMapLocation = -1;
-static GLint textureMenuLocation = -1;
-static GLint textureIntroLocation = -1;
-static GLint flipTLocation = -1;
+//static GLint  efectoLocation = -1;
+//static GLint filtroLocation = -1;
+//static GLint texSizeLocation = -1;
+//static GLint texturePRLocation = -1;
+//static GLint texturePLLocation = -1;
+//static GLint textureNPRLocation = -1;
+//static GLint textureNPLLocation = -1;
+//static GLint flipTLocation = -1;
 
 // ----------------------------------------------------------------------------
 // initGLPointers — solo en desktop, solo funciones GL 2.0
@@ -110,7 +110,20 @@ _gl_GetProgramiv = (PFNGLGETPROGRAMIVPROC)           SDL_GL_GetProcAddress("glGe
     return true;
 }
 #endif
-
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+EMSCRIPTEN_KEEPALIVE
+void my_request_fullscreen(SDL_Window* win) {
+    SDL_SetWindowFullscreen(win, SDL_WINDOW_FULLSCREEN_DESKTOP);
+}
+void hook_emscripten_fullscreen(SDL_Window* win) {
+    EM_ASM({
+        Module['requestFullscreen'] = function(lockPointer, resizeCanvas) {
+            _my_request_fullscreen($0);
+        };
+    }, win);
+}
+#endif
 // ----------------------------------------------------------------------------
 // init
 // ----------------------------------------------------------------------------
@@ -125,7 +138,10 @@ void System::init()
     Uint32 windowFlags = SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL;
     Uint32 initFlags   = SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER;
 
-    SDL_Init(SDL_INIT_VIDEO | initFlags | SDL_INIT_AUDIO);
+//    SDL_SetHint(SDL_HINT_LOGGING, "app=debug,all=warn");
+
+
+    SDL_Init(SDL_INIT_VIDEO | initFlags | SDL_INIT_AUDIO | SDL_WINDOW_RESIZABLE);
 
 #ifdef ANDROID
     windowFlags |= SDL_WINDOW_FULLSCREEN | SDL_WINDOW_RESIZABLE;
@@ -236,15 +252,15 @@ SDL_Log("despues de  loadConfig\n");
     // SDL_TEXTUREACCESS_TARGET permite SDL_SetRenderTarget
     // SDL_TEXTUREACCESS_STREAMING permitiría UpdateTexture directo
     // Usamos STREAMING para poder hacer UpdateTexture desde surface->pixels
-    texture = SDL_CreateTexture(renderer, surface->format->format,
+    texturePR = SDL_CreateTexture(renderer, surface->format->format,
                   SDL_TEXTUREACCESS_STREAMING, TEXTURE_WIDTH, TEXTURE_HEIGHT);
-    textureMap = SDL_CreateTexture(renderer, surfaceMap->format->format,
+    texturePL = SDL_CreateTexture(renderer, surfaceMap->format->format,
                   SDL_TEXTUREACCESS_STREAMING, TEXTURE_WIDTH, TEXTURE_HEIGHT);
-    textureMenu = SDL_CreateTexture(renderer, surfaceMenu->format->format,
+    textureNPR = SDL_CreateTexture(renderer, surfaceMenu->format->format,
                   SDL_TEXTUREACCESS_STREAMING, TEXTURE_WIDTH, TEXTURE_HEIGHT);
-    textureIntro = SDL_CreateTexture(renderer, surfaceIntro->format->format,
+    textureNPL = SDL_CreateTexture(renderer, surfaceIntro->format->format,
                   SDL_TEXTUREACCESS_STREAMING, TEXTURE_WIDTH, TEXTURE_HEIGHT);
-    if (!texture || !textureMap || !textureMenu || !textureIntro) print("ERROR: Could not create textures.\n");
+    if (!texturePR || !texturePL || !textureNPR || !textureNPL) print("ERROR: Could not create textures.\n");
 
 //    SDL_SetTextureScaleMode(texture, SDL_ScaleModeNearest);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -374,10 +390,18 @@ void System::quit()
     SDL_GameControllerClose(gamepad);
     SDL_HapticClose(hapticDevice);
 
-    if (texture)  SDL_DestroyTexture(texture);
-    if (textureMap)  SDL_DestroyTexture(textureMap);
-    if (textureMenu)  SDL_DestroyTexture(textureMenu);
-    if (textureIntro)  SDL_DestroyTexture(textureIntro);
+    if (texturePR) {
+	    SDL_DestroyTexture(texturePR); 
+    }
+    if (texturePL) {
+	    SDL_DestroyTexture(texturePL);
+    }
+    if (textureNPR) {
+	    SDL_DestroyTexture(textureNPR);
+    }
+    if (textureNPL) { 
+	    SDL_DestroyTexture(textureNPL);
+    }
     if (renderer) SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
 

@@ -24,6 +24,7 @@ void main() {
     } else {
         color = sampleTex(NEXT_PAGE_LEFT, vec2(1.0 - uv.x, uv.y));
     }
+//if (debugThumbs(uv)) return;
     gl_FragColor = vec4(color.rgb * light, 1.0);
 }
 )";

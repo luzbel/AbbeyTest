@@ -210,7 +210,7 @@ struct System
 {
 	PlayerInput pad;
 	bool exit             = false;
-	bool informationMode  = false;
+	bool informationMode  = true;
 	bool enableJoystick   = true;
 	bool fullscreen       = false;
 	bool haveHapticDevice = false;
@@ -249,10 +249,10 @@ struct System
 	SDL_Surface        *surfaceIntro = nullptr;
 	SDL_Rect            dstrect      = {};
 	SDL_Renderer       *renderer     = nullptr;
-	SDL_Texture        *texture      = nullptr;
-	SDL_Texture        *textureMap   = nullptr;
-	SDL_Texture        *textureMenu  = nullptr;
-	SDL_Texture        *textureIntro = nullptr;
+	SDL_Texture        *texturePR    = nullptr;
+	SDL_Texture        *texturePL    = nullptr;
+	SDL_Texture        *textureNPR   = nullptr;
+	SDL_Texture        *textureNPL   = nullptr;
 	SDL_Window         *window       = nullptr;
 	SDL_GameController *gamepad      = nullptr;
 	SDL_Haptic         *hapticDevice = nullptr;
@@ -388,7 +388,8 @@ struct System
 		fillRect(x, y, width, height, color);
 	}
 	Abadia::STATES _state; // para saber que textura actualizar
-	float uFlipT=1.0f;
+	float uFlipT=0.0f;
+	bool uFlipInProgress=false;
 
 private:
 	void fillRect(int x, int y, int width, int height, int color) {
